@@ -135,9 +135,9 @@ None — M10 is the leaf milestone. After M10 ships, downstream is real users.
 - Create: `senex/__main__.py`
 - Create: `tests/unit/test_cli_argparse.py`
 
-- [ ] **Step 10.1.1: Failing tests** — assert each subcommand parses correctly with expected attributes; `--help` returns 0 and contains expected subcommand names; `--version` prints version from `senex.__version__`; `audit --resume --nightly` raises `CLIArgError` (exit 2); `audit --model "@auto"` parses sentinel as literal string. One test per parser branch.
+- [x] **Step 10.1.1: Failing tests** — assert each subcommand parses correctly with expected attributes; `--help` returns 0 and contains expected subcommand names; `--version` prints version from `senex.__version__`; `audit --resume --nightly` raises `CLIArgError` (exit 2); `audit --model "@auto"` parses sentinel as literal string. One test per parser branch.
 
-- [ ] **Step 10.1.2: Implement `main()` with argparse** — define named exceptions `CLIArgError` and `ValidationGateFailed` at module top. Use parent parser for common flags (`--config`, `--no-tui`, `--verbose`, `--quiet`, `--json`, `--no-load`, `--no-unload`, `--unload-after`). Subparsers:
+- [x] **Step 10.1.2: Implement `main()` with argparse** — define named exceptions `CLIArgError` and `ValidationGateFailed` at module top. Use parent parser for common flags (`--config`, `--no-tui`, `--verbose`, `--quiet`, `--json`, `--no-load`, `--no-unload`, `--unload-after`). Subparsers:
   - `audit`: `<repo-path>` positional (optional when `--nightly`), `--resume`, `--nightly`, `--include-tests`, `--lens <name>`, `--min-priority <level>`, `--model <id>`, `--allow-mixed-resume`, `--unsafe-resume`. `--resume` + `--nightly` mutually exclusive.
   - `view`: `[<audit-dir>]` optional, `--speed <float>` (default 1.0).
   - `doctor`: `[<repo-path>]` optional.
@@ -146,9 +146,9 @@ None — M10 is the leaf milestone. After M10 ships, downstream is real users.
   - `lifecycle`: subcommands `status`, `clear-locks [--force]`.
   Per spec §10 + API-4. Reference `senex.__version__` for `--version`.
 
-- [ ] **Step 10.1.3: Implement `senex/__main__.py`** — single line: `from senex.cli import main; import sys; sys.exit(main())`. Verifies `python -m senex` invocation.
+- [x] **Step 10.1.3: Implement `senex/__main__.py`** — single line: `from senex.cli import main; import sys; sys.exit(main())`. Verifies `python -m senex` invocation.
 
-- [ ] **Step 10.1.4: Test pass + commit** `feat(M10): CLI argparse skeleton with all 6 subcommands`.
+- [x] **Step 10.1.4: Test pass + commit** `feat(M10): CLI argparse skeleton with all 6 subcommands`.
 
 ### Task 10.2: senex audit (with + without TUI)
 
