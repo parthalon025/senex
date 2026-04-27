@@ -696,7 +696,7 @@ class SearchCodeOutput(BaseModel):
 - `httpx.HTTPStatusError` (4xx) -> `ToolError(kind="dispatch_failed", message=...)` (likely a malformed query the model can adapt to).
 - `pydantic.ValidationError` on response -> `ToolError(kind="dispatch_failed", message="malformed MCP response")`.
 
-- [ ] **Step 5.7.1: Failing tests** in `tests/unit/test_tool_search_code.py` (mocks via `respx`):
+- [x] **Step 5.7.1: Failing tests** in `tests/unit/test_tool_search_code.py` (mocks via `respx`):
   - `test_happy_path_returns_hits` — mocked HTTP returns 3 hits; result parses.
   - `test_invalid_query_too_long` — `query="x" * 501` -> `schema_invalid`.
   - `test_invalid_limit_zero` — `limit=0` -> `schema_invalid`.
@@ -705,11 +705,11 @@ class SearchCodeOutput(BaseModel):
   - `test_malformed_response_returns_dispatch_failed` — `respx` returns 200 with `{"unexpected": "shape"}` -> `dispatch_failed` with message "malformed MCP response".
   - `test_empty_results_returns_empty_hits` — `respx` returns `{"hits": []}` -> `hits=[]`.
 
-- [ ] **Step 5.7.2: Implement** `senex/tools/search_code.py`.
+- [x] **Step 5.7.2: Implement** `senex/tools/search_code.py`.
 
-- [ ] **Step 5.7.3: Run** `pytest tests/unit/test_tool_search_code.py -v` -> green. Expected: `7 passed`.
+- [x] **Step 5.7.3: Run** `pytest tests/unit/test_tool_search_code.py -v` -> green. Expected: `7 passed`.
 
-- [ ] **Step 5.7.4: Commit** `feat(M5): search_code MCP tool with unavailable fallback`.
+- [x] **Step 5.7.4: Commit** `feat(M5): search_code MCP tool with unavailable fallback`.
 
 ### Task 5.8: ToolLoop controller (multi-call iteration over LMStudioClient)
 
