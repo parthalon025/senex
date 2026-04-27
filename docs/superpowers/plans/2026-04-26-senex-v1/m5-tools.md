@@ -419,7 +419,7 @@ stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=ctx.tool_tim
 - `asyncio.TimeoutError` -> `ToolError(kind="timeout")`.
 - JSON parse failure on stdout -> `ToolDispatchFailed` -> `ToolError(kind="dispatch_failed", message="malformed gitnexus output")`.
 
-- [ ] **Step 5.2.1: Failing tests** in `tests/unit/test_tool_gitnexus_query.py` (mock `asyncio.create_subprocess_exec` via `unittest.mock.patch`):
+- [x] **Step 5.2.1: Failing tests** in `tests/unit/test_tool_gitnexus_query.py` (mock `asyncio.create_subprocess_exec` via `unittest.mock.patch`):
   - `test_happy_path_returns_hits` — mocked subprocess returns valid JSON; output parses into `GitnexusQueryOutput`; result content includes process names.
   - `test_invalid_input_query_too_long` — `query="x" * 501` -> `ToolInputInvalid` raised by pydantic; registry returns `ToolError(kind="schema_invalid")`.
   - `test_invalid_input_limit_too_high` — `limit=10` -> `schema_invalid`.
@@ -428,11 +428,11 @@ stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=ctx.tool_tim
   - `test_empty_results_returns_empty_hits` — subprocess stdout `'{"hits": []}'` -> `ToolResult` with `"hits": []`.
   - `test_oversize_result_truncated` — subprocess returns 10000-token JSON -> result content ends with truncation marker.
 
-- [ ] **Step 5.2.2: Implement** `senex/tools/gitnexus_query.py`. Register with `ToolRegistry` in module-level `register_gitnexus_query(registry)` helper.
+- [x] **Step 5.2.2: Implement** `senex/tools/gitnexus_query.py`. Register with `ToolRegistry` in module-level `register_gitnexus_query(registry)` helper.
 
-- [ ] **Step 5.2.3: Run** `pytest tests/unit/test_tool_gitnexus_query.py -v` -> green. Verify expected output: `7 passed`.
+- [x] **Step 5.2.3: Run** `pytest tests/unit/test_tool_gitnexus_query.py -v` -> green. Verify expected output: `7 passed`.
 
-- [ ] **Step 5.2.4: Commit** `feat(M5): gitnexus_query tool`.
+- [x] **Step 5.2.4: Commit** `feat(M5): gitnexus_query tool`.
 
 ### Task 5.3: gitnexus_context tool
 
