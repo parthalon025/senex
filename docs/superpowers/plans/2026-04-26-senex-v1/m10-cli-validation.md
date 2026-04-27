@@ -180,7 +180,7 @@ None — M10 is the leaf milestone. After M10 ships, downstream is real users.
 - Edit: `senex/cli.py` (add `cmd_doctor`)
 - Create: `tests/unit/test_cli_doctor.py`
 
-- [ ] **Step 10.3.1: Failing tests** — test each branch with fixture configs:
+- [x] **Step 10.3.1: Failing tests** — test each branch with fixture configs:
   - `senex doctor` (no path, no `--all`) → runs against every `config.repos`
   - `senex doctor /path/to/repo` → runs against single repo
   - `senex doctor --json` → outputs structured JSON matching schema below; `exit_code` in JSON matches process exit
@@ -188,7 +188,7 @@ None — M10 is the leaf milestone. After M10 ships, downstream is real users.
   - One `fail` check → exit 2 or 3 (matching the failing check's documented exit code per §8.1)
   - Verify `secret_redactor` is applied to `details` field before JSON serialization (no `api_key`/`*_token`/`*_secret` substrings in output)
 
-- [ ] **Step 10.3.2: Implement `cmd_doctor(args, config) -> int`** — runs all preflight functions from `senex.phases.preflight` (the same `check_config`, `check_lms`, `check_addendum_safety`, etc. from M8 Task 8.2.3) against either: target repo (if `<repo-path>` given) OR every repo in config (if no path). Aggregate exit code = worst (max) over all checks. `--json` output schema:
+- [x] **Step 10.3.2: Implement `cmd_doctor(args, config) -> int`** — runs all preflight functions from `senex.phases.preflight` (the same `check_config`, `check_lms`, `check_addendum_safety`, etc. from M8 Task 8.2.3) against either: target repo (if `<repo-path>` given) OR every repo in config (if no path). Aggregate exit code = worst (max) over all checks. `--json` output schema:
   ```json
   {
     "version": 1,
@@ -202,7 +202,7 @@ None — M10 is the leaf milestone. After M10 ships, downstream is real users.
   ```
   `status` ∈ `{"pass", "warn", "fail"}`. Multi-repo: top-level is a list of these objects.
 
-- [ ] **Step 10.3.3: Test pass + commit** `feat(M10): senex doctor reusing M8 preflight checks`.
+- [x] **Step 10.3.3: Test pass + commit** `feat(M10): senex doctor reusing M8 preflight checks`.
 
 ### Task 10.4: senex aggregate
 
