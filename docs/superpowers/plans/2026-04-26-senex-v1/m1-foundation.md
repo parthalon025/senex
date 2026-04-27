@@ -127,7 +127,7 @@ This milestone creates the following files:
 
 **Conventions:** §1 (code style), §11 (git commit format), §13 (docs).
 
-- [ ] **Step 1.1.1: Write `pyproject.toml`** with the following content (copy verbatim — version pins per spec §5.5):
+- [x] **Step 1.1.1: Write `pyproject.toml`** with the following content (copy verbatim — version pins per spec §5.5):
 
   ```toml
   [build-system]
@@ -178,7 +178,7 @@ This milestone creates the following files:
   python_version = "3.11"
   ```
 
-- [ ] **Step 1.1.2: Write `requirements.txt`** mirroring the dependency list (one per line, no version comments):
+- [x] **Step 1.1.2: Write `requirements.txt`** mirroring the dependency list (one per line, no version comments):
   ```
   openai>=1.50,<2.0
   pydantic>=2.5,<3
@@ -193,7 +193,7 @@ This milestone creates the following files:
   ulid-py
   ```
 
-- [ ] **Step 1.1.3: Write `senex/__init__.py`** with module docstring + `__version__`:
+- [x] **Step 1.1.3: Write `senex/__init__.py`** with module docstring + `__version__`:
 
   ```python
   """senex — Local-LLM code audit tool. See spec §1, §3.1.
@@ -207,7 +207,7 @@ This milestone creates the following files:
   __all__: list[str] = []
   ```
 
-- [ ] **Step 1.1.4: Failing test** at `tests/unit/test_package.py`:
+- [x] **Step 1.1.4: Failing test** at `tests/unit/test_package.py`:
 
   ```python
   """Smoke tests for the senex package init."""
@@ -234,14 +234,14 @@ This milestone creates the following files:
       assert hasattr(senex, "__version__")
   ```
 
-- [ ] **Step 1.1.5: Verify install** by running:
+- [x] **Step 1.1.5: Verify install** by running:
   ```bash
   python -m pip install -e .
   python -c "import senex; print(senex.__version__)"
   ```
   Expected stdout: `0.1.0`.
 
-- [ ] **Step 1.1.6: Run tests:**
+- [x] **Step 1.1.6: Run tests:**
   ```bash
   pytest tests/unit/test_package.py -v
   ```
@@ -252,14 +252,14 @@ This milestone creates the following files:
   PASSED tests/unit/test_package.py::test_package_imports_clean
   ```
 
-- [ ] **Step 1.1.7: Lint + type check:**
+- [x] **Step 1.1.7: Lint + type check:**
   ```bash
   ruff check senex/ tests/
   mypy senex/
   ```
   Both must exit 0.
 
-- [ ] **Step 1.1.8: Commit** (conventions §11):
+- [x] **Step 1.1.8: Commit** (conventions §11):
   ```bash
   git add pyproject.toml requirements.txt senex/__init__.py tests/unit/test_package.py
   git commit -m "feat(M1): project scaffolding (pyproject, requirements, package init)"
@@ -289,9 +289,9 @@ This milestone creates the following files:
 
 **Conventions:** §1 (pathlib, f-strings), §2 (type hints), §4 (named exceptions), §10 (`extra="forbid"`), §11 (commit format), §13 (docstrings).
 
-- [ ] **Step 1.2.1: Write `senex.config.toml.example`** verbatim from spec §6 (lines 1151–1217). Includes `[output]`, `[lens]`, `[walker]`, `[crosscut]`, `[lmstudio]` (with `[lmstudio.sampling]`, `[lmstudio.thinking]`, `[lmstudio.tasks.file_audit]`, `[lmstudio.tasks.cross_cutting]`, `[lmstudio.tools]`, `[lmstudio.compaction]`, `[lmstudio.lifecycle]`), and `[[repos]]` for `pensiv`. Use the inline-table form: `lmstudio = { tasks = { file_audit = { temperature = 0.5 } } }`.
+- [x] **Step 1.2.1: Write `senex.config.toml.example`** verbatim from spec §6 (lines 1151–1217). Includes `[output]`, `[lens]`, `[walker]`, `[crosscut]`, `[lmstudio]` (with `[lmstudio.sampling]`, `[lmstudio.thinking]`, `[lmstudio.tasks.file_audit]`, `[lmstudio.tasks.cross_cutting]`, `[lmstudio.tools]`, `[lmstudio.compaction]`, `[lmstudio.lifecycle]`), and `[[repos]]` for `pensiv`. Use the inline-table form: `lmstudio = { tasks = { file_audit = { temperature = 0.5 } } }`.
 
-- [ ] **Step 1.2.2: Write the failing test file** at `tests/unit/test_config.py`:
+- [x] **Step 1.2.2: Write the failing test file** at `tests/unit/test_config.py`:
 
   ```python
   """Tests for senex.config — TOML loader + strict pydantic validation + deep-merge."""
@@ -411,7 +411,7 @@ This milestone creates the following files:
       ]
   ```
 
-- [ ] **Step 1.2.3: Implement `senex/config.py`.** Top-of-file docstring + named exception + nested models + loaders. Skeleton (fill in fields per spec §6 / §5.5):
+- [x] **Step 1.2.3: Implement `senex/config.py`.** Top-of-file docstring + named exception + nested models + loaders. Skeleton (fill in fields per spec §6 / §5.5):
 
   ```python
   """senex.config — TOML config loader + strict pydantic validation + deep-merge.
@@ -669,7 +669,7 @@ This milestone creates the following files:
       return SenexConfig.model_validate(merged)
   ```
 
-- [ ] **Step 1.2.4: Run targeted tests:**
+- [x] **Step 1.2.4: Run targeted tests:**
   ```bash
   pytest tests/unit/test_config.py -v
   ```
@@ -687,14 +687,14 @@ This milestone creates the following files:
   PASSED tests/unit/test_config.py::test_config_module_has_nonempty_docstring
   ```
 
-- [ ] **Step 1.2.5: Lint + type check:**
+- [x] **Step 1.2.5: Lint + type check:**
   ```bash
   ruff check senex/ tests/
   mypy senex/
   ```
   Both exit 0.
 
-- [ ] **Step 1.2.6: Commit:**
+- [x] **Step 1.2.6: Commit:**
   ```bash
   git add senex/config.py senex.config.toml.example tests/unit/test_config.py
   git commit -m "feat(M1): config loader with strict pydantic validation"
@@ -724,7 +724,7 @@ This milestone creates the following files:
 
 **Conventions:** §3 (async, bounded queues with explicit `maxsize`), §4 (named exceptions), §10 (pydantic), §11, §13.
 
-- [ ] **Step 1.3.1: Failing test file** at `tests/unit/test_events.py`:
+- [x] **Step 1.3.1: Failing test file** at `tests/unit/test_events.py`:
 
   ```python
   """Tests for senex.events — event taxonomy + bounded EventBus + CommandBus."""
@@ -925,7 +925,7 @@ This milestone creates the following files:
       assert ev_mod.__doc__ and ev_mod.__doc__.strip() != ""
   ```
 
-- [ ] **Step 1.3.2: Implement `senex/events.py`** with the full event taxonomy + EventBus + CommandBus. Skeleton (you fill in the remaining 25 event subclasses by copying the §5.6 table; all follow the same `Field(default="<ClassName>")` pattern):
+- [x] **Step 1.3.2: Implement `senex/events.py`** with the full event taxonomy + EventBus + CommandBus. Skeleton (you fill in the remaining 25 event subclasses by copying the §5.6 table; all follow the same `Field(default="<ClassName>")` pattern):
 
   ```python
   """senex.events — Event taxonomy + bounded async EventBus + CommandBus.
@@ -1366,7 +1366,7 @@ This milestone creates the following files:
               await q.put(command)
   ```
 
-- [ ] **Step 1.3.3: Run targeted tests:**
+- [x] **Step 1.3.3: Run targeted tests:**
   ```bash
   pytest tests/unit/test_events.py -v
   ```
@@ -1387,13 +1387,13 @@ This milestone creates the following files:
   PASSED tests/unit/test_events.py::test_events_module_has_nonempty_docstring
   ```
 
-- [ ] **Step 1.3.4: Lint + type:**
+- [x] **Step 1.3.4: Lint + type:**
   ```bash
   ruff check senex/ tests/
   mypy senex/
   ```
 
-- [ ] **Step 1.3.5: Commit:**
+- [x] **Step 1.3.5: Commit:**
   ```bash
   git add senex/events.py tests/unit/test_events.py
   git commit -m "feat(M1): event taxonomy + bounded async event bus"
@@ -1422,7 +1422,7 @@ This milestone creates the following files:
 
 **Conventions:** §5 (security — no hardcoded creds even in tests; placeholders only), §10, §11, §13.
 
-- [ ] **Step 1.4.1: Failing test file** at `tests/unit/test_secret_redactor.py` (parametrized — every pattern class has a literal test case):
+- [x] **Step 1.4.1: Failing test file** at `tests/unit/test_secret_redactor.py` (parametrized — every pattern class has a literal test case):
 
   ```python
   """Tests for senex.secret_redactor — pattern set + redact_dict.
@@ -1523,7 +1523,7 @@ This milestone creates the following files:
       assert sr.__doc__ and sr.__doc__.strip() != ""
   ```
 
-- [ ] **Step 1.4.2: Implement `senex/secret_redactor.py`.** Use the `regex` library (NOT stdlib `re`) per conventions §5 (timeout-capable). Patterns ordered most-specific-first:
+- [x] **Step 1.4.2: Implement `senex/secret_redactor.py`.** Use the `regex` library (NOT stdlib `re`) per conventions §5 (timeout-capable). Patterns ordered most-specific-first:
 
   ```python
   """senex.secret_redactor — regex-based redaction for persisted strings.
@@ -1613,19 +1613,19 @@ This milestone creates the following files:
                   self._scrub(item, globs)
   ```
 
-- [ ] **Step 1.4.3: Run tests:**
+- [x] **Step 1.4.3: Run tests:**
   ```bash
   pytest tests/unit/test_secret_redactor.py -v
   ```
   Expected: every parametrized case PASSED, plus the priority/dict/empty/docstring tests.
 
-- [ ] **Step 1.4.4: Lint + type:**
+- [x] **Step 1.4.4: Lint + type:**
   ```bash
   ruff check senex/ tests/
   mypy senex/
   ```
 
-- [ ] **Step 1.4.5: Commit:**
+- [x] **Step 1.4.5: Commit:**
   ```bash
   git add senex/secret_redactor.py tests/unit/test_secret_redactor.py
   git commit -m "feat(M1): secret redactor with named pattern set"
@@ -1659,7 +1659,7 @@ This milestone creates the following files:
 
 **Conventions:** §1 (pathlib), §4 (named exceptions), §10 (pydantic for validation), §11, §13.
 
-- [ ] **Step 1.5.1: Write `senex/lens/correctness/lens.toml`:**
+- [x] **Step 1.5.1: Write `senex/lens/correctness/lens.toml`:**
 
   ```toml
   schema_version = 1
@@ -1680,7 +1680,7 @@ This milestone creates the following files:
   ]
   ```
 
-- [ ] **Step 1.5.2: Write `senex/lens/correctness/tools.toml`:**
+- [x] **Step 1.5.2: Write `senex/lens/correctness/tools.toml`:**
 
   ```toml
   enabled_tools = [
@@ -1693,7 +1693,7 @@ This milestone creates the following files:
   ]
   ```
 
-- [ ] **Step 1.5.3: Write the three placeholder `.md` files** (M3 fills them with the verbatim prompts from spec §5.1, §5.4.1 prompt, §7.1 renderer template). For M1 the content only needs to make the fingerprint stable:
+- [x] **Step 1.5.3: Write the three placeholder `.md` files** (M3 fills them with the verbatim prompts from spec §5.1, §5.4.1 prompt, §7.1 renderer template). For M1 the content only needs to make the fingerprint stable:
 
   ```
   # senex/lens/correctness/system_senior_dev.md
@@ -1708,7 +1708,7 @@ This milestone creates the following files:
   PLACEHOLDER — per-file markdown template; replaced in M7.
   ```
 
-- [ ] **Step 1.5.4: Failing test file** at `tests/unit/test_lens.py`:
+- [x] **Step 1.5.4: Failing test file** at `tests/unit/test_lens.py`:
 
   ```python
   """Tests for senex.lens — Lens dataclass + Lens.load(name)."""
@@ -1769,7 +1769,7 @@ This milestone creates the following files:
       assert lens_mod.__doc__ and lens_mod.__doc__.strip() != ""
   ```
 
-- [ ] **Step 1.5.5: Implement `senex/lens.py`:**
+- [x] **Step 1.5.5: Implement `senex/lens.py`:**
 
   ```python
   """senex.lens — Lens dataclass + loader for ``senex/lens/<name>/``.
@@ -1901,19 +1901,19 @@ This milestone creates the following files:
       return h.hexdigest()
   ```
 
-- [ ] **Step 1.5.6: Run tests:**
+- [x] **Step 1.5.6: Run tests:**
   ```bash
   pytest tests/unit/test_lens.py -v
   ```
   Expected: 6 PASSED.
 
-- [ ] **Step 1.5.7: Lint + type:**
+- [x] **Step 1.5.7: Lint + type:**
   ```bash
   ruff check senex/ tests/
   mypy senex/
   ```
 
-- [ ] **Step 1.5.8: Commit:**
+- [x] **Step 1.5.8: Commit:**
   ```bash
   git add senex/lens.py senex/lens/correctness/ tests/unit/test_lens.py
   git commit -m "feat(M1): Lens loader with versioned prompts + tool packs"
@@ -1941,7 +1941,7 @@ This milestone creates the following files:
 
 **Conventions:** §3 (no locks held across `await` — the lockfile critical section is sync-only by design), §4 (named exceptions), §5 (path safety), §8 (atomic writes), §11, §13.
 
-- [ ] **Step 1.6.1: Failing test file** at `tests/unit/test_runlock.py`:
+- [x] **Step 1.6.1: Failing test file** at `tests/unit/test_runlock.py`:
 
   ```python
   """Tests for senex.runlock — interprocess refcount file lock with stale-PID prune."""
@@ -2040,7 +2040,7 @@ This milestone creates the following files:
       assert rl.__doc__ and rl.__doc__.strip() != ""
   ```
 
-- [ ] **Step 1.6.2: Implement `senex/runlock.py`:**
+- [x] **Step 1.6.2: Implement `senex/runlock.py`:**
 
   ```python
   """senex.runlock — Interprocess refcount file lock with stale-PID prune.
@@ -2199,19 +2199,19 @@ This milestone creates the following files:
       return Path.home() / ".senex" / "locks"
   ```
 
-- [ ] **Step 1.6.3: Run tests:**
+- [x] **Step 1.6.3: Run tests:**
   ```bash
   pytest tests/unit/test_runlock.py -v
   ```
   Expected: 8 PASSED.
 
-- [ ] **Step 1.6.4: Lint + type:**
+- [x] **Step 1.6.4: Lint + type:**
   ```bash
   ruff check senex/ tests/
   mypy senex/
   ```
 
-- [ ] **Step 1.6.5: Commit:**
+- [x] **Step 1.6.5: Commit:**
   ```bash
   git add senex/runlock.py tests/unit/test_runlock.py
   git commit -m "feat(M1): runlock interprocess refcount with stale-PID prune"
@@ -2244,7 +2244,7 @@ This milestone creates the following files:
 
 **Spec:** §8.5 (resume hash discipline) — every persisted finding/checkpoint carries the FULL hash bucket: `prompt_hash`, `config_hash`, `model_fingerprint`, `tool_pack_hash`, `lens_version`. Per §5.5.1 final paragraph and §8.5, the compaction prompt's hash is folded into the canonical `prompt_hash`; no separate `compaction_prompt_hash` field is persisted.
 
-- [ ] **Step 1.7.1: Write `senex/schema/checkpoint.schema.json`** (full hash bucket per §8.5):
+- [x] **Step 1.7.1: Write `senex/schema/checkpoint.schema.json`** (full hash bucket per §8.5):
 
   ```json
   {
@@ -2298,7 +2298,7 @@ This milestone creates the following files:
   }
   ```
 
-- [ ] **Step 1.7.2: Failing test file** at `tests/unit/test_checkpoint.py`:
+- [x] **Step 1.7.2: Failing test file** at `tests/unit/test_checkpoint.py`:
 
   ```python
   """Tests for senex.checkpoint — atomic state machine + resume-hash compatibility."""
@@ -2425,7 +2425,7 @@ This milestone creates the following files:
       assert cp_mod.__doc__ and cp_mod.__doc__.strip() != ""
   ```
 
-- [ ] **Step 1.7.3: Implement `senex/checkpoint.py`:**
+- [x] **Step 1.7.3: Implement `senex/checkpoint.py`:**
 
   ```python
   """senex.checkpoint — atomic state machine for resume.
@@ -2564,19 +2564,19 @@ This milestone creates the following files:
           return True
   ```
 
-- [ ] **Step 1.7.4: Run tests:**
+- [x] **Step 1.7.4: Run tests:**
   ```bash
   pytest tests/unit/test_checkpoint.py -v
   ```
   Expected: 9 PASSED.
 
-- [ ] **Step 1.7.5: Lint + type:**
+- [x] **Step 1.7.5: Lint + type:**
   ```bash
   ruff check senex/ tests/
   mypy senex/
   ```
 
-- [ ] **Step 1.7.6: Commit:**
+- [x] **Step 1.7.6: Commit:**
   ```bash
   git add senex/checkpoint.py senex/schema/checkpoint.schema.json tests/unit/test_checkpoint.py
   git commit -m "feat(M1): checkpoint state machine with phase tracking"
@@ -2609,17 +2609,17 @@ This milestone creates the following files:
 
 **Conventions:** §1 (one responsibility per file), §11, §13.
 
-- [ ] **Step 1.8.1: Copy `audit_response.schema.json` verbatim from spec §5.4**. Important fields:
+- [x] **Step 1.8.1: Copy `audit_response.schema.json` verbatim from spec §5.4**. Important fields:
   - `schema_version: const 1`
   - `additionalProperties: false` on every object — including `findings.items`, `findings.items.properties.location`, `recommendations.items`, and `best_practices_table.items` (writer-side strict validation per convention §SCHEMA-2; verified by M7 Task 7.1 renderer test that rejects extra fields).
   - `findings.items.properties.location` uses `oneOf: [{required: ["symbol"]}, {required: ["line_start"]}]`
   - Add a `$schema` line: `"$schema": "https://json-schema.org/draft/2020-12/schema"` and `"$id": "audit_response.schema.json"`.
 
-- [ ] **Step 1.8.2: Copy `crosscut_response.schema.json` verbatim from spec §5.4.1** (lines 600–624). Add `$schema` and `$id` headers as above. Theme `id` pattern is `^t-[a-f0-9]{12}$`.
+- [x] **Step 1.8.2: Copy `crosscut_response.schema.json` verbatim from spec §5.4.1** (lines 600–624). Add `$schema` and `$id` headers as above. Theme `id` pattern is `^t-[a-f0-9]{12}$`.
 
-- [ ] **Step 1.8.3: Copy `compaction_response.schema.json` verbatim from spec §5.5.1** (lines 724–733). Add headers + `additionalProperties: false`.
+- [x] **Step 1.8.3: Copy `compaction_response.schema.json` verbatim from spec §5.5.1** (lines 724–733). Add headers + `additionalProperties: false`.
 
-- [ ] **Step 1.8.4: Write `findings_index.schema.json`** based on spec §7.3 (lines 1373–1421):
+- [x] **Step 1.8.4: Write `findings_index.schema.json`** based on spec §7.3 (lines 1373–1421):
 
   ```json
   {
@@ -2730,7 +2730,7 @@ This milestone creates the following files:
   }
   ```
 
-- [ ] **Step 1.8.5: Write `events.schema.json`** as a `oneOf` discriminated union over the 36 event types (one entry per `senex.events.ALL_EVENT_TYPES` member). Skeleton — list all 36 entries:
+- [x] **Step 1.8.5: Write `events.schema.json`** as a `oneOf` discriminated union over the 36 event types (one entry per `senex.events.ALL_EVENT_TYPES` member). Skeleton — list all 36 entries:
 
   ```json
   {
@@ -2790,7 +2790,7 @@ This milestone creates the following files:
 
   > Implementation note: The full 36-entry expansion is mechanical — copy the `RunStart` template and substitute the field list from `senex/events.py`. The test in 1.8.6 catches missing entries.
 
-- [ ] **Step 1.8.6: Failing test file** at `tests/unit/test_schemas.py`:
+- [x] **Step 1.8.6: Failing test file** at `tests/unit/test_schemas.py`:
 
   ```python
   """Tests for senex.schema/*.json — validity + audit_response location.oneOf + events union."""
@@ -2924,19 +2924,19 @@ This milestone creates the following files:
       assert class_names.issubset(defs), f"missing $defs entries: {class_names - defs}"
   ```
 
-- [ ] **Step 1.8.7: Run tests:**
+- [x] **Step 1.8.7: Run tests:**
   ```bash
   pytest tests/unit/test_schemas.py -v
   ```
   Expected: every parametrized test PASSED + the 7 standalone tests.
 
-- [ ] **Step 1.8.8: Lint:**
+- [x] **Step 1.8.8: Lint:**
   ```bash
   ruff check tests/
   ```
   (No `senex/` python changed in this task; mypy stays clean by induction.)
 
-- [ ] **Step 1.8.9: Commit:**
+- [x] **Step 1.8.9: Commit:**
   ```bash
   git add senex/schema/*.json tests/unit/test_schemas.py
   git commit -m "feat(M1): JSON schemas for all artifacts"

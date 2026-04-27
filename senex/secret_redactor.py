@@ -10,7 +10,7 @@ from copy import deepcopy
 from fnmatch import fnmatchcase
 from typing import Any
 
-import regex as re  # type: ignore[import-untyped]  # conventions §5: timeout-capable regex
+import regex as re  # type: ignore[import-untyped, unused-ignore]  # conventions §5
 
 _PATTERNS: tuple[tuple[str, str], ...] = (
     # PEM block (most specific — multi-line).

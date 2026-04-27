@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal
 
-import jsonschema  # type: ignore[import-untyped]
+import jsonschema  # type: ignore[import-untyped, unused-ignore]
 
 PhaseName = Literal["preflight", "discovery", "file_audit", "crosscut", "aggregate"]
 PhaseStatus = Literal["pending", "in_progress", "complete", "errored"]
