@@ -603,6 +603,36 @@ async def run_audit(
 
 - [x] **Step 8.7.7: Commit** `feat(M8): run_audit coroutine — phases + checkpoint + command bus + lifecycle bracket`.
 
+## Status
+
+**Milestone complete (2026-04-26).** All 7 tasks ship:
+
+- 8.1 Phase protocol + named exceptions — runtime_checkable Phase, 5
+  named exceptions with documented exit_code attributes, AST import
+  boundary test against `senex.tui`.
+- 8.2 PreflightPhase — 13 individual `check_*` functions (sync + async),
+  PreflightPhase orchestrator, exit-code locking table, SEC-1 addendum
+  safety (symlink/traversal/oversized rejection).
+- 8.3 DiscoveryPhase — wraps Walker, persists `discovery.json`,
+  deterministic across runs.
+- 8.4 FileAuditPhase — full §8.2 recovery matrix: read_error,
+  token_budget, schema_mismatch (with retry), lms_error, compaction_loop,
+  render_error (ARCH-13 non-fatal), propagation of LMSConnectionLost
+  + FingerprintChanged. Command-bus polled at the canonical per-file
+  boundary.
+- 8.5 CrosscutPhase — failure-tolerant per §8.3 (returns themes=None on
+  any failure; combined report renders the gap).
+- 8.6 AggregatePhase — Aggregator + handoff + render_combined; any
+  sub-step failure -> `AggregateFailed(exit_code=1)`.
+- 8.7 `run_audit` — async-CM lifecycle bracket guarantees release on
+  every exit; 5-field resume hash check; `--allow-mixed-resume` override;
+  exit codes collapse to {0, 1, 2, 3, 130}.
+
+Coverage: phases 85-100%, auditor 77% (gap = full-run happy path; lives
+in M10 live gate 13a). Full suite: 641 passed, 1 xfailed (M3 stale
+fixture, regenerated in M10), 2 skipped (Windows symlink, RECORD_LMS
+env-default).
+
 ## Acceptance criteria
 
 - `pytest tests/unit/test_phase_protocol.py tests/unit/test_preflight_checks.py tests/unit/test_phases_*.py tests/unit/test_auditor_*.py tests/recorded/test_run_audit_e2e.py -v` is 100% green.
