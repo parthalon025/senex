@@ -1,0 +1,89 @@
+INFO:httpx:HTTP Request: GET http://localhost:1234/v1/models "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:1234/v1/models "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST http://localhost:1234/v1/chat/completions "HTTP/1.1 400 Bad Request"
+INFO:httpx:HTTP Request: POST http://localhost:1234/v1/chat/completions "HTTP/1.1 200 OK"
+{
+  "version": 1,
+  "repo": "E:\\senex\\tests\\fixtures\\repos\\tiny_python",
+  "checks": [
+    {
+      "name": "config_parses",
+      "status": "pass",
+      "message": "",
+      "details": {}
+    },
+    {
+      "name": "repo_path",
+      "status": "pass",
+      "message": "",
+      "details": {}
+    },
+    {
+      "name": "output_dir_writable",
+      "status": "pass",
+      "message": "",
+      "details": {}
+    },
+    {
+      "name": "gitnexus_index",
+      "status": "warn",
+      "message": "repo has no .gitnexus/ directory; graph context unavailable",
+      "details": {}
+    },
+    {
+      "name": "addendum_safety",
+      "status": "pass",
+      "message": "no addendum configured",
+      "details": {}
+    },
+    {
+      "name": "language_anchors",
+      "status": "pass",
+      "message": "",
+      "details": {}
+    },
+    {
+      "name": "sampling_ranges",
+      "status": "pass",
+      "message": "",
+      "details": {}
+    },
+    {
+      "name": "lifecycle_backend",
+      "status": "pass",
+      "message": "backend: sdk=False cli=True",
+      "details": {}
+    },
+    {
+      "name": "runlock_dir_writable",
+      "status": "pass",
+      "message": "",
+      "details": {}
+    },
+    {
+      "name": "lms_reachable",
+      "status": "pass",
+      "message": "",
+      "details": {}
+    },
+    {
+      "name": "model_loaded",
+      "status": "pass",
+      "message": "",
+      "details": {}
+    },
+    {
+      "name": "schema_with_thinking",
+      "status": "warn",
+      "message": "capability probe failed; assuming json_object fallback: Client error '400 Bad Request' for url 'http://localhost:1234/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400",
+      "details": {}
+    },
+    {
+      "name": "streaming",
+      "status": "pass",
+      "message": "",
+      "details": {}
+    }
+  ],
+  "exit_code": 0
+}

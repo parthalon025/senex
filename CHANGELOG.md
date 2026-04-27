@@ -1,0 +1,59 @@
+# Changelog
+
+All notable changes to senex are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses semantic versioning.
+
+## [1.0.0-rc1] — 2026-04-26
+
+First release candidate. All 10 implementation milestones (M1–M10) shipped, full test suite green at coverage targets, `senex doctor` passes against live LM Studio. Five live-validation gates (13a part 2, 13b, 13c, 13d, 13e) deferred to manual user execution per the v1 deferral protocol — see `docs/validation/2026-04-26-v1-validation.md` for runbooks. Once the user runs the deferred gates and they all pass, the same commit is re-tagged as `v1.0.0`.
+
+### Highlights
+
+- **Local-first audit pipeline.** Walks a target repo file by file, runs each through a thinking-MoE model in LM Studio (`google/gemma-4-26b-a4b` default), and produces a per-file Markdown report, a combined run report, a stable `findings.json`, and a Claude Code handoff artifact.
+- **6-tool framework** with read-only, sandboxed tools: `gitnexus_query`, `gitnexus_context`, `gitnexus_impact`, `read_file`, `grep`, `search_code`. All tool inputs are pydantic-validated; subprocess invocations are list-form and regex-hardened; tool results pass through ANSI strip + secret redaction + truncation.
+- **Context compaction safety net.** When the per-file message history approaches the model's context window, a versioned compaction prompt summarizes accumulated tool results into an evidence block. Compaction calls are bounded by their own budget independent of the tool-call budget.
+- **Lifecycle management.** Auto-load + auto-eject the model at run boundaries; cross-process refcount via `~/.senex/locks/`; resume-aware (the resumed run never owns unload of an attached model).
+- **Streaming Textual TUI.** Launcher screen for repo/lens/sampling overrides; monitor screen with progress, current-file, findings panel (deque, maxlen=30), error banner, status strip. `senex view <audit-dir>` replays a completed run from `events.jsonl`.
+- **Resume + reproducibility.** Audit dir naming carries `<DATE>-<run_id_short>`. Resume validates a 5-hash bundle (config, prompt, model_fingerprint, tool_pack, lens_version) and refuses on drift unless `--allow-mixed-resume`.
+- **Security posture.** Source stays local (only outbound calls are to LM Studio loopback + local subprocesses). Audited source is wrapped in `<UNTRUSTED_FILE_CONTENT>` before LLM ingestion; system prompt instructs the model to disregard directives within. Every persisted artifact passes through the SecretRedactor (PEM, JWT, AWS, GitHub PAT, `sk-…`, env-style secrets). Loopback-only by default; non-loopback `[lmstudio].base_url` requires explicit opt-in.
+
+### Implementation milestones
+
+- **M1 Foundation** (config, events, schemas, lens, runlock, checkpoint, secret_redactor) — 113 tests
+- **M2 Walker + Graph Awareness** (symlink-safe walker, gitnexus CLI provider, prompts) — 71 tests
+- **M3 LM Studio Integration** (streaming, tick coalescing, schema fallback, fingerprint) — 60 tests
+- **M4 Lifecycle + Runlock** (SDK + CLI backends, resume handshake, doctor check) — 81 tests
+- **M5 Tools Framework** (registry, safety, 6 tools, ToolLoop) — 103 tests
+- **M6 Context Compaction** (executor, trigger, tool-loop integration) — 38 tests
+- **M7 Renderer + Aggregator** (golden-file render, NDJSON streaming, atomic writes, handoff) — 74 tests
+- **M8 Phases + Auditor** (5 phases, run_audit coroutine) — 114 tests
+- **M9 Subscribers + TUI** (4 subscribers, Textual launcher + monitor + 5 widgets, view replay) — 119 tests
+- **M10 CLI + Validation** (argparse + 6 subcommands, scripts, README, full pytest pass) — ~104 tests
+
+### Test surface
+
+- **864 passing**, 3 skipped, 1 xfailed (xfail = recorded LMS replay fixture pending regeneration after M7 schema tightening; tracked for v1.0.0 promotion)
+- **91% aggregate coverage**; per-module targets all met (auditor 86%, renderer 98%, walker 90%, checkpoint 100%, secret_redactor 100%, all tools ≥86%, all phases ≥85%)
+
+### Deferred to v1.0.0 promotion
+
+Per the deferral protocol, these live-validation gates require manual user execution before the rc1 → v1.0.0 retag:
+
+- **13a part 2** — full headless audit on the fixture repo (4 files × ~3 min/file)
+- **13b** — TUI live render verification
+- **13c** — resume mid-run with Ctrl+C
+- **13d** — tool-loop evidence in `<file>.thinking.md`
+- **13e** — compaction smoke via `SENEX_FORCE_COMPACTION_AT_FILE` env var
+
+Runbooks for each gate live in `docs/validation/2026-04-26-v1-validation.md`. Once all five pass, a senex maintainer retags the same commit as `v1.0.0`.
+
+### Tag promotion (rc1 → v1.0.0)
+
+```bash
+git tag -a v1.0.0 -m "senex v1.0.0 — all live validation gates green" v1.0.0-rc1
+git push origin v1.0.0
+gh release create v1.0.0 --notes-file CHANGELOG.md --title "senex v1.0.0"
+```
+
+The release artifact is the same commit; only the tag name changes.
+
+[1.0.0-rc1]: https://github.com/parthalon025/senex/releases/tag/v1.0.0-rc1
