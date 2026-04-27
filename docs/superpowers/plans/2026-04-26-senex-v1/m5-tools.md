@@ -469,7 +469,7 @@ class GitnexusContextOutput(BaseModel):
 
 **Error mapping:** identical to 5.2.
 
-- [ ] **Step 5.3.1: Failing tests** in `tests/unit/test_tool_gitnexus_context.py`:
+- [x] **Step 5.3.1: Failing tests** in `tests/unit/test_tool_gitnexus_context.py`:
   - `test_happy_path_returns_360_view` — mocked subprocess returns `{"callers_d1": [...], "callees_d1": [...], "processes": [...], "cluster": "..."}`; result parses correctly.
   - `test_invalid_symbol_with_special_chars` — `symbol="foo;rm -rf /"` -> `schema_invalid` (regex pattern fails).
   - `test_invalid_file_with_dotdot` — `file="../etc/passwd"` -> `schema_invalid` (note: this is the *input* validator; the file is not opened, the gitnexus subprocess sees it).
@@ -477,11 +477,11 @@ class GitnexusContextOutput(BaseModel):
   - `test_optional_file_omitted` — `file=None` -> subprocess called without `--file` flag.
   - `test_oversize_result_truncated` — large callers list -> truncation marker present.
 
-- [ ] **Step 5.3.2: Implement** `senex/tools/gitnexus_context.py`.
+- [x] **Step 5.3.2: Implement** `senex/tools/gitnexus_context.py`.
 
-- [ ] **Step 5.3.3: Run** `pytest tests/unit/test_tool_gitnexus_context.py -v` -> green. Expected: `6 passed`.
+- [x] **Step 5.3.3: Run** `pytest tests/unit/test_tool_gitnexus_context.py -v` -> green. Expected: `6 passed`.
 
-- [ ] **Step 5.3.4: Commit** `feat(M5): gitnexus_context tool`.
+- [x] **Step 5.3.4: Commit** `feat(M5): gitnexus_context tool`.
 
 ### Task 5.4: gitnexus_impact tool
 
