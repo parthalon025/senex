@@ -163,6 +163,42 @@ async def test_aggregate_no_partial_returns_empty(tmp_path: Path) -> None:
 
 
 @pytest.mark.asyncio
+async def test_aggregate_collects_skipped_and_errored_artifacts(tmp_path: Path) -> None:
+    """Aggregate scans for *.SKIPPED.md / *.ERROR.md sidecars and feeds them
+    into combined.md."""
+    audit_dir = tmp_path / "audit"
+    audit_dir.mkdir()
+    (audit_dir / "main.py.SKIPPED.md").write_text(
+        "# Skipped: main.py\n\n**Reason:** read_error: bad utf-8\n",
+        encoding="utf-8",
+    )
+    (audit_dir / "other.py.ERROR.md").write_text(
+        "# Error: other.py\n\n**Kind:** lms_error\n",
+        encoding="utf-8",
+    )
+    bus = EventBus()
+    cb_bus = CommandBus()
+    phase = AggregatePhase(
+        audit_dir=audit_dir,
+        run_metadata=_make_run_metadata(audit_dir),
+        run_id="01JZRUNDTEST1234567890ABCD",
+    )
+    state = await phase.do_work(
+        {"themes": []},
+        Lens.load("correctness"),
+        SenexConfig(),
+        bus,
+        cb_bus,
+    )
+    assert state["finding_count"] == 0
+    body = (audit_dir / "combined.md").read_text(encoding="utf-8")
+    assert "main.py" in body
+    assert "read_error" in body
+    assert "other.py" in body
+    assert "lms_error" in body
+
+
+@pytest.mark.asyncio
 async def test_aggregate_atomic_no_partial_combined_on_crash(tmp_path: Path) -> None:
     """Step 8.6.3: atomic-write semantics — no partial combined.md on crash."""
     audit_dir = tmp_path / "audit"
