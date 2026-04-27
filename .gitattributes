@@ -1,0 +1,6 @@
+# Force LF line endings on prompt assets so the sha256 hash regression
+# fixture (tests/fixtures/expected_prompt_hashes.json) is platform-stable.
+# Spec section 5.1 + section POL-9 require byte-pinned prompt assets.
+senex/prompts/*.md text eol=lf
+senex/lens/*/*.md text eol=lf
+tests/fixtures/expected_prompt_hashes.json text eol=lf

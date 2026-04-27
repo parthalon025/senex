@@ -1230,36 +1230,36 @@ class PromptTemplateUnsubstituted(PromptError):
 
 Anchors are exactly **one paragraph each** (per spec §5.3: "A single short paragraph per language"). Plain markdown body, no front matter, UTF-8 LF, single trailing newline. Each MUST mention the items below; the test in 2.3.4 enforces presence by substring search.
 
-- [ ] **`senex/prompts/lang_python.md`** -- MUST mention each of: `pathlib`, `async`, `await`, `bare except`, mutable default args, `is None`, `f-string`. Suggested text:
+- [x] **`senex/prompts/lang_python.md`** -- MUST mention each of: `pathlib`, `async`, `await`, `bare except`, mutable default args, `is None`, `f-string`. Suggested text:
   ```
   Python 3.10+: prefer `X | Y` unions, structural `match`/`case`, `pathlib.Path` over `os.path`, and f-strings over `.format()`/`%`. Common defects in this language: bare `except:` (catches `KeyboardInterrupt` and `SystemExit`); `except Exception` without re-raise after logging; `is`/`is not` for value comparison instead of `==`/`!=`, and conversely `==` for `None` instead of `is None`; mutable default args (`def f(x=[]):` aliases across calls); coroutines created without `await` (silent fire-and-forget) or `asyncio.create_task` handles dropped on the floor (exceptions never observed); locks held across `await`; sync I/O on async paths; missing context managers on file/socket open; `time.time()` used where a monotonic clock is needed; timezone-naive `datetime.now()` where `datetime.now(timezone.utc)` is required.
   ```
 
-- [ ] **`senex/prompts/lang_typescript.md`** -- MUST mention each of: `strict`, narrowing, `never`, `unknown`, `any`, `Promise`, `await`. Suggested text:
+- [x] **`senex/prompts/lang_typescript.md`** -- MUST mention each of: `strict`, narrowing, `never`, `unknown`, `any`, `Promise`, `await`. Suggested text:
   ```
   TypeScript with `strict` enabled: prefer `unknown` over `any` at boundaries; use type predicates / discriminated unions for narrowing; an exhaustive `switch` should yield `never` in the default branch as a compile-time exhaustiveness check. Common defects: floating Promises (`async` calls without `await` inside a `try` block); `Promise.all` over arrays of independent awaits where order matters; non-null assertions (`!`) used to silence the type checker rather than fix the type; `any` re-introduced via untyped `JSON.parse`; missing exhaustiveness check letting a new union variant slip past; `==` instead of `===`; `Object.keys(x) as Array<keyof typeof x>` pretending a runtime invariant holds; passing `undefined` where the type is `T | null` (or vice versa) to silence narrowing.
   ```
 
-- [ ] **`senex/prompts/lang_rust.md`** -- MUST mention: `Result`, `Option`, `unwrap`, `?`, ownership, lifetime, `unsafe`, `clippy`. Suggested text:
+- [x] **`senex/prompts/lang_rust.md`** -- MUST mention: `Result`, `Option`, `unwrap`, `?`, ownership, lifetime, `unsafe`, `clippy`. Suggested text:
   ```
   Rust 2021/2024 edition: `Result<T, E>` and `Option<T>` are the canonical error/absence types; propagate with `?` rather than `match` boilerplate; prefer `match` for exhaustiveness over `if let` at API boundaries. Common defects: `unwrap()` / `expect("...")` on values that are not invariants of the function; ignored `Result` returns (`let _ = ...` without explanation); `clone()` to bypass borrow checker rather than fix the lifetime; `unsafe` blocks without an inline comment naming the invariant they uphold; missing `Send`/`Sync` bounds where a value crosses a thread; `RefCell` / `Rc` reaching for runtime borrow checks where compile-time would suffice; `into_iter()`/`iter()`/`iter_mut()` confusion; `clippy::correctness` lints suppressed without justification.
   ```
 
-- [ ] **`senex/prompts/lang_go.md`** -- MUST mention: `error`, `errors.Is`, `defer`, goroutine, channel, `context.Context`, `nil`. Suggested text:
+- [x] **`senex/prompts/lang_go.md`** -- MUST mention: `error`, `errors.Is`, `defer`, goroutine, channel, `context.Context`, `nil`. Suggested text:
   ```
   Go: errors are values, not exceptions -- every non-nil error MUST be checked at the call site or wrapped with `%w` and propagated; `errors.Is`/`errors.As` for sentinel and typed comparisons; `defer` for cleanup with the resource on the same line as acquisition. Common defects: ignored errors via `_ = f()` without comment; goroutines started without a parent `context.Context` (cannot be cancelled); unbuffered channels written without a reader (deadlock); `defer` inside a loop accumulating until function exit; capturing the loop variable by reference in goroutines (Go 1.22 fixes this for `range`, but pre-1.22 idiom must capture); `nil` interface vs `nil` concrete type confusion; mutexes copied by value into a struct receiver; missing `context.Context` in long-running calls; `time.Now()` in tests without a fake clock.
   ```
 
-- [ ] **`senex/prompts/lang_csharp.md`** -- MUST mention: `IDisposable`, `using`, `async`, `Task`, `nullable`, `ConfigureAwait`, `IAsyncEnumerable`. Suggested text:
+- [x] **`senex/prompts/lang_csharp.md`** -- MUST mention: `IDisposable`, `using`, `async`, `Task`, `nullable`, `ConfigureAwait`, `IAsyncEnumerable`. Suggested text:
   ```
   C# 11+/.NET 8+: nullable reference types enabled (`<Nullable>enable</Nullable>`); records for value-shaped types; pattern matching for state-shape decisions; `using` declarations for `IDisposable`/`IAsyncDisposable`. Common defects: `async void` on non-event-handler methods (exceptions cannot be awaited); `Task` returned but not awaited (silent failure); missing `ConfigureAwait(false)` in library code that may run in UI/SynchronizationContext; `Dispose` not called because of an exception path bypassing `using`; `IEnumerable<T>` materialized twice across an `await`; `null!` forgiveness used to silence the analyzer rather than fix the contract; `lock(this)` / `lock(typeof(...))` rather than a private `static readonly object`; cancellation tokens accepted but never checked.
   ```
 
 #### Step 2.3.2: Implement `select_anchor()` + `build_user_prompt()`
 
-- [ ] **Create `senex/prompts/__init__.py`** (empty file, marks the package).
+- [x] **Create `senex/prompts/__init__.py`** (empty file, marks the package).
 
-- [ ] **Create `senex/prompts/_anchor_loader.py`.** Module docstring:
+- [x] **Create `senex/prompts/_anchor_loader.py`.** Module docstring:
   ```python
   """Per-language anchor selector + per-file user prompt builder.
 
@@ -1269,7 +1269,7 @@ Anchors are exactly **one paragraph each** (per spec §5.3: "A single short para
   """
   ```
 
-- [ ] **Implementation:**
+- [x] **Implementation:**
   ```python
   from __future__ import annotations
   from functools import lru_cache
@@ -1352,7 +1352,7 @@ Anchors are exactly **one paragraph each** (per spec §5.3: "A single short para
 
 #### Step 2.3.3: Failing tests for anchors + builder
 
-- [ ] **`tests/unit/test_anchor_loader.py`:**
+- [x] **`tests/unit/test_anchor_loader.py`:**
   ```python
   from __future__ import annotations
   from pathlib import Path
@@ -1413,7 +1413,7 @@ Anchors are exactly **one paragraph each** (per spec §5.3: "A single short para
           build_user_prompt(file_relpath="a", language="b", graph_context="c", numbered_source="d")
   ```
 
-- [ ] **Run:**
+- [x] **Run:**
   ```bash
   pytest tests/unit/test_anchor_loader.py -v
   ```
@@ -1421,7 +1421,7 @@ Anchors are exactly **one paragraph each** (per spec §5.3: "A single short para
 
 #### Step 2.3.4: Commit
 
-- [ ] ```bash
+- [x] ```bash
   git add senex/prompts/lang_python.md senex/prompts/lang_typescript.md senex/prompts/lang_rust.md senex/prompts/lang_go.md senex/prompts/lang_csharp.md senex/prompts/__init__.py senex/prompts/_anchor_loader.py tests/unit/test_anchor_loader.py
   git commit -m "feat(M2): per-language prompt anchors + select_anchor/build_user_prompt
 
@@ -1430,9 +1430,9 @@ Anchors are exactly **one paragraph each** (per spec §5.3: "A single short para
 
 #### Definition of done (Task 2.3)
 
-- [ ] 5 anchor files exist and each contains the required keywords (verified by `test_select_anchor_*`).
-- [ ] `select_anchor("foo.py")` returns the Python anchor; `select_anchor("foo.unknown")` returns None.
-- [ ] `build_user_prompt(...)` substitutes all 4 template variables; raises on leftover tokens.
+- [x] 5 anchor files exist and each contains the required keywords (verified by `test_select_anchor_*`).
+- [x] `select_anchor("foo.py")` returns the Python anchor; `select_anchor("foo.unknown")` returns None.
+- [x] `build_user_prompt(...)` substitutes all 4 template variables; raises on leftover tokens.
 
 #### Pitfalls (Task 2.3)
 
