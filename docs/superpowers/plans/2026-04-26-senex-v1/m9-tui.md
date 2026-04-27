@@ -180,7 +180,7 @@ The bus dispatcher reads `subscriber.drop_policy` and applies it when the per-su
 
 **Spec anchors:** §5.6 (event bus + subscribers), §5.6.1 (bus semantics, slow-subscriber policy table); conventions §3 (bounded queues, no sync I/O), §8 (atomic writes, append-only NDJSON).
 
-- [ ] **Step 9.1.1: Failing tests.**
+- [x] **Step 9.1.1: Failing tests.**
   - `test_subscriber_protocol_attrs` — assert `Subscriber` has `name: str`, `queue_capacity: int`, `drop_policy: Literal[...]`, `consume`, `shutdown`. Use `typing.get_type_hints` + `inspect`.
   - `test_disk_writer_writes_events_in_seq_order` — feed 5 events (`seq=1..5`); assert `events.jsonl` lines are JSON-decodable in seq order.
   - `test_disk_writer_writes_one_line_per_event` — assert N events → N newline-terminated lines (no `[`/`]` array wrapper).
@@ -190,9 +190,9 @@ The bus dispatcher reads `subscriber.drop_policy` and applies it when the per-su
   - `test_disk_writer_drops_nothing_under_pressure` — assert no event is silently dropped (loop over `consume` 100×, file has exactly 100 lines).
   - `test_disk_writer_emits_subscriber_queue_full_on_block_timeout` — set `block_timeout=0.01`; fill queue; assert `SubscriberQueueFull` raised by bus.
 
-- [ ] **Step 9.1.2: Implement** `Subscriber` protocol in `senex/subscribers/base.py` (with `SubscriberQueueFull`, `SubscriberShutdownError`).
+- [x] **Step 9.1.2: Implement** `Subscriber` protocol in `senex/subscribers/base.py` (with `SubscriberQueueFull`, `SubscriberShutdownError`).
 
-- [ ] **Step 9.1.3: Implement** `DiskWriterSubscriber` in `senex/subscribers/disk_writer.py`:
+- [x] **Step 9.1.3: Implement** `DiskWriterSubscriber` in `senex/subscribers/disk_writer.py`:
   - `name = "disk_writer"`, `queue_capacity = 1024`, `drop_policy = "block"`.
   - `__init__(self, audit_dir: Path)` — opens `audit_dir / "events.jsonl"` in append mode (UTF-8, no BOM, LF line endings per conventions §8).
   - `async consume(event: BaseEvent) -> None` — `line = event.model_dump_json() + "\n"`; `await asyncio.to_thread(self._write_and_fsync, line)`.
@@ -200,11 +200,11 @@ The bus dispatcher reads `subscriber.drop_policy` and applies it when the per-su
   - `async shutdown() -> None` — drain pending; `await asyncio.to_thread(self._fh.close)`.
   - All exception paths emit a structured log line per conventions §7.
 
-- [ ] **Step 9.1.4: Run impact check** before any cross-module symbol use: `gitnexus_impact({target: "BaseEvent.model_dump_json", direction: "upstream"})` — confirm no caller assumes a specific newline behaviour.
+- [x] **Step 9.1.4: Run impact check** before any cross-module symbol use: `gitnexus_impact({target: "BaseEvent.model_dump_json", direction: "upstream"})` — confirm no caller assumes a specific newline behaviour.
 
-- [ ] **Step 9.1.5: Verify** `pytest tests/unit/test_subscribers_disk_writer.py -v` and `mypy senex/subscribers/` clean.
+- [x] **Step 9.1.5: Verify** `pytest tests/unit/test_subscribers_disk_writer.py -v` and `mypy senex/subscribers/` clean.
 
-- [ ] **Step 9.1.6: Commit** `feat(M9): Subscriber protocol + DiskWriterSubscriber with write-ahead persistence`.
+- [x] **Step 9.1.6: Commit** `feat(M9): Subscriber protocol + DiskWriterSubscriber with write-ahead persistence`.
 
 ### Task 9.2: HeadlessSubscriber
 
