@@ -792,6 +792,8 @@ For each outer iteration `i` in `range(max_calls + 1)`:
 
 ### Task 5.10: tool_pack_hash for resume bucket
 
+> **Producer/consumer cross-ref (R6):** This task computes `tool_pack_hash`. It is consumed by `senex.checkpoint.Checkpoint` (M1 Task 1.7), written into `findings.json` (M7 Task 7.3), and included in the `RunStart` event payload (M1 Task 1.3).
+
 **Files:**
 - Create: `senex/tools/pack_hash.py`
 - Create: `tests/unit/test_tool_pack_hash.py`

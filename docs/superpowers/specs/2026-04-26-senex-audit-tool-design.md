@@ -305,7 +305,7 @@ A Lens is the tuple:
 
 v1 ships exactly one lens directory: `lens/correctness/`. The auditor entry point is `auditor.run_audit(lens: Lens, ...)`. `lens.py` is the loader/validator that materializes a `Lens` from a directory.
 
-A Lens carries a `lens_version` (semver string in `lens/<name>/lens.toml`); this version is stamped into every persisted finding (§7.3) and into resume hashes (§8.5).
+A Lens carries a `lens_version` (semver string in `lens/<name>/lens.toml`, e.g. `"1.0.0"`); this version is stamped into every persisted finding (§7.3) and into resume hashes (§8.5).
 
 ### 5.1 System Prompt (`lens/correctness/system_senior_dev.md`)
 
@@ -536,6 +536,7 @@ JSON Schema enforced via LM Studio's `response_format=json_schema`. With the thi
       "type": "array",
       "items": {
         "type": "object",
+        "additionalProperties": false,
         "required": ["category", "priority", "title", "issue", "why", "fix", "confidence", "location"],
         "properties": {
           "category": { "type": "string" },
@@ -547,6 +548,7 @@ JSON Schema enforced via LM Studio's `response_format=json_schema`. With the thi
           "confidence": { "enum": ["high", "medium", "low"] },
           "location": {
             "type": "object",
+            "additionalProperties": false,
             "properties": {
               "line_start": { "type": "integer" },
               "line_end": { "type": "integer" },
@@ -564,6 +566,7 @@ JSON Schema enforced via LM Studio's `response_format=json_schema`. With the thi
       "type": "array",
       "items": {
         "type": "object",
+        "additionalProperties": false,
         "required": ["title", "rationale"],
         "properties": {
           "title":        { "type": "string" },
@@ -577,6 +580,7 @@ JSON Schema enforced via LM Studio's `response_format=json_schema`. With the thi
       "type": "array",
       "items": {
         "type": "object",
+        "additionalProperties": false,
         "required": ["feature", "original", "recommended"],
         "properties": {
           "feature": { "type": "string" },
@@ -763,7 +767,7 @@ Emit `CompactionTriggered {path, message_tokens_before, threshold}`, `Compaction
 
 #### Replay
 
-Recorded LMS fixtures for tests MUST include compaction events. The compaction prompt is hashed alongside the system prompt (per §8.1 TOCTOU snapshot) and snapshotted into `<audit-dir>/prompts.snapshot/compaction.md`. The compaction prompt hash is part of the resume hash bucket (see §8.5).
+Recorded LMS fixtures for tests MUST include compaction events. The compaction prompt is hashed alongside the system prompt (per §8.1 TOCTOU snapshot) and snapshotted into `<audit-dir>/prompts.snapshot/compaction.md`. The compaction prompt hash is folded into the canonical `prompt_hash` (no separate field is persisted); it is therefore part of the resume hash bucket transitively (see §8.5).
 
 #### Opt-out
 
@@ -897,6 +901,7 @@ Event types (pydantic models, serialized to `events.jsonl` newline-delimited). E
 | `SuspiciousEmptyFinding` | path, loc, reason |
 | `FileStart` | path, idx, total |
 | `FileContextBuilt` | path, graph_context_tokens |
+| `GraphContextUnavailable` | path, reason |
 | `FileLLMCall` | path, prompt_tokens |
 | `ThinkingStarted` | path |
 | `ThinkingTick` | path, tokens_so_far, delta_since_last_tick |
@@ -904,7 +909,7 @@ Event types (pydantic models, serialized to `events.jsonl` newline-delimited). E
 | `OutputStarted` | path |
 | `OutputTick` | path, tokens_so_far, delta_since_last_tick |
 | `OutputComplete` | path, total_output_tokens, latency_ms |
-| `FileComplete` | path, finding_counts: {high, medium, low, healthy} |
+| `FileComplete` | path, finding_counts: {high, medium, low, healthy}, last_finding_summary: FindingSummary \| None |
 | `FileError` | path, phase, error_kind, error_message |
 | `ToolCall` | path, tool_name, tool_input (truncated to 512 chars in event), call_id (UUIDv4 per call) |
 | `ToolResult` | path, tool_name, call_id, result_tokens, latency_ms, truncated: bool |
@@ -951,7 +956,7 @@ The bus is the single coordination point. The auditor publishes once; the bus fa
 | `TuiSubscriber` | Drop `ThinkingTick`, `OutputTick`. NEVER drop `RunStart`, `FileComplete`, `FileError`, `RunComplete`. |
 | `MetricsCollectorSubscriber` | Drop oldest tick events; preserve all phase events. |
 
-- **Coalesce-safe events** (subscribers MAY drop or merge consecutive events of these types): `ThinkingTick`, `OutputTick`. All other events are non-coalescable. In particular, `ToolCall`, `ToolResult`, `ToolError`, `ToolBudgetExhausted`, `CompactionTriggered`, `CompactionComplete`, `CompactionError`, `ModelLoadRequested`, `ModelLoadStarted`, `ModelLoadComplete`, `ModelLoadFailed`, `ModelUnloadStarted`, `ModelUnloadComplete`, `ModelUnloadSkipped`, `ModelUnloadFailed`, `ModelFingerprintChanged`, `RunLockAcquired`, and `RunLockReleased` are NOT coalesce-safe — each MUST be persisted.
+- **Coalesce-safe events** (subscribers MAY drop or merge consecutive events of these types): `ThinkingTick`, `OutputTick`. All other events are non-coalescable. In particular, `GraphContextUnavailable`, `ToolCall`, `ToolResult`, `ToolError`, `ToolBudgetExhausted`, `CompactionTriggered`, `CompactionComplete`, `CompactionError`, `ModelLoadRequested`, `ModelLoadStarted`, `ModelLoadComplete`, `ModelLoadFailed`, `ModelUnloadStarted`, `ModelUnloadComplete`, `ModelUnloadSkipped`, `ModelUnloadFailed`, `ModelFingerprintChanged`, `RunLockAcquired`, and `RunLockReleased` are NOT coalesce-safe — each MUST be persisted.
 
 ### 5.6.2 Command Bus
 
@@ -1158,7 +1163,7 @@ retention_days    = 0                                # 0 = never delete; >0 = rm
 
 [lens]
 name             = "correctness"     # resolves to lens/correctness/
-min_confidence   = "all"             # "all" | "medium" | "high" — to be renamed min_priority in v2 (§API-4)
+min_priority     = "all"             # "all" | "high" | "medium" | "low" — matches CLI --min-priority (§10, §API-4)
 include_tests    = false
 
 [walker]
@@ -1320,7 +1325,7 @@ Mirrors the empirical sample format the user has validated. Generated by `render
 | <feature> | <original> | <recommended> |
 ```
 
-If `min_confidence` (v1) / `min_priority` (CLI form, §API-4) is set to `"medium"` or `"high"`, lower-priority findings are suppressed from the markdown but still recorded in `findings.json` with a `suppressed: true` flag.
+If `min_priority` (TOML key under `[lens]`; CLI flag `--min-priority`; §API-4) is set to `"medium"` or `"high"`, lower-priority findings are suppressed from the markdown but still recorded in `findings.json` with a `suppressed: true` flag.
 
 ### 7.2 Combined Report (`combined.md`)
 
@@ -1595,7 +1600,7 @@ Every persisted finding is stamped with `prompt_hash`, `config_hash`, `model_fin
 
 `tool_pack_hash` is `sha256` over the JSON-serialized tuple `(enabled_tools sorted, tool_input_schemas sorted by tool name)`. Files audited under different tool packs (e.g. `search_code` was disabled at preflight on a previous run because `claude-context` was unreachable) land in different buckets and require `--allow-mixed-resume` to merge — mirrors the `prompt_hash` / `config_hash` behavior.
 
-The compaction prompt's hash is folded into `prompt_hash` (it is one of the snapshotted prompt assets, §8.1) so a compaction-prompt change forces a new bucket without a separate field.
+The compaction prompt's hash is folded into the canonical `prompt_hash` (it is one of the snapshotted prompt assets, §8.1) so a compaction-prompt change forces a new bucket without a separate `compaction_prompt_hash` field. No separate field is persisted on the checkpoint, on `findings.json`, or on any event payload.
 
 This rule is the single source of truth for "is this finding comparable to that one?" — referenced from §7.3 (finding identity), §8.3 (run-level resume), and §ARCH-4 (resume hash discipline).
 
@@ -1689,7 +1694,7 @@ senex --help
 ```
 
 **Vocabulary notes.**
-- `--min-confidence` is renamed `--min-priority` to match the schema enum (`priority` is the gate; `confidence` is the model's calibration). The `confidence` field name in the structured response is preserved for v1; rename slated for v2.
+- The threshold flag is `--min-priority` (TOML: `[lens] min_priority`) — single canonical name. It matches the schema enum (`priority` is the gate; `confidence` is the model's calibration). The `confidence` field name in the structured response is preserved for v1; rename slated for v2.
 - `<audit-dir>` is **optional** everywhere it appears; auto-detect = latest run for the inferred repo. `senex audit --resume` with no explicit dir finds the latest **unfinished** audit and resumes it.
 - Audit-dir naming: `<repo>/<DATE>-<run_id_short>/`. Same-day re-runs no longer collide.
 - `senex audit <repo> --no-unload` is the typical "I'll be auditing more later, leave the model loaded" invocation (§5.5.2).

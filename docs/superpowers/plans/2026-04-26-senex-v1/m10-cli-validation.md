@@ -334,7 +334,7 @@ None — M10 is the leaf milestone. After M10 ships, downstream is real users.
 
 ### Task 10.9: Live validation gates 13a-13e
 
-**Prerequisites:** LM Studio running with `google/gemma-4-26b-a4b` loaded (verify with `lms ps`). Tiny fixture repo at `tests/fixtures/repos/tiny_python/` indexed via `npx gitnexus analyze`. Free disk ≥ 1 GB at output path. `senex.config.toml` configured with the fixture repo as a `[[repos]]` entry.
+**Prerequisites:** LM Studio running with `google/gemma-4-26b-a4b` loaded (verify with `lms ps`). Tiny fixture repo at `tests/fixtures/repos/tiny_python/` (created in M2 Task 2.1.4 — see R10 ownership note in `m2-walker-graph.md`) indexed via `npx gitnexus analyze`. Free disk ≥ 1 GB at output path. `senex.config.toml` configured with the fixture repo as a `[[repos]]` entry.
 
 Each gate has its own subtask with: setup, command (verbatim), expected output (key lines), manual verification checklist, pass criteria.
 

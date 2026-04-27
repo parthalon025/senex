@@ -74,7 +74,7 @@ This milestone creates the following files:
 - §8.2 Per-file Recovery — error matrix
 - §8.3 Run-Level — preflight failure, lifecycle handshake fail, fingerprint drift
 - §8.4 Observability — events at phase boundaries
-- §8.5 Reproducibility & Resume Compatibility — `config_hash`, `prompt_hash`, `model_fingerprint`, `tool_pack_hash`, `lens_version`, `compaction_prompt_hash`
+- §8.5 Reproducibility & Resume Compatibility — `config_hash`, `prompt_hash`, `model_fingerprint`, `tool_pack_hash`, `lens_version` (compaction-prompt hash is folded into `prompt_hash`; no separate field)
 - §11 Git — commit message conventions
 - §ARCH-3 Phases as objects — protocol contract
 - §ARCH-13 Renderer crash NOT run-killing — write `<file>.ERROR.md` and continue
@@ -95,13 +95,18 @@ class PhaseAborted(Exception):
     """Raised when a phase aborts due to an unrecoverable condition specific to that phase."""
 
 class ResumeIncompatible(Exception):
-    """Raised when checkpoint hashes don't match current config/prompts/model. exit_code=4."""
+    """Raised when checkpoint hashes don't match current config/prompts/model.
+    exit_code=2 (config/setup error category — checkpoint hash mismatch is a
+    setup-state mismatch; collapses into the spec §8.1 0/1/2/3/130 set per R11)."""
 
 class RenderFatal(Exception):
     """Truly unrecoverable run-killing render error (disk full, audit_dir gone). NOT for per-file render failures (those go to <file>.ERROR.md per §ARCH-13)."""
 
 class AggregateFailed(Exception):
-    """Aggregate phase failed but is resumable via `senex aggregate`. exit_code=5."""
+    """Aggregate phase failed but is resumable via `senex aggregate`. exit_code=1
+    (partial success — per-file work survived; only aggregation failed; user can
+    run `senex aggregate` to recover; collapses into the spec §8.1 0/1/2/3/130
+    set per R11)."""
 ```
 
 Tests assert each exception's `exit_code` is part of the public contract (locked by `tests/unit/test_exit_codes.py`).
@@ -469,9 +474,9 @@ async def do_work(self, state, lens, config, bus, command_bus):
 - Create: `senex/phases/aggregate.py`
 - Create: `tests/unit/test_phases_aggregate.py`
 
-- [ ] **Step 8.6.1: Failing test** — given partial findings + themes fixtures, `AggregatePhase` writes `combined.md`, `findings.json`, `claude-handoff.md` atomically. Failure path: any sub-step raises → wrapped in `AggregateFailed` (with `exit_code=5`).
+- [ ] **Step 8.6.1: Failing test** — given partial findings + themes fixtures, `AggregatePhase` writes `combined.md`, `findings.json`, `claude-handoff.md` atomically. Failure path: any sub-step raises → wrapped in `AggregateFailed` (with `exit_code=1` per R11 — partial success; per-file work survived; recoverable via `senex aggregate`).
 
-- [ ] **Step 8.6.2: Implement `AggregatePhase`** — `Aggregator.run()` → `HandoffWriter.write()` → `Renderer.render_combined()` → all writes via `write_atomic` (tmp + rename). On any failure, raise `AggregateFailed(exit_code=5, message=...)`.
+- [ ] **Step 8.6.2: Implement `AggregatePhase`** — `Aggregator.run()` → `HandoffWriter.write()` → `Renderer.render_combined()` → all writes via `write_atomic` (tmp + rename). On any failure, raise `AggregateFailed(exit_code=1, message=...)` (per R11; collapsed into the spec §8.1 0/1/2/3/130 set).
 
 - [ ] **Step 8.6.3: Test atomic-write semantics** — kill the process mid-aggregate; verify no partial `combined.md` exists (only `.tmp` files).
 
@@ -499,15 +504,21 @@ async def run_audit(
     """
     Returns:
         0 — full success
-        1 — partial success (run completed but some files skipped/errored)
-        ResumeIncompatible.exit_code (4) — hash mismatch on resume
-        AggregateFailed.exit_code (5) — aggregate phase failed (resumable via `senex aggregate`)
-        PreflightFailure.exit_code — per spec §8.1 (varies by check)
+        1 — partial success (run completed but some files skipped/errored;
+            also AggregateFailed — recoverable via `senex aggregate`)
+        2 — config/setup error (also ResumeIncompatible — checkpoint hash
+            mismatch is a setup-state mismatch)
+        3 — external dependency error (LM Studio, etc.)
+        130 — interrupted (SIGINT)
+        Per R11, the exit-code surface collapses to spec §8.1's 0/1/2/3/130 set.
+        PreflightFailure.exit_code maps within {2, 3} per spec §8.1.
     """
     audit_dir = compute_audit_dir(repo, config)  # includes run_id_short suffix
     audit_dir.mkdir(parents=True, exist_ok=True)
 
     # ---- Checkpoint: load or create, validate hashes on resume ----
+    # Note: compaction-prompt hash is folded into ``prompt_hash`` at preflight
+    # snapshotting (spec §5.5.1 + §8.5); no separate field is passed here.
     checkpoint = await Checkpoint.create_or_resume(
         audit_dir,
         config_hash=config.hash(),
@@ -515,7 +526,6 @@ async def run_audit(
         model_fingerprint=config.model.fingerprint,
         tool_pack_hash=lens.tool_pack_hash(),
         lens_version=lens.version,
-        compaction_prompt_hash=config.compaction.prompt_hash,
     )
     if resume and checkpoint.is_incompatible() and not config.allow_mixed_resume:
         raise ResumeIncompatible(
@@ -583,12 +593,12 @@ async def run_audit(
   - Compatible resume (all hashes match) → checkpoint loaded, completed phases skipped.
   - `config_hash` mismatch → `ResumeIncompatible` raised unless `allow_mixed_resume=True`.
   - `model_fingerprint` mismatch → `ResumeIncompatible` raised; with `allow_mixed_resume=True`, run proceeds.
-  - Each of the 6 hashes in §8.5 has a dedicated mismatch test.
+  - Each of the 5 hashes in §8.5 (`config_hash`, `prompt_hash`, `model_fingerprint`, `tool_pack_hash`, `lens_version`) has a dedicated mismatch test.
 
 - [ ] **Step 8.7.4: Test lifecycle release on exception** — `tests/unit/test_auditor_lifecycle.py`:
   - Inject exception in `PreflightPhase.do_work` → assert `Lifecycle.release` called exactly once.
   - Inject exception in `FileAuditPhase.do_work` → assert release called.
-  - Inject exception in `AggregatePhase.do_work` (`AggregateFailed`) → assert release called, return code is 5.
+  - Inject exception in `AggregatePhase.do_work` (`AggregateFailed`) → assert release called, return code is 1 (per R11).
   - `KeyboardInterrupt` from Quit command → assert release called, exception propagates.
 
 - [ ] **Step 8.7.5: Test checkpoint state machine** — start a run, kill mid-FileAudit (raise after 1 file). Restart with `resume=True`. Assert: preflight + discovery skipped (status="complete"), file_audit resumes (1 file in `completed`), 4 remaining files processed, crosscut + aggregate run normally.
@@ -607,7 +617,7 @@ async def run_audit(
 - Per-file recovery tests (one per branch): `read_error`, `token_budget_exceeded`, `CompactionLoopExceeded`, `schema_mismatch_after_retry`, `lms_error`, `render_error` each produce the right artifact (`<file>.SKIPPED.md` or `<file>.ERROR.md`) AND the run continues to the next file.
 - Run-aborting failures propagate cleanly: `LMSConnectionLost` and `FingerprintChanged` raise out of `FileAuditPhase` and `Lifecycle.release` is still called.
 - All 14 spec §8.1 preflight checks have unit tests asserting documented exit codes; `check_addendum_safety` has explicit symlink + path-traversal rejection tests (SEC-1).
-- Resume hash mismatch test: each of the 6 hashes in §8.5 has a dedicated `ResumeIncompatible` test; `--allow-mixed-resume` overrides each.
+- Resume hash mismatch test: each of the 5 hashes in §8.5 (`config_hash`, `prompt_hash`, `model_fingerprint`, `tool_pack_hash`, `lens_version`) has a dedicated `ResumeIncompatible` test; `--allow-mixed-resume` overrides each.
 - Command bus tests: `Pause` between files suspends; `Resume` continues; `Skip` writes SKIPPED.md and proceeds; `Quit` raises `KeyboardInterrupt` with lifecycle released; commands posted between phases also honored.
 - `tests/recorded/test_run_audit_e2e.py` runs offline (no live LMS) using the `recorded_lms` fixture from M3.
 - Aggregate atomicity: process killed mid-aggregate leaves no partial `combined.md` (only `.tmp` files); next run with `resume=True` recovers cleanly via re-running `AggregatePhase`.

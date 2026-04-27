@@ -448,7 +448,7 @@ Phase enum (string): `"context"` (after `FileContextBuilt`) → `"thinking"` (af
 - Create: `senex/tui/widgets/findings_panel.py`
 - Create: `tests/tui/test_widget_findings_panel.py`
 
-**Driven by:** `FileComplete` (extracts the most recent finding for that file from `finding_counts` summary; the actual finding details flow via the renderer's partial — but the panel only needs path + priority + a 1-line title which is included in the `FileComplete` payload's optional `last_finding_title` field). Implementation note: spec §5.6's `FileComplete` table lists `path` + `finding_counts` only; M9 introduces an optional auxiliary field `last_finding_summary: dict | None` carried alongside (planner MUST coordinate with M7 to ensure the renderer attaches this; if not feasible, the panel falls back to subscribing to `findings.partial.jsonl` tail-reads at file-complete time — see watch-out below).
+**Driven by:** `FileComplete.last_finding_summary` (a `FindingSummary | None` field defined on `senex.events.FileComplete` in M1 Task 1.3, per R12). The `FindingSummary` shape is `{priority, title, location | None}` — minimal subset for the TUI panel; full finding text continues to flow through `findings.partial.jsonl` for the on-disk artifacts. Spec §5.6's `FileComplete` row enumerates this field; M7's renderer is the producer (it sets the field on emit when the file produced any finding). When the file produced no findings, the field is `None` and the panel skips that row.
 
 **Pseudo layout:**
 ```
@@ -470,7 +470,7 @@ Recent findings (30 max):
 
 - [ ] **Step 9.6c.3: Verify** + **commit** `feat(M9): FindingsPanelWidget with deque(maxlen=30) eviction`.
 
-**Watch-out:** if `last_finding_summary` is NOT added to the M7 `FileComplete` schema, this task degrades to "show priority counters only" — coordinate via plan addendum, not silent code drift.
+**Watch-out:** `last_finding_summary` is now a first-class field on `FileComplete` (M1 Task 1.3 per R12). If a downstream change ever removes it, this widget MUST degrade to "show priority counters only" rather than silently break — coordinate via plan addendum, not silent code drift.
 
 #### Task 9.6d: ErrorBannerWidget
 

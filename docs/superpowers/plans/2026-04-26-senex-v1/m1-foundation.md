@@ -390,6 +390,25 @@ This milestone creates the following files:
   def test_config_module_has_nonempty_docstring() -> None:
       from senex import config as config_mod
       assert config_mod.__doc__ is not None and config_mod.__doc__.strip() != ""
+
+
+  def test_walker_cfg_defaults_match_spec_section_6() -> None:
+      # Per R8: WalkerCfg defaults are part of the spec §6 contract.
+      from senex.config import WalkerCfg
+      cfg = WalkerCfg()
+      assert cfg.max_size_bytes == 524_288
+      assert cfg.respect_gitignore is True
+      assert cfg.include_tests is False
+      assert cfg.extensions == [
+          ".py", ".ts", ".tsx", ".js", ".jsx", ".go", ".rs",
+          ".java", ".kt", ".cs", ".cpp", ".c", ".h", ".hpp",
+          ".swift", ".rb", ".php", ".sh", ".ps1", ".scala",
+          ".ex", ".exs", ".dart", ".lua", ".zig", ".nim",
+      ]
+      assert cfg.default_excludes == [
+          "node_modules", ".venv", "venv", "dist", "build",
+          "__pycache__", "*.min.*", ".git", "vendor",
+      ]
   ```
 
 - [ ] **Step 1.2.3: Implement `senex/config.py`.** Top-of-file docstring + named exception + nested models + loaders. Skeleton (fill in fields per spec §6 / §5.5):
@@ -405,7 +424,7 @@ This milestone creates the following files:
   import tomllib
   from copy import deepcopy
   from pathlib import Path
-  from typing import Any
+  from typing import Annotated, Any, Literal
 
   from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
@@ -427,15 +446,32 @@ This milestone creates the following files:
 
   class LensCfg(_StrictModel):
       name: str = "correctness"
-      min_confidence: str = "all"  # "all" | "medium" | "high"
+      # Matches CLI --min-priority (spec §10, §API-4). Order: "all" < "low" < "medium" < "high".
+      min_priority: Annotated[
+          Literal["all", "low", "medium", "high"], Field(default="all")
+      ]
       include_tests: bool = False
 
 
   class WalkerCfg(_StrictModel):
+      # Defaults per spec §6 (must match the senex.config.toml.example values).
       max_size_bytes: int = Field(default=524_288, gt=0)
-      extensions: list[str] = Field(default_factory=lambda: [".py", ".ts", ".tsx", ".js"])
-      default_excludes: list[str] = Field(default_factory=lambda: ["node_modules", ".venv"])
+      extensions: list[str] = Field(
+          default_factory=lambda: [
+              ".py", ".ts", ".tsx", ".js", ".jsx", ".go", ".rs",
+              ".java", ".kt", ".cs", ".cpp", ".c", ".h", ".hpp",
+              ".swift", ".rb", ".php", ".sh", ".ps1", ".scala",
+              ".ex", ".exs", ".dart", ".lua", ".zig", ".nim",
+          ]
+      )
+      default_excludes: list[str] = Field(
+          default_factory=lambda: [
+              "node_modules", ".venv", "venv", "dist", "build",
+              "__pycache__", "*.min.*", ".git", "vendor",
+          ]
+      )
       respect_gitignore: bool = True
+      include_tests: bool = False
 
 
   class CrosscutCfg(_StrictModel):
@@ -720,9 +756,10 @@ This milestone creates the following files:
       return datetime.now(tz=timezone.utc)
 
 
-  def test_event_count_is_at_least_35() -> None:
-      # Spec §5.6 declares 35+ event types.
-      assert len(ALL_EVENT_TYPES) >= 35
+  def test_event_count_is_at_least_36() -> None:
+      # Spec §5.6 declares 36+ event types (35 baseline + GraphContextUnavailable
+      # added per R7 reconciliation).
+      assert len(ALL_EVENT_TYPES) >= 36
 
 
   def test_event_runstart_serialization_roundtrip() -> None:
@@ -855,6 +892,34 @@ This milestone creates the following files:
       assert cmd.type == "Pause"
 
 
+  @pytest.mark.asyncio
+  async def test_eventbus_subscribe_local_only_fires_on_matching_types() -> None:
+      # R9: subscribe_local fires only when the published event matches one
+      # of the registered types.
+      bus = EventBus(default_capacity=8)
+      seen: list[BaseEvent] = []
+
+      async def cb(ev: BaseEvent) -> None:
+          seen.append(ev)
+
+      handle = bus.subscribe_local(
+          "test", (FileError,), cb,
+      )
+      # Matching type fires.
+      await bus.publish(
+          FileError(ts=_now(), seq=0, run_id="x", path="a.py",
+                    phase="audit", error_kind="boom", error_message="m")
+      )
+      # Non-matching type does NOT fire.
+      await bus.publish(
+          FileComplete(ts=_now(), seq=0, run_id="x", path="a.py",
+                       finding_counts={"high": 0, "medium": 0, "low": 0, "healthy": 0})
+      )
+      handle.unsubscribe()
+      assert len(seen) == 1
+      assert isinstance(seen[0], FileError)
+
+
   def test_events_module_has_nonempty_docstring() -> None:
       from senex import events as ev_mod
       assert ev_mod.__doc__ and ev_mod.__doc__.strip() != ""
@@ -871,6 +936,7 @@ This milestone creates the following files:
   from __future__ import annotations
 
   import asyncio
+  from collections.abc import Awaitable, Callable
   from datetime import datetime
   from typing import Any, Literal
 
@@ -942,6 +1008,15 @@ This milestone creates the following files:
       graph_context_tokens: int
 
 
+  class GraphContextUnavailable(BaseEvent):
+      # Emitted by GitNexusCLIProvider (M2) when the gitnexus CLI fails or
+      # returns no data; the auditor proceeds with the sentinel awareness
+      # block per §5.8. Non-coalesce-safe (per §5.6.1).
+      type: Literal["GraphContextUnavailable"] = Field(default="GraphContextUnavailable")
+      path: str
+      reason: str
+
+
   class FileLLMCall(BaseEvent):
       type: Literal["FileLLMCall"] = Field(default="FileLLMCall")
       path: str
@@ -986,10 +1061,20 @@ This milestone creates the following files:
       latency_ms: int
 
 
+  class FindingSummary(_StrictModel):
+      """Minimal subset of a finding carried on FileComplete for the TUI's
+      findings panel (M9 Task 9.6c) — see R12."""
+      priority: Literal["high", "medium", "low", "healthy"]
+      title: str
+      location: str | None = None
+
+
   class FileComplete(BaseEvent):
       type: Literal["FileComplete"] = Field(default="FileComplete")
       path: str
       finding_counts: dict[str, int]
+      # Per R12: most-recent finding summary for the file (TUI consumes via M9 Task 9.6c).
+      last_finding_summary: FindingSummary | None = None
 
 
   class FileError(BaseEvent):
@@ -1141,7 +1226,7 @@ This milestone creates the following files:
 
   ALL_EVENT_TYPES: tuple[type[BaseEvent], ...] = (
       RunStart, DiscoveryComplete, SymlinkSkipped, SuspiciousEmptyFinding,
-      FileStart, FileContextBuilt, FileLLMCall,
+      FileStart, FileContextBuilt, GraphContextUnavailable, FileLLMCall,
       ThinkingStarted, ThinkingTick, ThinkingComplete,
       OutputStarted, OutputTick, OutputComplete,
       FileComplete, FileError,
@@ -1161,6 +1246,17 @@ This milestone creates the following files:
       ts: datetime
 
 
+  class SubscriptionHandle:
+      """Returned by ``EventBus.subscribe_local``; opaque cancel token (R9)."""
+
+      def __init__(self, bus: "EventBus", token: int) -> None:
+          self._bus = bus
+          self._token = token
+
+      def unsubscribe(self) -> None:
+          self._bus._cancel_local(self._token)
+
+
   class EventBus:
       """Per-subscriber bounded asyncio queue fan-out (spec §5.6.1).
 
@@ -1170,6 +1266,10 @@ This milestone creates the following files:
       def __init__(self, default_capacity: int = DEFAULT_CAPACITY) -> None:
           self._default_capacity = default_capacity
           self._subs: dict[str, tuple[asyncio.Queue[BaseEvent], int]] = {}
+          self._local_subs: dict[
+              int, tuple[tuple[type[BaseEvent], ...], "Callable[[BaseEvent], Awaitable[None]]"]
+          ] = {}
+          self._next_local_token = 0
           self._seq_counter = 0
 
       def subscribe(self, name: str, capacity: int | None = None) -> asyncio.Queue[BaseEvent]:
@@ -1178,12 +1278,42 @@ This milestone creates the following files:
           self._subs[name] = (q, cap)
           return q
 
+      def subscribe_local(
+          self,
+          name: str,
+          event_types: type[BaseEvent] | tuple[type[BaseEvent], ...],
+          callback: "Callable[[BaseEvent], Awaitable[None]]",
+          capacity: int = 1024,
+      ) -> SubscriptionHandle:
+          """Subscribe a callback to specific event types.
+
+          Internal helper for tests and TUI widgets that don't need a Queue
+          (R9). Only fires for events whose ``type(event)`` matches one of
+          the provided ``event_types``. Returns a handle for unsubscription.
+          ``capacity`` is reserved for future buffering — v1 invokes the
+          callback synchronously during ``publish``.
+          """
+          types_tuple = (
+              (event_types,) if isinstance(event_types, type) else tuple(event_types)
+          )
+          token = self._next_local_token
+          self._next_local_token += 1
+          self._local_subs[token] = (types_tuple, callback)
+          return SubscriptionHandle(self, token)
+
+      def _cancel_local(self, token: int) -> None:
+          self._local_subs.pop(token, None)
+
       async def publish(self, event: BaseEvent) -> None:
           # Stamp seq monotonically. Subclasses MUST NOT generate their own.
           event.seq = self._seq_counter
           self._seq_counter += 1
           for name, (q, _cap) in self._subs.items():
               await self._dispatch(name, q, event)
+          # R9: fire any locally-registered callbacks for matching event types.
+          for types_tuple, cb in list(self._local_subs.values()):
+              if isinstance(event, types_tuple):
+                  await cb(event)
 
       async def _dispatch(
           self, name: str, q: asyncio.Queue[BaseEvent], event: BaseEvent
@@ -1277,8 +1407,8 @@ This milestone creates the following files:
 - Pydantic v2 `Literal["X"] = Field(default="X")` is the only pattern that satisfies both the type-narrowing for the discriminator AND the runtime default. Using just `type: Literal["X"]` requires the caller to pass `type="X"` always.
 
 **Definition of done (Task 1.3):**
-- `pytest tests/unit/test_events.py -v` shows all PASSED (≥ 47 tests including parametrized).
-- `len(ALL_EVENT_TYPES) == 36` (35+ per spec; this implementation has 36).
+- `pytest tests/unit/test_events.py -v` shows all PASSED (≥ 48 tests including parametrized).
+- `len(ALL_EVENT_TYPES) == 37` (36+ per spec; this implementation includes `GraphContextUnavailable` per R7).
 - `ruff check senex/ tests/` and `mypy senex/` exit 0.
 - `git diff --stat HEAD~1` lists exactly: `senex/events.py`, `tests/unit/test_events.py`.
 
@@ -2112,7 +2242,7 @@ This milestone creates the following files:
 
 **Conventions:** §4 (named exceptions), §8 (atomic writes), §10 (pydantic validates the model), §11, §13.
 
-**Spec:** §8.5 (resume hash discipline) — every persisted finding/checkpoint carries the FULL hash bucket: `prompt_hash`, `config_hash`, `model_fingerprint`, `tool_pack_hash`, `lens_version`, plus `compaction_prompt_hash` (folded into `prompt_hash`, but kept as a separate field for forensic clarity per §5.5.1 final paragraph).
+**Spec:** §8.5 (resume hash discipline) — every persisted finding/checkpoint carries the FULL hash bucket: `prompt_hash`, `config_hash`, `model_fingerprint`, `tool_pack_hash`, `lens_version`. Per §5.5.1 final paragraph and §8.5, the compaction prompt's hash is folded into the canonical `prompt_hash`; no separate `compaction_prompt_hash` field is persisted.
 
 - [ ] **Step 1.7.1: Write `senex/schema/checkpoint.schema.json`** (full hash bucket per §8.5):
 
@@ -2126,7 +2256,7 @@ This milestone creates the following files:
       "schema_version", "run_id", "current_phase", "phase_status",
       "phase_artifact_hashes", "completed_files",
       "config_hash", "prompt_hash", "model_fingerprint",
-      "tool_pack_hash", "lens_version", "compaction_prompt_hash"
+      "tool_pack_hash", "lens_version"
     ],
     "properties": {
       "schema_version": {"const": 1},
@@ -2159,9 +2289,11 @@ This milestone creates the following files:
       "config_hash":             {"type": "string"},
       "prompt_hash":             {"type": "string"},
       "model_fingerprint":       {"type": "string"},
-      "tool_pack_hash":          {"type": "string"},
-      "lens_version":            {"type": "string"},
-      "compaction_prompt_hash":  {"type": "string"}
+      "tool_pack_hash":          {
+        "type": "string",
+        "description": "Computed by senex.tools.registry.compute_tool_pack_hash() at preflight (see M5 Task 5.10). Consumed by Checkpoint.is_compatible() (M1) and embedded in findings.json (M7 Task 7.3) + RunStart event (M1 Task 1.3)."
+      },
+      "lens_version":            {"type": "string"}
     }
   }
   ```
@@ -2189,8 +2321,9 @@ This milestone creates the following files:
       "model_fingerprint":      "sha256:mdl",
       "tool_pack_hash":         "sha256:tlp",
       "lens_version":           "1.0.0",
-      "compaction_prompt_hash": "sha256:cpt",
   }
+  # Per spec §5.5.1 + §8.5: the compaction prompt hash is folded into prompt_hash;
+  # there is no separate compaction_prompt_hash field on the checkpoint.
 
 
   def test_checkpoint_create_writes_all_required_fields(tmp_path: Path) -> None:
@@ -2359,8 +2492,10 @@ This milestone creates the following files:
           model_fingerprint: str,
           tool_pack_hash: str,
           lens_version: str,
-          compaction_prompt_hash: str,
       ) -> Checkpoint:
+          # Per spec §5.5.1 + §8.5: compaction prompt hash is folded into
+          # ``prompt_hash`` upstream (preflight prompt-snapshot stage).
+          # No separate compaction_prompt_hash field is persisted here.
           data = {
               "schema_version": 1,
               "run_id": run_id,
@@ -2373,7 +2508,6 @@ This milestone creates the following files:
               "model_fingerprint": model_fingerprint,
               "tool_pack_hash": tool_pack_hash,
               "lens_version": lens_version,
-              "compaction_prompt_hash": compaction_prompt_hash,
           }
           _validator().validate(data)
           audit_dir.mkdir(parents=True, exist_ok=True)
@@ -2415,10 +2549,15 @@ This milestone creates the following files:
           _atomic_write_json(path, new_data)
 
       def is_compatible(self, other_hashes: dict[str, str]) -> bool:
-          """Return True iff every hash in ``other_hashes`` matches this checkpoint."""
+          """Return True iff every hash in ``other_hashes`` matches this checkpoint.
+
+          Note: a compaction-prompt change is detected through ``prompt_hash``
+          (the compaction prompt is one of the preflight-snapshotted assets
+          that compose ``prompt_hash``; see spec §5.5.1 + §8.5).
+          """
           for k in (
               "config_hash", "prompt_hash", "model_fingerprint",
-              "tool_pack_hash", "lens_version", "compaction_prompt_hash",
+              "tool_pack_hash", "lens_version",
           ):
               if k in other_hashes and other_hashes[k] != self.data[k]:
                   return False
@@ -2445,7 +2584,7 @@ This milestone creates the following files:
 
 **Pitfalls (Task 1.7):**
 - The `os.replace` MUST be the LAST operation. If you `fsync` after `replace`, a crash between rename and fsync leaves a renamed-but-not-durable file — file content is whatever the OS happened to flush. The implementation does `f.flush(); os.fsync(); os.replace()` in that exact order.
-- `is_compatible` checks ALL six bucket fields per §8.5. Missing one (e.g., forgetting `compaction_prompt_hash`) silently allows resume across an incompatible compaction prompt change — the spec says compaction_prompt_hash IS folded into prompt_hash, but we keep it explicit so forensic comparisons are obvious. Do not collapse them.
+- `is_compatible` checks ALL FIVE bucket fields per §8.5: `config_hash`, `prompt_hash`, `model_fingerprint`, `tool_pack_hash`, `lens_version`. The compaction prompt's hash is folded into `prompt_hash` upstream (preflight prompt-snapshot stage); per §5.5.1 + §8.5 there is NO separate `compaction_prompt_hash` field on the checkpoint. Adding one re-introduces forensic-only state that drifts from `prompt_hash` and is a bug.
 - `phase_status` is keyed by phase name, not phase index. Order is established via `ALL_PHASES`. Adding a phase later requires a schema_version bump (currently `const: 1`).
 - The schema's `run_id` `pattern` `^[0-9A-Z]{26}$` matches Crockford-base32 ULID. If a test uses lowercase, it fails — the test fixture uses uppercase explicitly.
 - `_atomic_write_json` uses `sort_keys=True` so two checkpoints with the same logical state hash to the same string — important for `phase_artifact_hashes` integrity checks in M8.
@@ -2470,9 +2609,9 @@ This milestone creates the following files:
 
 **Conventions:** §1 (one responsibility per file), §11, §13.
 
-- [ ] **Step 1.8.1: Copy `audit_response.schema.json` verbatim from spec §5.4** (lines 528–589). Important fields:
+- [ ] **Step 1.8.1: Copy `audit_response.schema.json` verbatim from spec §5.4**. Important fields:
   - `schema_version: const 1`
-  - `additionalProperties: false` on every object
+  - `additionalProperties: false` on every object — including `findings.items`, `findings.items.properties.location`, `recommendations.items`, and `best_practices_table.items` (writer-side strict validation per convention §SCHEMA-2; verified by M7 Task 7.1 renderer test that rejects extra fields).
   - `findings.items.properties.location` uses `oneOf: [{required: ["symbol"]}, {required: ["line_start"]}]`
   - Add a `$schema` line: `"$schema": "https://json-schema.org/draft/2020-12/schema"` and `"$id": "audit_response.schema.json"`.
 

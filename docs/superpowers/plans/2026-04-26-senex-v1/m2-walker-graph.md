@@ -210,7 +210,7 @@ class PromptTemplateUnsubstituted(PromptError):
 **Files:**
 - Create: `senex/walker.py`
 - Create: `tests/unit/test_walker.py`
-- Create: `tests/fixtures/repos/tiny_python/` (5 files; see §M9)
+- Create: `tests/fixtures/repos/tiny_python/` (5 files; this milestone owns the fixture — consumed by M10 live-validation gates per R10)
 
 #### Step 2.1.1: Failing tests (TDD)
 
@@ -678,7 +678,9 @@ class PromptTemplateUnsubstituted(PromptError):
 
 #### Step 2.1.4: Create the synthetic `tiny_python` fixture repo
 
-- [ ] **Create `tests/fixtures/repos/tiny_python/`** with these 5 files (used by M3, M5, M8, M10):
+> **Ownership (R10):** M2 owns this fixture; downstream milestones consume it. Specifically: M3 + M5 use it for tool-loop tests; M8 uses it for end-to-end recorded-LMS runs; M10 Task 10.9 live-validation gates 13a/13b/13c/13d/13e cite this exact path.
+
+- [ ] **Create `tests/fixtures/repos/tiny_python/`** with these 5 files (consumed by M3, M5, M8, M10 — see R10 ownership note above):
   - `tests/fixtures/repos/tiny_python/.git/` -- empty placeholder (`mkdir`, then `touch HEAD`); the walker only checks for `.git/` existence.
   - `tests/fixtures/repos/tiny_python/main.py` -- entry point with one obvious bug:
     ```python

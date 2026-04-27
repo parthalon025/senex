@@ -194,6 +194,7 @@ All exception classes live at module top-level (per conventions §4):
   - `test_render_escapes_pipes_in_table_cells` — assert `\|` substring in the rendered table.
   - `test_render_escapes_pipes_in_finding_title` — assert `\|` in the L42 finding title section.
   - `test_render_recommendation_language_falls_back_to_file_language` — when `recommendations[i].language` is None, fence uses `FileMetadata.language`.
+  - `test_audit_response_schema_rejects_extra_fields_on_inner_items` — feed a payload with an unexpected field on `findings.items[0]` (e.g. `"severity": "p0"`) and assert `jsonschema.Draft202012Validator(audit_response_schema).validate(payload)` raises `ValidationError` with `additionalProperties` in the error path. Repeat for `recommendations.items[0]` and `best_practices_table.items[0]` — confirms writer-side strict validation per convention §SCHEMA-2 (R5).
 
 - [ ] **Step 7.1.4: Implement `senex/render_models.py`** — pydantic v2 models (`FileMetadata`, `RunMetadata`, `FindingRecord`, `LocationRecord`, `Theme`, `ToolCallSummary`, `SkippedRecord`, `ErroredRecord`) with `extra="forbid"`.
 
