@@ -1599,3 +1599,84 @@ async def test_redaction_order_strip_then_redact(
     )
     assert resp.content == "safe"
     assert "AKIAIOSFODNN7EXAMPLE" not in resp.content
+
+
+# ---------------------------------------------------------------------------
+# M11 Schema sanitizer for LM Studio compat
+# ---------------------------------------------------------------------------
+
+
+def test_sanitize_schema_drops_conditional_anyof_required() -> None:
+    """LM Studio rejects ``anyOf: [{required: [...]}, {required: [...]}]``;
+    the sanitizer drops it but preserves all other shape constraints."""
+    from senex.lmstudio_client import _sanitize_schema_for_lmstudio
+
+    schema = {
+        "type": "object",
+        "properties": {
+            "location": {
+                "type": "object",
+                "properties": {
+                    "line_start": {"type": "integer"},
+                    "symbol": {"type": "string"},
+                },
+                "anyOf": [
+                    {"required": ["symbol"]},
+                    {"required": ["line_start"]},
+                ],
+            }
+        },
+    }
+    out = _sanitize_schema_for_lmstudio(schema)
+    assert "anyOf" not in out["properties"]["location"]
+    # Property shapes preserved.
+    assert out["properties"]["location"]["properties"]["line_start"] == {
+        "type": "integer"
+    }
+
+
+def test_sanitize_schema_preserves_richer_anyof() -> None:
+    """``anyOf`` with shape constraints (not just ``required``) is kept;
+    only the conditional-required pattern is dropped."""
+    from senex.lmstudio_client import _sanitize_schema_for_lmstudio
+
+    schema = {
+        "type": "object",
+        "anyOf": [
+            {"properties": {"a": {"type": "string"}}},
+            {"properties": {"b": {"type": "integer"}}},
+        ],
+    }
+    out = _sanitize_schema_for_lmstudio(schema)
+    assert "anyOf" in out
+    assert len(out["anyOf"]) == 2
+
+
+def test_sanitize_schema_drops_oneof_required_too() -> None:
+    """Same rule applies to ``oneOf`` — both surface the conditional-required
+    pattern senex's audit_response.schema.json uses."""
+    from senex.lmstudio_client import _sanitize_schema_for_lmstudio
+
+    schema = {
+        "oneOf": [
+            {"required": ["symbol"]},
+            {"required": ["line_start"]},
+        ]
+    }
+    assert _sanitize_schema_for_lmstudio(schema) == {}
+
+
+def test_sanitize_schema_recurses_into_array_items() -> None:
+    """Conditional-required inside ``items`` is dropped (this is the actual
+    pattern in audit_response.schema.json — findings[i].location.anyOf)."""
+    from senex.lmstudio_client import _sanitize_schema_for_lmstudio
+
+    schema = {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "anyOf": [{"required": ["a"]}, {"required": ["b"]}],
+        },
+    }
+    out = _sanitize_schema_for_lmstudio(schema)
+    assert "anyOf" not in out["items"]

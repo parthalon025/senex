@@ -910,11 +910,20 @@ class LMStudioClient:
     ) -> tuple[_StreamResult, dict[str, object] | None]:
         body = dict(base_body)
         if mode == "json_schema":
+            # Wire-level adapter: LM Studio's json_schema validator does not
+            # accept ``anyOf``/``oneOf`` blocks that only carry ``required``
+            # arrays (it returns a 200 OK SSE chunk with an inline error
+            # body and zero content). The senex-side schema file (M2) stays
+            # the canonical source of truth for response validation; this
+            # transport-only sanitizer drops the conditional-required blocks
+            # so the model actually produces output. Validation downstream
+            # uses the full schema (see ``_validate_audit_schema``).
+            wire_schema = _sanitize_schema_for_lmstudio(schema)
             body["response_format"] = {
                 "type": "json_schema",
                 "json_schema": {
                     "name": "audit_response",
-                    "schema": schema,
+                    "schema": wire_schema,
                     "strict": True,
                 },
             }
@@ -1063,6 +1072,62 @@ def _redact_tool_calls(
         )
         for tc in tcs
     ]
+
+
+def _sanitize_schema_for_lmstudio(schema: dict[str, object]) -> dict[str, object]:
+    """Strip schema constructs LM Studio's structured-output validator rejects.
+
+    LM Studio's json_schema enforcement (as of v0.3.x) returns a 200 OK with
+    an inline ``{"error": "Invalid JSON Schema: Unrecognized schema: ..."}``
+    SSE chunk (and otherwise empty completion) when the schema contains:
+
+    * ``anyOf`` / ``oneOf`` blocks whose branches each carry only ``required``
+      arrays (the conditional-required pattern, e.g. "either symbol or
+      line_start"). Strict mode rejects these wholesale.
+
+    The audit response schema (``audit_response.schema.json``) uses this
+    pattern on ``findings[i].location`` to express "either a symbol or a
+    line range, but at least one." We KEEP the canonical schema file — it
+    drives senex-side response validation — but strip the conditional
+    branches at the wire boundary so the model actually emits output.
+    Downstream validation (``_validate_audit_schema``) uses the full
+    schema, so semantic guarantees are unchanged.
+
+    Rules:
+    * Recurse into every dict.
+    * Drop ``anyOf`` / ``oneOf`` keys whose every branch contains ONLY
+      ``required`` (i.e., conditional-required, no shape constraints).
+    * Leave ``allOf`` and richer ``anyOf``/``oneOf`` patterns untouched.
+    """
+    import copy
+
+    def _is_conditional_required(branches: list[Any]) -> bool:
+        if not branches:
+            return False
+        for branch in branches:
+            if not isinstance(branch, dict):
+                return False
+            keys = set(branch.keys())
+            if keys != {"required"}:
+                return False
+        return True
+
+    def _walk(node: Any) -> Any:
+        if isinstance(node, dict):
+            out: dict[str, Any] = {}
+            for key, value in node.items():
+                if key in ("anyOf", "oneOf") and isinstance(value, list):
+                    if _is_conditional_required(value):
+                        # Drop the constraint entirely; the response schema
+                        # still validates server-side after we receive it.
+                        continue
+                out[key] = _walk(value)
+            return out
+        if isinstance(node, list):
+            return [_walk(item) for item in node]
+        return node
+
+    return _walk(copy.deepcopy(schema))
 
 
 def _validate_audit_schema(parsed: dict[str, object], schema: dict[str, object]) -> None:
