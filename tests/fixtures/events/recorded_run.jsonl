@@ -1,0 +1,6 @@
+{"v":1,"type":"RunStart","ts":"2026-04-27T17:00:56.948220Z","seq":0,"run_id":"r1","repo":"/repo","audit_dir":"/d","model":"m","lens":"correctness","lens_version":"1","config_hash":"c","prompt_hash":"p","model_fingerprint":"f","tool_pack_hash":"","started_at":"2026-04-27T17:00:56.948220Z"}
+{"v":1,"type":"FileStart","ts":"2026-04-27T17:00:56.948220Z","seq":0,"run_id":"r1","path":"src/a.py","idx":1,"total":2}
+{"v":1,"type":"FileComplete","ts":"2026-04-27T17:00:56.948220Z","seq":0,"run_id":"r1","path":"src/a.py","finding_counts":{"high":1,"medium":0,"low":0,"healthy":0},"last_finding_summary":{"priority":"high","title":"bad","location":null}}
+{"v":1,"type":"FileStart","ts":"2026-04-27T17:00:56.948220Z","seq":0,"run_id":"r1","path":"src/b.py","idx":2,"total":2}
+{"v":1,"type":"FileComplete","ts":"2026-04-27T17:00:56.948220Z","seq":0,"run_id":"r1","path":"src/b.py","finding_counts":{"high":0,"medium":0,"low":0,"healthy":1},"last_finding_summary":null}
+{"v":1,"type":"RunComplete","ts":"2026-04-27T17:00:56.948220Z","seq":0,"run_id":"r1","duration_seconds":3.0,"totals":{"files_audited":2},"exit_status":0}
