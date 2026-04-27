@@ -31,3 +31,4 @@ events.jsonl
 # Local secrets / config
 .env
 senex.config.local.toml
+.gitnexus
