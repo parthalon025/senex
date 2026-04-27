@@ -581,6 +581,87 @@ async def test_thinking_trace_written_when_enabled(tmp_path: Path) -> None:
     assert (phase._audit_dir / "main.py.thinking.md").exists()
 
 
+# ---------------------------------------------------------------------------
+# FileMetadata population (M11 bug 2)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_file_metadata_populates_tokens_latency_compactions(
+    tmp_path: Path,
+) -> None:
+    """``_build_file_metadata`` MUST surface ChatResponse token/timing fields
+    and the compactor's running count instead of hardcoded zeros (M11 bug 2).
+    """
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / ".git").mkdir()
+    f1 = repo / "main.py"
+    f1.write_text("x=1\n", encoding="utf-8")
+
+    # Build a response with all the metric fields populated.
+    body = json.dumps(_VALID_RESPONSE_DICT)
+    rich_response = ChatResponse(
+        content=body,
+        content_dict=_VALID_RESPONSE_DICT,
+        reasoning_content="thought",
+        tool_calls=None,
+        finish_reason="stop",
+        latency_ms=1500,
+        thinking_ms=1000,
+        output_ms=500,
+        prompt_tokens=1234,
+        completion_tokens=567,
+        fingerprint="fp123",
+    )
+    client = FakeClient(responses=[rich_response])
+    phase, bus, cb, captured, state = _setup_phase(tmp_path, client, [f1])
+
+    cfg = SenexConfig()
+    out = await phase.do_work(state, Lens.load("correctness"), cfg, bus, cb)
+    assert out["completed"] == ["main.py"]
+    rendered = (phase._audit_dir / "main.py.md").read_text(encoding="utf-8")
+    # Tokens row (was "0 / 0" pre-fix).
+    assert "**Tokens in/out:** 1234 / 567" in rendered
+    # Latency row uses int seconds.
+    assert "**Latency:** 1s (thinking 1s, output 0s)" in rendered
+
+
+@pytest.mark.asyncio
+async def test_file_metadata_falls_back_to_latency_when_phase_split_unknown(
+    tmp_path: Path,
+) -> None:
+    """When the model doesn't expose phase boundaries (thinking_ms ==
+    output_ms == 0), the renderer must still surface the total latency."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / ".git").mkdir()
+    f1 = repo / "main.py"
+    f1.write_text("x=1\n", encoding="utf-8")
+
+    body = json.dumps(_VALID_RESPONSE_DICT)
+    response = ChatResponse(
+        content=body,
+        content_dict=_VALID_RESPONSE_DICT,
+        reasoning_content="",
+        tool_calls=None,
+        finish_reason="stop",
+        latency_ms=2000,
+        thinking_ms=0,
+        output_ms=0,
+        prompt_tokens=10,
+        completion_tokens=20,
+        fingerprint="fp123",
+    )
+    client = FakeClient(responses=[response])
+    phase, bus, cb, captured, state = _setup_phase(tmp_path, client, [f1])
+    cfg = SenexConfig()
+    await phase.do_work(state, Lens.load("correctness"), cfg, bus, cb)
+    rendered = (phase._audit_dir / "main.py.md").read_text(encoding="utf-8")
+    # Output collapses to total latency when no split available.
+    assert "**Latency:** 2s (thinking 0s, output 2s)" in rendered
+
+
 @pytest.mark.asyncio
 async def test_thinking_trace_not_written_when_disabled(tmp_path: Path) -> None:
     repo = tmp_path / "repo"

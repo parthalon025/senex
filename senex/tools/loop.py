@@ -35,7 +35,9 @@ M6 integration contract:
 """
 from __future__ import annotations
 
+from collections import Counter
 from collections.abc import Awaitable, Callable
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -80,6 +82,32 @@ _KIND_TO_EVENT_KIND: dict[str, str] = {
 
 def _now() -> datetime:
     return datetime.now(tz=timezone.utc)
+
+
+@dataclass
+class ToolLoopMetrics:
+    """Per-file metrics surfaced by ``ToolLoop.run()`` (M11).
+
+    The model's ``ChatResponse`` carries token counts and per-call latency,
+    but tools dispatched THROUGH the loop are invisible to the response.
+    The renderer's per-file header (spec §7.1) wants the count + breakdown,
+    so we expose it as a sibling to the final ``ChatResponse``.
+
+    Attributes:
+        tool_counts: ``{tool_name: count}`` of every tool dispatched in
+            this file's turn-loop. Includes both successful results and
+            errors (the spec's "Tools used: N / 5" cap counts both).
+        compactions_used: read off the injected compactor after the loop.
+            Populated by the caller (M8 ``FileAuditPhase``); ToolLoop has
+            no handle on the compactor's counter.
+    """
+
+    tool_counts: dict[str, int] = field(default_factory=dict)
+    compactions_used: int = 0
+
+    @property
+    def total_calls(self) -> int:
+        return sum(self.tool_counts.values())
 
 
 def _to_chat_messages(messages: list[dict[str, Any]]) -> list[ChatMessage]:
@@ -164,6 +192,17 @@ class ToolLoop:
         self._max_result_tokens = max_result_tokens
         self._npx_path = npx_path or Path("npx")
         self._bus = bus
+        # Per-file tool dispatch counts; reset by each ``run()`` so a
+        # reused loop instance reports the most recent file's tools.
+        self._tool_counts: Counter[str] = Counter()
+
+    @property
+    def tool_counts(self) -> dict[str, int]:
+        """Dispatched tool counts from the most recent ``run()``.
+
+        Used by ``FileAuditPhase`` to populate ``FileMetadata.tools_used``.
+        """
+        return dict(self._tool_counts)
 
     def _ctx(self) -> ToolContext:
         return ToolContext(
@@ -217,6 +256,9 @@ class ToolLoop:
         """
         ctx = self._ctx()
         calls_made = 0
+        # Reset per-file tool counts so a reused loop reports only the
+        # current file's dispatches (M11 bug 2 — ``FileMetadata.tools_used``).
+        self._tool_counts = Counter()
 
         for i in range(self._max_calls + 1):
             tools_arg = (
@@ -238,6 +280,7 @@ class ToolLoop:
 
             # Dispatch each tool call in order.
             for tc in response.tool_calls:
+                self._tool_counts[tc.function.name] += 1
                 if self._bus is not None:
                     await self._bus.publish(
                         ToolCallEvent(
@@ -339,4 +382,4 @@ class ToolLoop:
         raise AssertionError("ToolLoop bound exceeded - programmer error")
 
 
-__all__ = ["MaybeCompact", "ToolLoop"]
+__all__ = ["MaybeCompact", "ToolLoop", "ToolLoopMetrics"]

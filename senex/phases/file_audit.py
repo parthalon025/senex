@@ -396,6 +396,10 @@ class FileAuditPhase:
             max_result_tokens=config.lmstudio.tools.max_result_tokens,
             bus=bus,
         )
+        # Track for FileMetadata population (M11 bug 2). Both objects expose
+        # public counters that survive the recovery branches below.
+        self._last_loop = loop
+        self._last_compactor = compactor
         try:
             response = await loop.run(
                 messages,
@@ -625,6 +629,34 @@ class FileAuditPhase:
         lens: "Lens",
         config: "SenexConfig",
     ) -> FileMetadata:
+        # Pull the per-file tool dispatch counts from the loop instance and
+        # the compactor's running count from the per-file compactor (M11
+        # bug 2). Both objects are owned by ``_audit_one`` and stamped on
+        # ``self`` just before this method runs; defensive ``getattr`` so
+        # tests that bypass ``_audit_one`` don't AttributeError here.
+        loop = getattr(self, "_last_loop", None)
+        compactor = getattr(self, "_last_compactor", None)
+        tool_counts: dict[str, int] = (
+            loop.tool_counts if loop is not None else {}
+        )
+        tools_used = [
+            ToolCallSummary(name=name, count=count)
+            for name, count in sorted(tool_counts.items())
+            if count > 0
+        ]
+        compactions_used = (
+            int(getattr(compactor, "compactions_so_far", 0))
+            if compactor is not None
+            else 0
+        )
+        # ``ChatResponse`` carries ms; ``FileMetadata`` wants seconds.
+        thinking_ms = int(getattr(response, "thinking_ms", 0) or 0)
+        output_ms = int(getattr(response, "output_ms", 0) or 0)
+        # Fallback when the model didn't expose phase boundaries: the
+        # whole call counts as "output" so the operator sees the total
+        # latency in the header rather than 0s.
+        if thinking_ms == 0 and output_ms == 0:
+            output_ms = int(getattr(response, "latency_ms", 0) or 0)
         return FileMetadata(
             relpath=relpath,
             language=_detect_language(file),
@@ -632,10 +664,10 @@ class FileAuditPhase:
             lens_name=lens.name,
             prompt_tokens=response.prompt_tokens,
             completion_tokens=response.completion_tokens,
-            thinking_seconds=0.0,
-            output_seconds=0.0,
-            tools_used=[],
-            compactions_used=0,
+            thinking_seconds=thinking_ms / 1000.0,
+            output_seconds=output_ms / 1000.0,
+            tools_used=tools_used,
+            compactions_used=compactions_used,
             compactions_max=config.lmstudio.compaction.max_compactions_per_file,
             graph_context_summary="(see graph block in user prompt)",
             run_id_short=self._run_id_short,

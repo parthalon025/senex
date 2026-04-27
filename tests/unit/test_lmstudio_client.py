@@ -391,6 +391,12 @@ async def test_interleaved_think_tags_stripped(
         tools=None,
     )
     assert resp.content == "prefixmiddlesuffix"
+    # M11 bug 4: inline <think> blocks captured into reasoning_content so
+    # ``save_traces`` can write them to ``*.thinking.md`` for models that
+    # emit thinking inline (e.g. gemma) instead of via a sidecar
+    # ``reasoning_content`` field.
+    assert "x\nmulti\nline" in resp.reasoning_content
+    assert "y" in resp.reasoning_content
 
 
 @pytest.mark.asyncio

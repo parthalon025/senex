@@ -118,6 +118,11 @@ class ChatResponse(_StrictModel):
     All string fields are post-redaction and (for ``content``) post-ANSI-strip.
     The caller may safely append ``content`` / ``reasoning_content`` /
     ``tool_calls`` to history without re-running the redactor.
+
+    ``thinking_ms`` / ``output_ms`` decompose ``latency_ms`` into the time
+    spent streaming ``reasoning_content`` (or inline ``<think>`` blocks)
+    versus regular ``content``. They default to 0 when the server doesn't
+    expose phase boundaries.
     """
 
     content: str
@@ -126,6 +131,8 @@ class ChatResponse(_StrictModel):
     tool_calls: list[ToolCall] | None
     finish_reason: Literal["stop", "tool_calls", "length", "content_filter"]
     latency_ms: int
+    thinking_ms: int = 0
+    output_ms: int = 0
     prompt_tokens: int
     completion_tokens: int
     fingerprint: str
@@ -187,6 +194,8 @@ class _StreamResult:
     prompt_tokens: int
     completion_tokens: int
     headers: dict[str, str] = field(default_factory=dict)
+    thinking_ms: int = 0
+    output_ms: int = 0
 
 
 @dataclass
@@ -330,6 +339,8 @@ class LMStudioClient:
             tool_calls=stream.tool_calls,
             finish_reason=stream.finish_reason,
             latency_ms=stream.latency_ms,
+            thinking_ms=stream.thinking_ms,
+            output_ms=stream.output_ms,
             prompt_tokens=stream.prompt_tokens,
             completion_tokens=stream.completion_tokens,
             fingerprint=observed_fp,
@@ -566,6 +577,11 @@ class LMStudioClient:
         """Issue a single stream attempt; consume SSE; assemble ``_StreamResult``."""
         body_streamed = dict(body)
         body_streamed["stream"] = True
+        # Per OpenAI streaming spec: ``usage`` is only emitted in the final
+        # SSE chunk when ``stream_options.include_usage`` is true. Without
+        # this, prompt_tokens / completion_tokens come back as 0 and the
+        # per-file metadata header reports "Tokens in/out: 0 / 0" (M11 bug 2).
+        body_streamed["stream_options"] = {"include_usage": True}
 
         thinking_tick = _TickCoalescer()
         output_tick = _TickCoalescer()
@@ -578,6 +594,7 @@ class LMStudioClient:
         completion_tokens = 0
         thinking_started_at = 0.0
         output_started_at = 0.0
+        thinking_ms_total = 0  # accumulator for ChatResponse.thinking_ms
 
         start = time.monotonic()
 
@@ -601,21 +618,26 @@ class LMStudioClient:
                     if data.strip() == "[DONE]":
                         break
                     chunk = json.loads(data)
-                    finish_reason, phase, thinking_started_at, output_started_at = (
-                        await self._handle_stream_chunk(
-                            chunk=chunk,
-                            phase=phase,
-                            thinking_tick=thinking_tick,
-                            output_tick=output_tick,
-                            reasoning_buf=reasoning_buf,
-                            content_buf=content_buf,
-                            tool_calls_acc=tool_calls_acc,
-                            finish_reason=finish_reason,
-                            path=path,
-                            thinking_started_at=thinking_started_at,
-                            output_started_at=output_started_at,
-                        )
+                    (
+                        finish_reason,
+                        phase,
+                        thinking_started_at,
+                        output_started_at,
+                        delta_thinking_ms,
+                    ) = await self._handle_stream_chunk(
+                        chunk=chunk,
+                        phase=phase,
+                        thinking_tick=thinking_tick,
+                        output_tick=output_tick,
+                        reasoning_buf=reasoning_buf,
+                        content_buf=content_buf,
+                        tool_calls_acc=tool_calls_acc,
+                        finish_reason=finish_reason,
+                        path=path,
+                        thinking_started_at=thinking_started_at,
+                        output_started_at=output_started_at,
                     )
+                    thinking_ms_total += delta_thinking_ms
                     if "usage" in chunk and chunk["usage"]:
                         prompt_tokens = chunk["usage"].get("prompt_tokens", prompt_tokens)
                         completion_tokens = chunk["usage"].get(
@@ -654,8 +676,10 @@ class LMStudioClient:
 
         # Phase-out events.
         latency_ms = int((time.monotonic() - start) * 1000)
+        output_ms_total = 0
         if phase == "thinking":
             thinking_latency = int((time.monotonic() - thinking_started_at) * 1000)
+            thinking_ms_total += thinking_latency
             await self._bus.publish(
                 ThinkingComplete(
                     ts=_now(),
@@ -669,6 +693,7 @@ class LMStudioClient:
             # ThinkingComplete may have already fired during the chunk loop;
             # publish OutputComplete to mirror it.
             output_latency = int((time.monotonic() - output_started_at) * 1000)
+            output_ms_total = output_latency
             await self._bus.publish(
                 OutputComplete(
                     ts=_now(),
@@ -680,10 +705,28 @@ class LMStudioClient:
             )
 
         # Strip-then-redact ordering (§5.10 / §3.10): think -> ANSI -> redact.
+        # Also: extract <think>...</think> blocks BEFORE stripping so that
+        # models like gemma which emit thinking inline (instead of via the
+        # OpenAI ``reasoning_content`` field) still produce a usable trace
+        # (M11 bug 4). Prepend the inline thoughts to any streamed
+        # reasoning_content so combined render is deterministic.
         raw_content = "".join(content_buf)
+        inline_think_blocks = _THINK_TAG_RE.findall(raw_content)
         stripped_content = _ANSI_RE.sub("", _THINK_TAG_RE.sub("", raw_content))
         final_content = self._redactor.redact(stripped_content)
-        final_reasoning = self._redactor.redact("".join(reasoning_buf))
+
+        # Concatenate inline <think> bodies (strip the tag wrappers) and any
+        # streamed reasoning_content. Use a single newline join so the file
+        # looks like a coherent transcript when rendered.
+        inline_reasoning = "\n".join(
+            re.sub(r"^<think>|</think>$", "", block).strip()
+            for block in inline_think_blocks
+        )
+        streamed_reasoning = "".join(reasoning_buf)
+        combined_reasoning = "\n\n".join(
+            part for part in (inline_reasoning, streamed_reasoning) if part
+        )
+        final_reasoning = self._redactor.redact(combined_reasoning)
         final_tool_calls = _redact_tool_calls(tool_calls_acc.build(), self._redactor)
 
         return _StreamResult(
@@ -695,6 +738,8 @@ class LMStudioClient:
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,
             headers=headers,
+            thinking_ms=thinking_ms_total,
+            output_ms=output_ms_total,
         )
 
     async def _handle_stream_chunk(
@@ -711,7 +756,21 @@ class LMStudioClient:
         path: str | None,
         thinking_started_at: float,
         output_started_at: float,
-    ) -> tuple[str | None, Literal["pre", "thinking", "output"], float, float]:
+    ) -> tuple[
+        str | None,
+        Literal["pre", "thinking", "output"],
+        float,
+        float,
+        int,
+    ]:
+        """Process one SSE chunk; returns (finish_reason, phase,
+        thinking_started_at, output_started_at, delta_thinking_ms).
+
+        ``delta_thinking_ms`` is non-zero only on the chunk that closes the
+        thinking phase (the last reasoning_content chunk before the first
+        content delta). Caller accumulates into ``thinking_ms_total``.
+        """
+        delta_thinking_ms = 0
         choice = (chunk.get("choices") or [{}])[0]
         delta = choice.get("delta") or {}
         if choice.get("finish_reason"):
@@ -745,6 +804,7 @@ class LMStudioClient:
             if phase == "thinking":
                 # Close out thinking phase before opening output.
                 latency_ms = int((time.monotonic() - thinking_started_at) * 1000)
+                delta_thinking_ms = latency_ms
                 await self._bus.publish(
                     ThinkingComplete(
                         ts=_now(),
@@ -784,7 +844,13 @@ class LMStudioClient:
         if delta.get("tool_calls"):
             tool_calls_acc.consume(delta["tool_calls"])
 
-        return finish_reason, phase, thinking_started_at, output_started_at
+        return (
+            finish_reason,
+            phase,
+            thinking_started_at,
+            output_started_at,
+            delta_thinking_ms,
+        )
 
     def _approx_tokens(self, text: str) -> int:
         """Cheap streaming token estimate; the budget pre-check uses tiktoken."""
