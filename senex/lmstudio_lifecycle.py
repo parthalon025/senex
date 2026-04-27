@@ -73,7 +73,15 @@ _MODEL_ID_MAX_LEN = 256
 
 
 def validate_model_id(model_id: str) -> str:
-    """Validate model_id against the SEC-4 regex; raise InvalidModelId on failure."""
+    """Validate model_id against the SEC-4 regex; raise InvalidModelId on failure.
+
+    Defense in depth (spec section 5.5.2.6): rejects shell metacharacters via the
+    base regex, plus an explicit path-traversal rejection for ``..`` segments.
+    The base regex allows ``.`` and ``/`` because legitimate model_ids contain
+    them (e.g. ``google/gemma-4-26b-a4b``), but ``..`` segments are never
+    legitimate and would feed a directory escape if interpreted as a filesystem
+    path by either backend.
+    """
     if not isinstance(model_id, str) or not model_id:
         raise InvalidModelId(
             f"model_id must be non-empty str, got {type(model_id).__name__!r}"
@@ -85,6 +93,12 @@ def validate_model_id(model_id: str) -> str:
     if not _MODEL_ID_RE.match(model_id):
         raise InvalidModelId(
             f"model_id {model_id!r} does not match {_MODEL_ID_RE.pattern}"
+        )
+    # Path-traversal rejection: ``..`` segments at any position.
+    parts = model_id.replace("\\", "/").split("/")
+    if any(seg == ".." for seg in parts):
+        raise InvalidModelId(
+            f"model_id {model_id!r} contains a path-traversal segment ('..')"
         )
     return model_id
 
@@ -346,6 +360,28 @@ def _current_pid() -> int:
     return os.getpid()
 
 
+def _resume_holder_record(
+    info: ModelInfo, *, run_id: str, loaded_by_us: bool
+) -> dict[str, Any]:
+    """Construct a holder record for the resume path.
+
+    Defense-in-depth (spec 5.5.2.7 watch-out): a resumed run can NEVER own the
+    load. Even if internal callers somehow set ``loaded_by_us=True``, raise
+    ``ResumedRunCannotOwnLoad``. The public ``acquire_for_resume`` API never
+    exposes this knob, but this helper exists so unit tests can verify the
+    invariant and so future refactors can't bypass it silently.
+    """
+    if loaded_by_us is not False:
+        raise ResumedRunCannotOwnLoad(
+            "resume path cannot transfer load ownership; loaded_by_us must be False"
+        )
+    return {
+        "run_id": run_id,
+        "fingerprint": info.fingerprint,
+        "loaded_by_us": False,
+    }
+
+
 # Lifecycle high-level API --------------------------------------------------
 
 
@@ -583,3 +619,112 @@ class Lifecycle:
             model_id=model_id,
             duration_seconds=duration,
         )
+
+    async def acquire_for_resume(
+        self,
+        model_id: str,
+        run_id: str,
+        runlock: "type[RunLockType]",
+        *,
+        checkpoint_fingerprint: str,
+        allow_mixed: bool,
+    ) -> ModelInfo:
+        """Acquire a runlock on the resume path.
+
+        Spec 5.5.2.7 invariants:
+        1. Re-probe; recompute fingerprint via the backend.
+        2. If the model is unloaded externally and ``auto_load`` is enabled,
+           re-load — but the runlock holder is ``loaded_by_us=False``
+           UNCONDITIONALLY (a resumed run can never transfer load ownership).
+        3. If the probed fingerprint differs from ``checkpoint_fingerprint``
+           and ``allow_mixed`` is False, raise ``FingerprintMismatch`` BEFORE
+           any runlock touch.
+        4. Otherwise call ``runlock.acquire(loaded_by_us=False)`` and emit
+           ``RunLockAcquired``.
+        """
+        validate_model_id(model_id)
+        if not await self._backend.is_loaded(model_id):
+            if not self._config.auto_load:
+                raise ModelNotLoaded(
+                    f"model {model_id!r} is not loaded and auto_load is disabled"
+                )
+            # Resume path may need to re-load; reuse the same emission sequence
+            # as acquire(), but the holder will still be loaded_by_us=False.
+            await self._publish(
+                "ModelLoadRequested",
+                run_id=run_id,
+                model_id=model_id,
+                target_fingerprint=checkpoint_fingerprint,
+            )
+            await self._publish("ModelLoadStarted", run_id=run_id, model_id=model_id)
+            started_at = datetime.now(tz=timezone.utc)
+            try:
+                info = await asyncio.wait_for(
+                    self._backend.load(
+                        model_id, timeout=self._config.load_timeout_seconds
+                    ),
+                    timeout=self._config.load_timeout_seconds,
+                )
+            except asyncio.TimeoutError as exc:
+                await self._publish(
+                    "ModelLoadFailed",
+                    run_id=run_id,
+                    model_id=model_id,
+                    error_kind="timeout",
+                    error_message=self._redactor.redact(repr(exc)),
+                )
+                raise ModelLoadTimeout(
+                    f"load({model_id!r}) timed out after "
+                    f"{self._config.load_timeout_seconds}s"
+                ) from exc
+            except Exception as exc:
+                await self._publish(
+                    "ModelLoadFailed",
+                    run_id=run_id,
+                    model_id=model_id,
+                    error_kind="load_failed",
+                    error_message=self._redactor.redact(repr(exc)),
+                )
+                raise ModelLoadFailed(
+                    f"load({model_id!r}) failed: {self._redactor.redact(str(exc))}"
+                ) from exc
+            duration = (datetime.now(tz=timezone.utc) - started_at).total_seconds()
+            await self._publish(
+                "ModelLoadComplete",
+                run_id=run_id,
+                model_id=model_id,
+                duration_seconds=duration,
+                fingerprint=info.fingerprint,
+            )
+        else:
+            info = await self._probe_info(model_id)
+
+        # Fingerprint comparison is BEFORE runlock.acquire so a refused resume
+        # never poisons the lockfile with a holder that won't release.
+        if info.fingerprint != checkpoint_fingerprint:
+            if not allow_mixed:
+                raise FingerprintMismatch(
+                    f"resume fingerprint mismatch: expected={checkpoint_fingerprint!r} "
+                    f"observed={info.fingerprint!r}"
+                )
+            await self._publish(
+                "ModelFingerprintChanged",
+                run_id=run_id,
+                path="",  # whole-run mismatch, not file-scoped
+                expected_fingerprint=checkpoint_fingerprint,
+                observed_fingerprint=info.fingerprint,
+            )
+
+        # Defense-in-depth: forbids loaded_by_us=True even from internal callers.
+        _holder = _resume_holder_record(info, run_id=run_id, loaded_by_us=False)
+        del _holder  # invariant check only; runlock holder built by RunLock.acquire().
+
+        count = runlock.acquire(info.fingerprint, run_id, _current_pid(), False)
+        self._fingerprints[(model_id, run_id)] = info.fingerprint
+        await self._publish(
+            "RunLockAcquired",
+            run_id=run_id,
+            model_fingerprint=info.fingerprint,
+            holder_count=count,
+        )
+        return info
