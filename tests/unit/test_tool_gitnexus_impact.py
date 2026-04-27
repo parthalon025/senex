@@ -113,6 +113,37 @@ async def test_subprocess_failure(
 
 
 @pytest.mark.asyncio
+async def test_malformed_json_output(
+    registry: ToolRegistry, tmp_path: Path
+) -> None:
+    """Unparseable subprocess output -> dispatch_failed."""
+    sub = _mock_subprocess(b"not json")
+    with patch("senex.tools.gitnexus_impact.asyncio.create_subprocess_exec", sub):
+        result = await registry.dispatch(
+            "c", "gitnexus_impact", '{"target": "x"}', _ctx(tmp_path)
+        )
+    assert isinstance(result, ToolError)
+    assert result.kind == "dispatch_failed"
+    assert "malformed" in result.message.lower()
+
+
+@pytest.mark.asyncio
+async def test_output_failing_schema(
+    registry: ToolRegistry, tmp_path: Path
+) -> None:
+    """Output with invalid risk_level Literal -> dispatch_failed."""
+    sub = _mock_subprocess(
+        b'{"risk_level": "EXTREME", "dependents_by_depth": {}}'
+    )
+    with patch("senex.tools.gitnexus_impact.asyncio.create_subprocess_exec", sub):
+        result = await registry.dispatch(
+            "c", "gitnexus_impact", '{"target": "x"}', _ctx(tmp_path)
+        )
+    assert isinstance(result, ToolError)
+    assert result.kind == "dispatch_failed"
+
+
+@pytest.mark.asyncio
 async def test_empty_dependents_d2_d3(
     registry: ToolRegistry, tmp_path: Path
 ) -> None:

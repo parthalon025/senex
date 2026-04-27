@@ -140,6 +140,50 @@ async def test_optional_file_omitted(
 
 
 @pytest.mark.asyncio
+async def test_invalid_file_with_special_chars(
+    registry: ToolRegistry, tmp_path: Path
+) -> None:
+    """File regex must reject special chars (in addition to traversal)."""
+    args = json.dumps({"symbol": "validateUser", "file": "foo;bar"})
+    result = await registry.dispatch("c", "gitnexus_context", args, _ctx(tmp_path))
+    assert isinstance(result, ToolError)
+    assert result.kind == "schema_invalid"
+
+
+@pytest.mark.asyncio
+async def test_malformed_json_output(
+    registry: ToolRegistry, tmp_path: Path
+) -> None:
+    """Subprocess returning unparseable bytes -> dispatch_failed."""
+    factory, _ = _mock_subprocess(b"not valid json")
+    with patch(
+        "senex.tools.gitnexus_context.asyncio.create_subprocess_exec", factory
+    ):
+        result = await registry.dispatch(
+            "c", "gitnexus_context", '{"symbol": "validateUser"}', _ctx(tmp_path)
+        )
+    assert isinstance(result, ToolError)
+    assert result.kind == "dispatch_failed"
+    assert "malformed" in result.message.lower()
+
+
+@pytest.mark.asyncio
+async def test_output_failing_schema(
+    registry: ToolRegistry, tmp_path: Path
+) -> None:
+    """Subprocess returning JSON missing required keys -> dispatch_failed."""
+    factory, _ = _mock_subprocess(b'{"only_one_key": "x"}')
+    with patch(
+        "senex.tools.gitnexus_context.asyncio.create_subprocess_exec", factory
+    ):
+        result = await registry.dispatch(
+            "c", "gitnexus_context", '{"symbol": "validateUser"}', _ctx(tmp_path)
+        )
+    assert isinstance(result, ToolError)
+    assert result.kind == "dispatch_failed"
+
+
+@pytest.mark.asyncio
 async def test_oversize_result_truncated(
     registry: ToolRegistry, tmp_path: Path
 ) -> None:

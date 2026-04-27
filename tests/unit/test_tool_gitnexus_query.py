@@ -143,6 +143,35 @@ async def test_empty_results_returns_empty_hits(
 
 
 @pytest.mark.asyncio
+async def test_malformed_json_output(
+    registry: ToolRegistry, tmp_path: Path
+) -> None:
+    """Unparseable subprocess output -> dispatch_failed."""
+    sub = _mock_subprocess(b"not json")
+    with patch("senex.tools.gitnexus_query.asyncio.create_subprocess_exec", sub):
+        result = await registry.dispatch(
+            "c", "gitnexus_query", '{"query": "x"}', _ctx(tmp_path)
+        )
+    assert isinstance(result, ToolError)
+    assert result.kind == "dispatch_failed"
+    assert "malformed" in result.message.lower()
+
+
+@pytest.mark.asyncio
+async def test_output_failing_schema(
+    registry: ToolRegistry, tmp_path: Path
+) -> None:
+    """Output missing required keys -> dispatch_failed."""
+    sub = _mock_subprocess(b'{"unexpected": "key"}')
+    with patch("senex.tools.gitnexus_query.asyncio.create_subprocess_exec", sub):
+        result = await registry.dispatch(
+            "c", "gitnexus_query", '{"query": "x"}', _ctx(tmp_path)
+        )
+    assert isinstance(result, ToolError)
+    assert result.kind == "dispatch_failed"
+
+
+@pytest.mark.asyncio
 async def test_oversize_result_truncated(
     registry: ToolRegistry, tmp_path: Path
 ) -> None:
