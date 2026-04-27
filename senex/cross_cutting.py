@@ -17,7 +17,7 @@ import json
 import logging
 from pathlib import Path
 
-from jsonschema import Draft202012Validator
+from jsonschema import Draft202012Validator  # type: ignore[import-untyped]
 from jsonschema import ValidationError as JsonSchemaValidationError
 from pydantic import ValidationError
 
@@ -186,11 +186,14 @@ class CrossCutter:
         # parsing `content` as JSON.
         content_dict = getattr(response, "content_dict", None)
         if isinstance(content_dict, dict):
-            return content_dict
+            return dict(content_dict)
         content = getattr(response, "content", None)
         if not isinstance(content, str):
             raise ValueError("crosscut response missing content")
-        return json.loads(content)
+        parsed = json.loads(content)
+        if not isinstance(parsed, dict):
+            raise ValueError("crosscut response is not a JSON object")
+        return dict(parsed)
 
     def _build_themes(self, payload: dict[str, object]) -> list[Theme]:
         themes_raw = payload.get("themes", [])
@@ -209,8 +212,8 @@ class CrossCutter:
                     title=title,
                     description=str(raw.get("description", "")),
                     affected_files=[str(f) for f in raw.get("affected_files", [])],
-                    priority=raw.get("priority", "low"),  # type: ignore[arg-type]
-                    confidence=raw.get("confidence", "low"),  # type: ignore[arg-type]
+                    priority=raw.get("priority", "low"),
+                    confidence=raw.get("confidence", "low"),
                     recommended_action=str(raw.get("recommended_action", "")),
                 )
             )

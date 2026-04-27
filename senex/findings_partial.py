@@ -12,10 +12,10 @@ writes the canonical `findings.json` atomically.
 from __future__ import annotations
 
 import hashlib
-import io
 import os
 from pathlib import Path
 from types import TracebackType
+from typing import IO
 
 from senex.render_models import FindingRecord
 
@@ -65,7 +65,7 @@ class FindingsPartialWriter:
         audit_dir.mkdir(parents=True, exist_ok=True)
         self._target = audit_dir / "findings.partial.jsonl"
         # Append-binary, no buffering across calls; we manage flush/fsync ourselves.
-        self._fp: io.BufferedWriter | None = open(self._target, "ab", buffering=0)
+        self._fp: IO[bytes] | None = open(self._target, "ab", buffering=0)
         self._closed = False
 
     def append(self, finding: FindingRecord) -> None:

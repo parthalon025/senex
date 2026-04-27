@@ -13,7 +13,7 @@ import json
 import logging
 from pathlib import Path
 
-from jsonschema import Draft202012Validator
+from jsonschema import Draft202012Validator  # type: ignore[import-untyped]
 from pydantic import ValidationError
 
 from senex.atomic_io import write_text_atomic

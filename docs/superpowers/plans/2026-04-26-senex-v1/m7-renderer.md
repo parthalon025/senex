@@ -166,7 +166,7 @@ All exception classes live at module top-level (per conventions §4):
 - Create: `tests/golden/sample_file.input.json`
 - Create: `tests/golden/sample_file.expected.md`
 
-- [ ] **Step 7.1.1: Hand-craft `tests/golden/sample_file.input.json`** as a fully-populated `AuditResponse` instance:
+- [x] **Step 7.1.1: Hand-craft `tests/golden/sample_file.input.json`** as a fully-populated `AuditResponse` instance:
   - `schema_version: 1`
   - `overall_assessment` ≥ 50 chars (§5.4 minLength)
   - 3 findings: 1 high, 1 medium, 1 low — each with distinct `category`, `title`, `issue`, `why`, `fix`, `confidence`, and `location` (one with `symbol` only, one with `line_start`+`line_end`, one with all three)
@@ -175,7 +175,7 @@ All exception classes live at module top-level (per conventions §4):
   - 2 recommendations: first with `code_snippet` + explicit `language="python"`, second without `code_snippet` (rationale only)
   - 3-row `best_practices_table` — at least one row contains `|` in a cell (pipe-escape edge case)
 
-- [ ] **Step 7.1.2: Hand-craft `tests/golden/sample_file.expected.md`** matching the §7.1 spec format. Pin the COMPLETE expected content (every byte). Include:
+- [x] **Step 7.1.2: Hand-craft `tests/golden/sample_file.expected.md`** matching the §7.1 spec format. Pin the COMPLETE expected content (every byte). Include:
   - Header: `# Audit: <relpath>` + `**Date:** ... **Run ID:** ... **Model:** ... **Lens:** ...` + tokens line + tools line + GitNexus context line
   - `<overall_assessment>` paragraph
   - `---`
@@ -188,7 +188,7 @@ All exception classes live at module top-level (per conventions §4):
   - `### Summary of Best Practices Applied` table with 3 rows; the row containing `|` shows it as `\|`
   - Every `FileMetadata` field (relpath, language, model_id, lens_name, prompt_tokens, completion_tokens, thinking_seconds, output_seconds, tools_used, compactions_used, graph_context_summary, run_id_short, date) appears at least once in the rendered output (round-trip completeness — assert separately).
 
-- [ ] **Step 7.1.3: Failing tests** in `tests/golden/test_renderer.py`:
+- [x] **Step 7.1.3: Failing tests** in `tests/golden/test_renderer.py`:
   - `test_render_byte_match_against_golden` — `Renderer(...).render_file(input, meta) == Path("sample_file.expected.md").read_text(encoding="utf-8", newline="\n")` byte-exact.
   - `test_render_includes_every_metadata_field` — round-trip completeness: each field of `FileMetadata` appears as a substring in the rendered output.
   - `test_render_escapes_pipes_in_table_cells` — assert `\|` substring in the rendered table.
@@ -196,9 +196,9 @@ All exception classes live at module top-level (per conventions §4):
   - `test_render_recommendation_language_falls_back_to_file_language` — when `recommendations[i].language` is None, fence uses `FileMetadata.language`.
   - `test_audit_response_schema_rejects_extra_fields_on_inner_items` — feed a payload with an unexpected field on `findings.items[0]` (e.g. `"severity": "p0"`) and assert `jsonschema.Draft202012Validator(audit_response_schema).validate(payload)` raises `ValidationError` with `additionalProperties` in the error path. Repeat for `recommendations.items[0]` and `best_practices_table.items[0]` — confirms writer-side strict validation per convention §SCHEMA-2 (R5).
 
-- [ ] **Step 7.1.4: Implement `senex/render_models.py`** — pydantic v2 models (`FileMetadata`, `RunMetadata`, `FindingRecord`, `LocationRecord`, `Theme`, `ToolCallSummary`, `SkippedRecord`, `ErroredRecord`) with `extra="forbid"`.
+- [x] **Step 7.1.4: Implement `senex/render_models.py`** — pydantic v2 models (`FileMetadata`, `RunMetadata`, `FindingRecord`, `LocationRecord`, `Theme`, `ToolCallSummary`, `SkippedRecord`, `ErroredRecord`) with `extra="forbid"`.
 
-- [ ] **Step 7.1.5: Implement `Renderer.render_file(response, file_metadata)`** in `senex/renderer.py`:
+- [x] **Step 7.1.5: Implement `Renderer.render_file(response, file_metadata)`** in `senex/renderer.py`:
   - Header with all `FileMetadata` fields
   - Findings sorted: priority high → medium → low → healthy (omit empty); within priority, by `(file, location.line_start or 0, title)`. Categories assigned letter prefix A/B/C in priority order; healthy finding gets `### Healthy` with no letter prefix.
   - Each finding: `- **<title>**` + Issue/Why/Fix/Confidence/Location bullets
@@ -207,11 +207,11 @@ All exception classes live at module top-level (per conventions §4):
   - `best_practices_table` rows escape pipes in every cell.
   - Apply `SecretRedactor.redact()` to the final string.
 
-- [ ] **Step 7.1.6: Implement `Renderer.write_file_atomic(audit_dir, relpath, markdown)`** — delegates to `write_text_atomic` (after Task 7.7 lands; before then, stub raising `NotImplementedError`). Returns final `<file>.md` path.
+- [x] **Step 7.1.6: Implement `Renderer.write_file_atomic(audit_dir, relpath, markdown)`** — delegates to `write_text_atomic` (after Task 7.7 lands; before then, stub raising `NotImplementedError`). Returns final `<file>.md` path.
 
-- [ ] **Step 7.1.7: Run** the 5 tests → all green.
+- [x] **Step 7.1.7: Run** the 5 tests → all green.
 
-- [ ] **Step 7.1.8: Commit** `feat(M7): renderer with golden-file regression test`.
+- [x] **Step 7.1.8: Commit** `feat(M7): renderer with golden-file regression test`.
 
 ### Task 7.2: Findings partial writer (NDJSON streaming)
 
@@ -219,26 +219,26 @@ All exception classes live at module top-level (per conventions §4):
 - Create: `senex/findings_partial.py`
 - Create: `tests/unit/test_findings_partial.py`
 
-- [ ] **Step 7.2.1: Failing tests**:
+- [x] **Step 7.2.1: Failing tests**:
   - `test_append_writes_one_valid_json_line` — single `append()` produces exactly one line; `json.loads(line)` round-trips.
   - `test_each_line_validates_against_findings_index_schema` — every appended line satisfies the per-finding subset of `findings_index.schema.json`.
   - `test_finding_id_format` — every emitted `id` matches `^f-[a-f0-9]{12}$`.
   - `test_partial_write_crash_safety` — write 5 findings via `FindingsPartialWriter`; mock `os.fsync` to raise on the 5th; reopen the file and assert: 4 valid lines + an optionally truncated 5th (file ends mid-line). Reader skips the bad last line via `json.JSONDecodeError` handling.
   - `test_context_manager_closes_idempotently` — `with FindingsPartialWriter(d) as w: w.append(...)` then explicit `w.close()` → no error.
 
-- [ ] **Step 7.2.2: Implement `FindingsPartialWriter`** — opens `findings.partial.jsonl` in append-binary mode (`"ab"`, no buffering across calls). Each `append()` performs: serialize → `write(line + b"\n")` → `flush()` → `os.fsync(fileno)`. `close()` flushes + closes; idempotent.
+- [x] **Step 7.2.2: Implement `FindingsPartialWriter`** — opens `findings.partial.jsonl` in append-binary mode (`"ab"`, no buffering across calls). Each `append()` performs: serialize → `write(line + b"\n")` → `flush()` → `os.fsync(fileno)`. `close()` flushes + closes; idempotent.
 
-- [ ] **Step 7.2.3: Implement `compute_finding_id`** in same module: `"f-" + hashlib.sha256(f"{file}|{symbol or ''}|{line_start or ''}|{title}|{prompt_hash}".encode("utf-8")).hexdigest()[:12]`.
+- [x] **Step 7.2.3: Implement `compute_finding_id`** in same module: `"f-" + hashlib.sha256(f"{file}|{symbol or ''}|{line_start or ''}|{title}|{prompt_hash}".encode("utf-8")).hexdigest()[:12]`.
 
-- [ ] **Step 7.2.4: Stability + sensitivity tests** for `compute_finding_id`:
+- [x] **Step 7.2.4: Stability + sensitivity tests** for `compute_finding_id`:
   - Same inputs → same id (stability).
   - Different `prompt_hash` → different id (sensitivity to prompt change).
   - Different `title` → different id (sensitivity to title change).
   - Missing `symbol` (None) and missing `line_start` (None) — id still deterministic; ensures the `or ''` / `or ''` branch is covered.
 
-- [ ] **Step 7.2.5: Run** tests → green.
+- [x] **Step 7.2.5: Run** tests → green.
 
-- [ ] **Step 7.2.6: Commit** `feat(M7): streaming findings.partial.jsonl writer with stable ids`.
+- [x] **Step 7.2.6: Commit** `feat(M7): streaming findings.partial.jsonl writer with stable ids`.
 
 ### Task 7.3: Findings aggregator (Phase 5)
 
@@ -246,7 +246,7 @@ All exception classes live at module top-level (per conventions §4):
 - Create: `senex/findings_aggregator.py`
 - Create: `tests/unit/test_findings_aggregator.py`
 
-- [ ] **Step 7.3.1: Failing tests**:
+- [x] **Step 7.3.1: Failing tests**:
   - `test_aggregate_dedup_by_id_last_wins` — write 3 findings with identical id (re-audit scenario); aggregator output contains exactly 1 finding with the LAST-written content.
   - `test_aggregate_sort_priority_then_file_then_line` — given findings with mixed priority/file/line, output is sorted high → medium → low → healthy, then alphabetical by file, then ascending by `location.line_start`.
   - `test_aggregate_validates_against_findings_index_schema` — output `findings.json` validates against `findings_index.schema.json`.
@@ -255,7 +255,7 @@ All exception classes live at module top-level (per conventions §4):
   - `test_aggregate_missing_partial_returns_empty_findings_json` — no `findings.partial.jsonl` on disk → aggregator writes `findings.json` with empty `findings: []`, `totals: {high:0,medium:0,low:0,healthy:0,files:0}`; does NOT raise `AggregatorInputMissing` (that's reserved for the catastrophic case where the audit dir itself is missing).
   - `test_aggregate_atomic_write` — mock `os.replace` to raise; assert no partial `findings.json` exists; tmp file may exist.
 
-- [ ] **Step 7.3.2: Implement `Aggregator.run(audit_dir, themes, run_metadata) -> Path`**:
+- [x] **Step 7.3.2: Implement `Aggregator.run(audit_dir, themes, run_metadata) -> Path`**:
   - Read `findings.partial.jsonl` line-by-line; on `json.JSONDecodeError` for the LAST line only, log + skip; for non-last lines, raise `FindingsValidationFailed` (corruption mid-stream is a real bug).
   - Validate each line against `FindingRecord`; on validation failure, emit `FileError` event and skip the finding (do NOT raise — one bad finding shouldn't kill the aggregate).
   - Dedupe by `id` using a dict (insertion order, last-wins).
@@ -266,9 +266,9 @@ All exception classes live at module top-level (per conventions §4):
   - Write via `write_text_atomic(audit_dir / "findings.json", model.model_dump_json(indent=2))`.
   - Return final path.
 
-- [ ] **Step 7.3.3: Run** tests → green.
+- [x] **Step 7.3.3: Run** tests → green.
 
-- [ ] **Step 7.3.4: Commit** `feat(M7): findings.json aggregator with dedupe + stable sort`.
+- [x] **Step 7.3.4: Commit** `feat(M7): findings.json aggregator with dedupe + stable sort`.
 
 ### Task 7.4: Cross-cutting pass
 
@@ -276,7 +276,7 @@ All exception classes live at module top-level (per conventions §4):
 - Create: `senex/cross_cutting.py`
 - Create: `tests/unit/test_cross_cutting.py`
 
-- [ ] **Step 7.4.1: Failing tests**:
+- [x] **Step 7.4.1: Failing tests**:
   - `test_crosscut_compresses_findings_to_tuples` — given 10 findings, the LMS payload contains tuples of `(file, category, priority, title)` only (no `issue`/`why`/`fix`).
   - `test_crosscut_caps_input_per_priority` — given 60 high + 200 medium + 200 low findings, the LMS payload contains exactly 50 + 100 + 100 = 250 tuples (per §ARCH-12 defaults from `CrosscutCfg`).
   - `test_crosscut_returns_themes_with_stable_ids` — themes have `id` matching `^t-[a-f0-9]{12}$` per §5.4.1; same `(title, run_id)` pair → same id.
@@ -285,7 +285,7 @@ All exception classes live at module top-level (per conventions §4):
   - `test_crosscut_passes_lens_tools_disabled` — payload sent to `client.chat()` has `tools=None` (the crosscut call uses NO tools per the same logic as compaction).
   - `test_crosscut_hierarchical_signature_extension_point` — `_chunk_for_crosscut(findings, cluster_map=None)` returns the full list when `cluster_map=None` (degenerate single-level); when `cluster_map` is provided, returns clustered groups (skeleton — full hierarchy in v2).
 
-- [ ] **Step 7.4.2: Implement `CrossCutter.run(client, lens, findings, cfg)`**:
+- [x] **Step 7.4.2: Implement `CrossCutter.run(client, lens, findings, cfg)`**:
   - Cap input via `_top_n_per_priority(findings, cfg.top_n_high, cfg.top_n_medium, cfg.top_n_low)`.
   - Compress to tuples `(file, category, priority, title)`.
   - Build user prompt from `prompts/cross_cutting.md` template + tuples (renderer handles JSON-encoding).
@@ -293,11 +293,11 @@ All exception classes live at module top-level (per conventions §4):
   - On any failure (HTTP, timeout, schema mismatch after retry): emit event, log, return `None`.
   - On success: parse response; compute theme ids via `compute_theme_id(title, run_id)`; return `list[Theme]`.
 
-- [ ] **Step 7.4.3: Implement `compute_theme_id`** in same module: `"t-" + hashlib.sha256(f"{title}|{run_id}".encode("utf-8")).hexdigest()[:12]`.
+- [x] **Step 7.4.3: Implement `compute_theme_id`** in same module: `"t-" + hashlib.sha256(f"{title}|{run_id}".encode("utf-8")).hexdigest()[:12]`.
 
-- [ ] **Step 7.4.4: Run** tests → green.
+- [x] **Step 7.4.4: Run** tests → green.
 
-- [ ] **Step 7.4.5: Commit** `feat(M7): cross-cutting themes pass with input cap`.
+- [x] **Step 7.4.5: Commit** `feat(M7): cross-cutting themes pass with input cap`.
 
 ### Task 7.5: Combined report renderer
 
@@ -305,7 +305,7 @@ All exception classes live at module top-level (per conventions §4):
 - Edit: `senex/renderer.py`
 - Create: `tests/unit/test_render_combined.py`
 
-- [ ] **Step 7.5.1: Failing tests**:
+- [x] **Step 7.5.1: Failing tests**:
   - `test_render_combined_includes_every_run_metadata_field` — every `RunMetadata` field appears in output.
   - `test_render_combined_priority_rollup_correct` — given totals `{high:8, medium:34, low:56, healthy:17}`, rollup section contains exactly those numbers.
   - `test_render_combined_themes_section_when_themes_present` — themes section lists each theme with title + description.
@@ -317,7 +317,7 @@ All exception classes live at module top-level (per conventions §4):
   - `test_render_combined_errored_section_lists_kind` — each `ErroredRecord` appears with kind annotation.
   - `test_render_combined_pipe_escapes_finding_titles_in_table` — finding with `|` in title shows `\|` in the top-findings table.
 
-- [ ] **Step 7.5.2: Implement `Renderer.render_combined(run_metadata, findings, themes, skipped, errored)`** matching §7.2 structure:
+- [x] **Step 7.5.2: Implement `Renderer.render_combined(run_metadata, findings, themes, skipped, errored)`** matching §7.2 structure:
   - `# senex Audit: <repo> <date>`
   - Run header line: files audited / skipped / errored, duration, model, prompt_hash, config_hash
   - `## Priority Rollup` — HIGH/MEDIUM/LOW/HEALTHY counts
@@ -329,9 +329,9 @@ All exception classes live at module top-level (per conventions §4):
   - `## Run Metadata` — model fingerprint, GitNexus index hash, totals
   - Apply `SecretRedactor.redact()` to final string.
 
-- [ ] **Step 7.5.3: Run** tests → green.
+- [x] **Step 7.5.3: Run** tests → green.
 
-- [ ] **Step 7.5.4: Commit** `feat(M7): combined report renderer`.
+- [x] **Step 7.5.4: Commit** `feat(M7): combined report renderer`.
 
 ### Task 7.6: Handoff renderer (references-only per §POL-2)
 
@@ -339,7 +339,7 @@ All exception classes live at module top-level (per conventions §4):
 - Create: `senex/handoff.py`
 - Create: `tests/unit/test_handoff.py`
 
-- [ ] **Step 7.6.1: Failing tests**:
+- [x] **Step 7.6.1: Failing tests**:
   - `test_handoff_lists_audit_dir_paths` — output contains `Audit dir:`, `Findings index:`, `Per-file reports:` lines pointing at the actual audit dir.
   - `test_handoff_top_3_findings_summary_format` — top-3 list is exactly `<N>. [<PRIORITY>] <file>:<line> — <title>` (per §7.4 example).
   - `test_handoff_does_not_embed_finding_issue_text` — assert `top_findings[0].issue` substring is NOT present in handoff output.
@@ -349,7 +349,7 @@ All exception classes live at module top-level (per conventions §4):
   - `test_handoff_atomic_write` — mock rename to raise; original `claude-handoff.md` (if present) unchanged.
   - `test_handoff_top_3_uses_priority_then_line_order` — given mixed priority/line findings, top-3 are correctly ordered.
 
-- [ ] **Step 7.6.2: Implement `write_handoff(audit_dir, run_metadata, top_findings)`** per spec §7.4:
+- [x] **Step 7.6.2: Implement `write_handoff(audit_dir, run_metadata, top_findings)`** per spec §7.4:
   - Loads `prompts/claude_handoff.md` template (snapshot-resolved by caller).
   - Substitutes `{repo}`, `{date}`, `{run_id_short}`, `{audit_dir}`, `{findings_index}`, `{per_file_reports}`, `{top_findings_block}` placeholders.
   - `top_findings_block` = numbered list of up to 3 findings, format: `[<PRIORITY>]   <file>:<line> — <title>` (priority padding to 6 chars for visual alignment).
@@ -358,9 +358,9 @@ All exception classes live at module top-level (per conventions §4):
   - Write via `write_text_atomic(audit_dir / "claude-handoff.md", text)`.
   - Return final path.
 
-- [ ] **Step 7.6.3: Run** tests → green.
+- [x] **Step 7.6.3: Run** tests → green.
 
-- [ ] **Step 7.6.4: Commit** `feat(M7): claude-handoff.md writer (references-only per POL-2)`.
+- [x] **Step 7.6.4: Commit** `feat(M7): claude-handoff.md writer (references-only per POL-2)`.
 
 ### Task 7.7: Atomic write helper
 
@@ -368,7 +368,7 @@ All exception classes live at module top-level (per conventions §4):
 - Create: `senex/atomic_io.py`
 - Create: `tests/unit/test_atomic_io.py`
 
-- [ ] **Step 7.7.1: Failing tests**:
+- [x] **Step 7.7.1: Failing tests**:
   - `test_write_text_atomic_creates_target` — `write_text_atomic(target, "hello")` produces a file with content `"hello"` and UTF-8 encoding.
   - `test_write_text_atomic_uses_lf_line_endings` — input `"a\r\nb\r\n"` is written as `"a\nb\n"` (or: caller is responsible for normalization, we just assert no `\r` injected by us — pin the choice).
   - `test_write_text_atomic_no_partial_on_rename_failure` — mock `os.replace` to raise `OSError`; original target file (pre-existing) is unchanged; tmp file may exist for inspection but `target` is intact.
@@ -377,7 +377,7 @@ All exception classes live at module top-level (per conventions §4):
   - `test_write_text_atomic_raises_disk_fatal_on_enospc` — mock `Path.write_text` to raise `OSError(errno=ENOSPC)`; assert `DiskFatalError` is raised (run-killing per §ARCH-13).
   - `test_write_text_atomic_returns_target_path` — return value is the input `target`, not the tmp.
 
-- [ ] **Step 7.7.2: Implement `write_text_atomic(target, text, encoding="utf-8") -> Path`**:
+- [x] **Step 7.7.2: Implement `write_text_atomic(target, text, encoding="utf-8") -> Path`**:
   - `tmp = target.with_suffix(target.suffix + ".tmp")`
   - `tmp.write_bytes(text.encode(encoding))` — bytes-level so we control line endings exactly
   - Open `tmp` with `os.open(tmp, O_RDONLY)`; `os.fsync(fd)`; close
@@ -385,13 +385,13 @@ All exception classes live at module top-level (per conventions §4):
   - On `OSError` with `errno in {ENOSPC, EROFS, EDQUOT}`: raise `DiskFatalError(...) from e`
   - Return `target`.
 
-- [ ] **Step 7.7.3: Update `Renderer.write_file_atomic`** to delegate to `write_text_atomic`. Update `Aggregator`, `write_handoff`, error-artifact writers to use it.
+- [x] **Step 7.7.3: Update `Renderer.write_file_atomic`** to delegate to `write_text_atomic`. Update `Aggregator`, `write_handoff`, error-artifact writers to use it.
 
-- [ ] **Step 7.7.4: Crash-injection integration test** — `test_renderer_crash_mid_write_leaves_target_intact`: pre-create `<file>.md` with sentinel content; mock `os.replace` to raise; call `Renderer.write_file_atomic`; assert `<file>.md` still has sentinel content; tmp may exist.
+- [x] **Step 7.7.4: Crash-injection integration test** — `test_renderer_crash_mid_write_leaves_target_intact`: pre-create `<file>.md` with sentinel content; mock `os.replace` to raise; call `Renderer.write_file_atomic`; assert `<file>.md` still has sentinel content; tmp may exist.
 
-- [ ] **Step 7.7.5: Run** tests → green.
+- [x] **Step 7.7.5: Run** tests → green.
 
-- [ ] **Step 7.7.6: Commit** `feat(M7): atomic write helper (tmp+fsync+rename) with disk-fatal escalation`.
+- [x] **Step 7.7.6: Commit** `feat(M7): atomic write helper (tmp+fsync+rename) with disk-fatal escalation`.
 
 ### Task 7.8: Error/skipped/raw artifact writers
 
@@ -399,7 +399,7 @@ All exception classes live at module top-level (per conventions §4):
 - Create: `senex/error_artifacts.py`
 - Create: `tests/unit/test_error_artifacts.py`
 
-- [ ] **Step 7.8.1: Failing tests** (one per writer):
+- [x] **Step 7.8.1: Failing tests** (one per writer):
   - `test_write_error_artifact_shape` — output file is `<audit_dir>/<relpath>.ERROR.md`; content includes `kind`, `error_message`, traceback section per §8.2.
   - `test_write_error_artifact_uses_atomic_write` — mock `os.replace` to raise; pre-existing target unchanged.
   - `test_write_error_artifact_applies_redactor` — error message containing `sk-FAKE-secret` is redacted in output.
@@ -410,16 +410,16 @@ All exception classes live at module top-level (per conventions §4):
   - `test_write_render_error_artifact_shape` — output file is `<audit_dir>/<relpath>.RENDER_ERROR.md` (per §ARCH-13); content includes traceback + `response_dump` (the structured response that triggered the renderer crash).
   - `test_write_render_error_artifact_does_not_kill_run` — wrapper test asserting the writer returns normally (no re-raise).
 
-- [ ] **Step 7.8.2: Implement the four writers** in `senex/error_artifacts.py`. Each:
+- [x] **Step 7.8.2: Implement the four writers** in `senex/error_artifacts.py`. Each:
   - Accepts `audit_dir: Path` + `relpath: str` + payload args
   - Builds markdown/JSON string per §8.2 shape
   - Applies `SecretRedactor.redact()` to the body (passed in via `Renderer.__init__` or module-level singleton — pin the choice in implementation)
   - Calls `write_text_atomic(audit_dir / f"{relpath}.<EXT>", body)`
   - Returns final path
 
-- [ ] **Step 7.8.3: Run** all 9 tests → green.
+- [x] **Step 7.8.3: Run** all 9 tests → green.
 
-- [ ] **Step 7.8.4: Commit** `feat(M7): error/skipped/raw/render-error artifact writers`.
+- [x] **Step 7.8.4: Commit** `feat(M7): error/skipped/raw/render-error artifact writers`.
 
 ## Acceptance criteria
 
