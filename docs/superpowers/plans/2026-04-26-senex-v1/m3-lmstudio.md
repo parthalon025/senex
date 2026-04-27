@@ -220,9 +220,9 @@ class LoadedModelInfo(BaseModel):
 
 **Spec/conv refs:** §5.4 (schema), §5.5 (chat API), §10 conventions (pydantic), §3 conventions (async).
 
-- [ ] **Step 3.1.1: Hand-craft the fixture.** `tests/fixtures/lms_responses/simple_audit.json` is a complete OpenAI-style response with one assistant message whose `content` is a valid `audit_response.schema.json` payload (one finding, one recommendation). Hand-built; not from a live LMS yet.
+- [x] **Step 3.1.1: Hand-craft the fixture.** `tests/fixtures/lms_responses/simple_audit.json` is a complete OpenAI-style response with one assistant message whose `content` is a valid `audit_response.schema.json` payload (one finding, one recommendation). Hand-built; not from a live LMS yet.
 
-- [ ] **Step 3.1.2: Failing test** `test_chat_returns_validated_response`:
+- [x] **Step 3.1.2: Failing test** `test_chat_returns_validated_response`:
   ```python
   @pytest.mark.asyncio
   async def test_chat_returns_validated_response(respx_mock, fixture_dir):
@@ -242,7 +242,7 @@ class LoadedModelInfo(BaseModel):
   ```
   Run; expect `ImportError` / `ModuleNotFoundError` since the module does not exist.
 
-- [ ] **Step 3.1.3: Implement `LMStudioClient`** (non-streaming first):
+- [x] **Step 3.1.3: Implement `LMStudioClient`** (non-streaming first):
 
   ```python
   class LMStudioClient:
@@ -293,22 +293,22 @@ class LoadedModelInfo(BaseModel):
 
   Validation strategy in 3.1: send `response_format={"type":"json_schema","json_schema":{"name":"audit_response","schema":schema,"strict":True}}`; parse `response.choices[0].message.content` as JSON; validate via `pydantic.TypeAdapter(AuditResponseModel).validate_python(parsed)`.
 
-- [ ] **Step 3.1.4: Run** `pytest tests/unit/test_lmstudio_client.py::test_chat_returns_validated_response -v` → green.
+- [x] **Step 3.1.4: Run** `pytest tests/unit/test_lmstudio_client.py::test_chat_returns_validated_response -v` → green.
 
-- [ ] **Step 3.1.5: Verification command:**
+- [x] **Step 3.1.5: Verification command:**
   ```bash
   pytest tests/unit/test_lmstudio_client.py -v -k chat_returns_validated
   ```
   Expected literal output: `1 passed` in the trailing summary line.
 
-- [ ] **Step 3.1.6: Pitfalls.**
+- [x] **Step 3.1.6: Pitfalls.**
   - Forgetting `extra="forbid"` on `ChatResponse` → silent acceptance of malformed responses.
   - Putting `httpx.AsyncClient(...)` inside `chat()` → resource leak; one per call.
   - Validating against the raw JSON Schema dict instead of a pre-built `TypeAdapter` → 10x slower; cache the adapter as a class-level constant.
 
-- [ ] **Step 3.1.7: Definition of done.** Test green; `mypy --strict senex/lmstudio_client.py` clean; `ruff check senex/lmstudio_client.py senex/lmstudio_errors.py` clean.
+- [x] **Step 3.1.7: Definition of done.** Test green; `mypy --strict senex/lmstudio_client.py` clean; `ruff check senex/lmstudio_client.py senex/lmstudio_errors.py` clean.
 
-- [ ] **Step 3.1.8: Commit** `feat(M3): LMStudioClient basic chat with schema validation`.
+- [x] **Step 3.1.8: Commit** `feat(M3): LMStudioClient basic chat with schema validation`.
 
 ---
 
@@ -316,7 +316,7 @@ class LoadedModelInfo(BaseModel):
 
 **Spec/conv refs:** §5.5 streaming clause, §5.6 Tick scoping ("per-turn counter resets on each `*_Started`"), §5 conventions (ANSI strip, `<think>` strip), §8.2 ("`<think>` tags leaked into JSON").
 
-- [ ] **Step 3.2.1: Failing tests.**
+- [x] **Step 3.2.1: Failing tests.**
   - `test_stream_emits_thinking_lifecycle_events`: SSE chunks with `delta.reasoning_content` deltas; assert sequence `ThinkingStarted` → ≥1 `ThinkingTick` → `ThinkingComplete` → `OutputStarted` → ≥1 `OutputTick` → `OutputComplete`.
   - `test_thinking_tick_coalesces_at_256_tokens_or_500ms`: drive 1024 reasoning tokens through the parser; assert ≥4 ticks (one per 256), but never two ticks within 500ms.
   - `test_per_turn_counter_resets_between_thinking_starts`: simulate **two** turns by feeding two SSE streams back-to-back (one chat call returns; second call reuses the same client). Assert turn-2's first `ThinkingTick.tokens_so_far == delta_since_last_tick` (i.e. counter started at 0 for turn 2).
@@ -324,7 +324,7 @@ class LoadedModelInfo(BaseModel):
   - `test_interleaved_think_tags_stripped`: SSE delivers `content="prefix<think>x</think>middle<think>y</think>suffix"`; `ChatResponse.content == "prefixmiddlesuffix"`. Use `re.DOTALL` because tags may contain newlines.
   - `test_total_thinking_tokens_equals_sum_of_ticks`: sum `ThinkingTick.delta_since_last_tick` events for the turn; assert it equals `ThinkingComplete.total_thinking_tokens`.
 
-- [ ] **Step 3.2.2: Implement streaming `chat()`.**
+- [x] **Step 3.2.2: Implement streaming `chat()`.**
 
   ```python
   _THINK_TAG_RE: Final = re.compile(r"<think>.*?</think>", re.DOTALL)
@@ -443,24 +443,24 @@ class LoadedModelInfo(BaseModel):
       )
   ```
 
-- [ ] **Step 3.2.3: Run** tests → green.
+- [x] **Step 3.2.3: Run** tests → green.
 
-- [ ] **Step 3.2.4: Verification command:**
+- [x] **Step 3.2.4: Verification command:**
   ```bash
   pytest tests/unit/test_lmstudio_client.py -v -k "stream or think_tag or tick or counter_resets"
   ```
   Expected: `6 passed` in the trailing summary.
 
-- [ ] **Step 3.2.5: Pitfalls.**
+- [x] **Step 3.2.5: Pitfalls.**
   - Using `re.compile(r"<think>.*?</think>")` without `re.DOTALL` → tags spanning newlines leak through.
   - Forgetting to reset `_TickCoalescer` on the second turn → counter monotonically grows across the whole run; `tokens_so_far` becomes meaningless. The `test_per_turn_counter_resets_between_thinking_starts` test exists specifically to catch this.
   - Emitting `ThinkingTick` before `ThinkingStarted` (race when `phase == "pre"` and the first chunk has reasoning_content) → subscribers may drop tickets they assume are mid-stream. The phase guard MUST set `ThinkingStarted` before the first tick, never after.
   - Stripping `<think>` tags AFTER schema validation → JSON parse fails on the unstripped text; spec §8.2 says strip first, then if stripping leaves invalid JSON, retry once with stricter prompt (Task 3.3 handles the retry).
   - ANSI strip applied to `reasoning_content` → spec §5 conventions explicitly says ANSI strip on `content` only.
 
-- [ ] **Step 3.2.6: Definition of done.** All 6 streaming tests green; tick cadence asserted both by token count AND wall-clock time; per-turn reset asserted across two turns; `<think>` tag regex byte-matches the spec literal `re.compile(r"<think>.*?</think>", re.DOTALL)`.
+- [x] **Step 3.2.6: Definition of done.** All 6 streaming tests green; tick cadence asserted both by token count AND wall-clock time; per-turn reset asserted across two turns; `<think>` tag regex byte-matches the spec literal `re.compile(r"<think>.*?</think>", re.DOTALL)`.
 
-- [ ] **Step 3.2.7: Commit** `feat(M3): streaming chat with Tick coalescing + think-tag strip`.
+- [x] **Step 3.2.7: Commit** `feat(M3): streaming chat with Tick coalescing + think-tag strip`.
 
 ---
 
@@ -489,14 +489,14 @@ The fallback decision tree:
    On HTTP 4xx → raise SchemaNegotiationFailed("both modes refused").
 ```
 
-- [ ] **Step 3.3.1: Failing tests.**
+- [x] **Step 3.3.1: Failing tests.**
   - `test_schema_fallback_on_400_schema_error`: respx returns 400 with body `{"error":{"message":"response_format json_schema not supported"}}` on first request, 200 with valid `json_object` payload on second; assert client falls back, validates, and caches `self._schema_mode == "json_object"`.
   - `test_schema_fallback_caches_decision_per_session`: drive two `chat()` calls; assert only the **first** issues two requests; the second uses cached `json_object` and issues exactly one.
   - `test_schema_fallback_400_unrelated_does_not_fallback`: respx returns 400 with body `{"error":{"message":"context length exceeded"}}`; assert `httpx.HTTPStatusError` propagates (caller / Task 3.5 retry decides).
   - `test_post_hoc_validation_failure_raises_LMSResponseSchemaInvalid`: respx returns 200 in `json_object` mode with `{"schema_version": "wrong_type"}`; assert `LMSResponseSchemaInvalid` raised.
   - `test_invalid_json_after_think_strip_raises_LMSResponseInvalidJSON`: respx returns 200 with `content = "<think>...</think>{not valid"`; assert `LMSResponseInvalidJSON`.
 
-- [ ] **Step 3.3.2: Implement `_chat_with_schema_fallback()`** following the decision tree above. Key snippet:
+- [x] **Step 3.3.2: Implement `_chat_with_schema_fallback()`** following the decision tree above. Key snippet:
 
   ```python
   _SCHEMA_ERROR_RE: Final = re.compile(r"schema|response_format|json_schema", re.IGNORECASE)
@@ -527,7 +527,7 @@ The fallback decision tree:
   - Try `json.loads(content)` → on JSONDecodeError raise `LMSResponseInvalidJSON`.
   - Validate via `_AUDIT_RESPONSE_ADAPTER.validate_python(parsed)` → on ValidationError raise `LMSResponseSchemaInvalid`.
 
-- [ ] **Step 3.3.3: One-shot retry on schema-invalid response.** Per §8.2, on the first `LMSResponseSchemaInvalid` or `LMSResponseInvalidJSON` from `_post_validate()`, retry **once** with a stricter system prompt prefix:
+- [x] **Step 3.3.3: One-shot retry on schema-invalid response.** Per §8.2, on the first `LMSResponseSchemaInvalid` or `LMSResponseInvalidJSON` from `_post_validate()`, retry **once** with a stricter system prompt prefix:
   ```python
   STRICT_RETRY_PREAMBLE: Final = (
       "Your previous response did not validate against the required schema. "
@@ -539,21 +539,21 @@ The fallback decision tree:
 
   Test: `test_schema_invalid_retried_once_with_stricter_prompt` — first call returns `{"schema_version": "wrong"}`, second call returns valid; assert `chat()` ultimately succeeds AND emits exactly one `chat/completions` request after the strict-retry preamble appears in the body.
 
-- [ ] **Step 3.3.4: Verification command:**
+- [x] **Step 3.3.4: Verification command:**
   ```bash
   pytest tests/unit/test_lmstudio_client.py -v -k "schema_fallback or post_hoc or invalid_json or strict_retry"
   ```
   Expected: `6 passed`.
 
-- [ ] **Step 3.3.5: Pitfalls.**
+- [x] **Step 3.3.5: Pitfalls.**
   - Caching the schema decision **before** validation succeeds → a transient 400 falsely demotes the session to `json_object` permanently. Cache only after successful validation.
   - Forgetting `re.IGNORECASE` on `_SCHEMA_ERROR_RE` → upstream "Response_Format" capitalizations slip through.
   - Re-parsing JSON in the strict-retry path with stale stripped content → always re-strip and re-parse from the new response; never reuse the failed parse.
   - Treating `LMSResponseInvalidJSON` as identical to `LMSResponseSchemaInvalid` in the retry path → spec §8.2 lists them as the same recovery, but the distinct exception types matter for telemetry.
 
-- [ ] **Step 3.3.6: Definition of done.** All 6 fallback tests green; per-session caching observable; strict-retry preamble byte-matches the literal in the test fixture.
+- [x] **Step 3.3.6: Definition of done.** All 6 fallback tests green; per-session caching observable; strict-retry preamble byte-matches the literal in the test fixture.
 
-- [ ] **Step 3.3.7: Commit** `feat(M3): json_schema → json_object fallback path with one-shot strict retry`.
+- [x] **Step 3.3.7: Commit** `feat(M3): json_schema → json_object fallback path with one-shot strict retry`.
 
 ---
 
@@ -561,14 +561,14 @@ The fallback decision tree:
 
 **Spec/conv refs:** §5.5.1 ("the loop computes total message tokens using the active model's tokenizer"), §8.1 ("Pre-LMS token count > 90% of context window — Skip"), §14 conventions ("cache expensive computations once").
 
-- [ ] **Step 3.4.1: Failing tests.**
+- [x] **Step 3.4.1: Failing tests.**
   - `test_count_tokens_returns_positive_for_nonempty_messages`: 3 messages totaling ~30 chars → expect > 0.
   - `test_count_tokens_grows_monotonically_with_content_length`: 100-char message > 10-char message.
   - `test_count_tokens_caches_encoder_per_model`: call twice; assert `tiktoken.get_encoding` called once (patch + assert call count).
   - `test_count_tokens_unknown_model_falls_back_to_chars_div_4`: pass `model_id="completely-fake-model"`; assert result ≈ `total_chars // 4` (within ±1 for rounding).
   - `test_chat_raises_token_budget_exceeded_above_90_percent`: configure `context_window=1000`, build messages totaling ~950 tokens; assert `chat()` raises `TokenBudgetExceeded` BEFORE any HTTP call (assert respx received zero requests).
 
-- [ ] **Step 3.4.2: Implement `count_tokens`.**
+- [x] **Step 3.4.2: Implement `count_tokens`.**
 
   ```python
   def count_tokens(self, messages: list[ChatMessage], model_id: str) -> int:
@@ -604,7 +604,7 @@ The fallback decision tree:
       return total
   ```
 
-- [ ] **Step 3.4.3: Implement preflight check in `chat()`** (top of method, before any HTTP):
+- [x] **Step 3.4.3: Implement preflight check in `chat()`** (top of method, before any HTTP):
 
   ```python
   context_window = self._config.context_window  # set per-model in M4
@@ -616,21 +616,21 @@ The fallback decision tree:
       )
   ```
 
-- [ ] **Step 3.4.4: Verification command:**
+- [x] **Step 3.4.4: Verification command:**
   ```bash
   pytest tests/unit/test_lmstudio_client.py -v -k "count_tokens or token_budget"
   ```
   Expected: `5 passed`.
 
-- [ ] **Step 3.4.5: Pitfalls.**
+- [x] **Step 3.4.5: Pitfalls.**
   - Caching `None` encoder is intentional: if `cl100k_base` is unavailable, the retry would always fail. Caching `None` triggers fallback consistently.
   - Forgetting per-message overhead → undercounts; OpenAI's chat-completion format adds ~4 tokens of structural overhead per message.
   - Counting `tool_calls.id` (a UUID) → wastes the budget. Only `function.name` + `function.arguments` carry semantic content; the IDs are bookkeeping.
   - Hardcoding `0.9` instead of `self._config.token_budget_pct` → the config field exists in `LmStudioCfg` and the test asserts it; do not lose configurability.
 
-- [ ] **Step 3.4.6: Definition of done.** All 5 token-counting tests green; encoder cached observably; `TokenBudgetExceeded` fires before any HTTP.
+- [x] **Step 3.4.6: Definition of done.** All 5 token-counting tests green; encoder cached observably; `TokenBudgetExceeded` fires before any HTTP.
 
-- [ ] **Step 3.4.7: Commit** `feat(M3): pre-LMS token counting + budget enforcement`.
+- [x] **Step 3.4.7: Commit** `feat(M3): pre-LMS token counting + budget enforcement`.
 
 ---
 
@@ -647,7 +647,7 @@ The retry decision tree:
 | `httpx.HTTPStatusError` with `400 <= status < 500` | NO retry. Re-raise immediately. |
 | `httpx.ConnectError` (TCP refused / network unreachable) | Raise `LMSConnectionLost` immediately. The auditor (M8) catches this, pauses the loop, calls `await self._reprobe_until_alive(interval=10s)`, then resumes. |
 
-- [ ] **Step 3.5.1: Failing tests.**
+- [x] **Step 3.5.1: Failing tests.**
   - `test_5xx_retried_with_correct_backoff`: respx returns 503 three times then 200; patch `asyncio.sleep` to a recording fake; assert sleep was called with `[5, 15, 45]` in order.
   - `test_5xx_exhausted_after_3_retries_reraises`: respx returns 503 four times; assert final `httpx.HTTPStatusError` propagates AFTER exactly 3 retries (4 total requests).
   - `test_4xx_not_retried`: respx returns 401 once; assert `httpx.HTTPStatusError` raised on first call; assert respx received exactly 1 request.
@@ -655,7 +655,7 @@ The retry decision tree:
   - `test_connect_error_raises_LMSConnectionLost`: respx raises `httpx.ConnectError`; assert `LMSConnectionLost` (NOT bare `httpx.ConnectError`) bubbles up.
   - `test_reprobe_until_alive_polls_models_every_10s`: drive `_reprobe_until_alive()` with respx returning ConnectError twice then 200 on `/v1/models`; assert two sleeps of 10s, returns when reachable. (This method is exercised by M8; M3 just provides it.)
 
-- [ ] **Step 3.5.2: Implement retry decorator** as an instance method (configurable from `LmStudioCfg`):
+- [x] **Step 3.5.2: Implement retry decorator** as an instance method (configurable from `LmStudioCfg`):
 
   ```python
   async def _post_with_retry(
@@ -707,22 +707,22 @@ The retry decision tree:
       raise LMSConnectionLost(f"reprobe gave up after {max_iterations * interval_s}s")
   ```
 
-- [ ] **Step 3.5.3: Verification command:**
+- [x] **Step 3.5.3: Verification command:**
   ```bash
   pytest tests/unit/test_lmstudio_client.py -v -k "retry or backoff or reprobe or connect_error"
   ```
   Expected: `6 passed`.
 
-- [ ] **Step 3.5.4: Pitfalls.**
+- [x] **Step 3.5.4: Pitfalls.**
   - Retrying 4xx → wastes the budget; 4xx is by definition "your request is wrong, retrying won't help". Test `test_4xx_not_retried` exists to catch regressions here.
   - Forgetting to convert `ConnectError` → `LMSConnectionLost` → callers receive an httpx-specific type instead of the senex exception hierarchy; downstream `error_kind` mapping breaks.
   - Sleeping on the **last** attempt → adds 45s of latency before the final exception. The `if attempt < max_attempts - 1` guard skips that sleep.
   - Using `asyncio.sleep()` without making it patch-able → tests can't assert backoff cadence. Tests must use `monkeypatch.setattr(asyncio, "sleep", recording_fake)` or use `freezegun`.
   - Reprobe loop without `max_iterations` cap → §3 conventions violation. Default cap is 1 hour (360 × 10s); after that, fail loudly.
 
-- [ ] **Step 3.5.5: Definition of done.** All 6 retry-policy tests green; backoff cadence asserted by recording sleep calls; 4xx fail-fast asserted with respx call count; `_reprobe_until_alive` bounded.
+- [x] **Step 3.5.5: Definition of done.** All 6 retry-policy tests green; backoff cadence asserted by recording sleep calls; 4xx fail-fast asserted with respx call count; `_reprobe_until_alive` bounded.
 
-- [ ] **Step 3.5.6: Commit** `feat(M3): bounded retry with exponential backoff + reprobe loop`.
+- [x] **Step 3.5.6: Commit** `feat(M3): bounded retry with exponential backoff + reprobe loop`.
 
 ---
 
@@ -747,7 +747,7 @@ The contract:
 | Trigger compaction at `trigger_pct * context_window` | M6 (called from `ToolLoop` between turns) |
 | Emit `ToolCall` / `ToolResult` / `ToolError` / `ToolBudgetExhausted` events | M5 (`ToolLoop`) |
 
-- [ ] **Step 3.6.1: Failing test** `test_chat_with_tools_returns_tool_calls`:
+- [x] **Step 3.6.1: Failing test** `test_chat_with_tools_returns_tool_calls`:
   ```python
   @pytest.mark.asyncio
   async def test_chat_with_tools_returns_tool_calls(respx_mock):
@@ -781,16 +781,16 @@ The contract:
       assert resp.content_dict is None  # no JSON content yet — tool calls in flight
   ```
 
-- [ ] **Step 3.6.2: Failing test** `test_chat_with_tools_passes_tools_and_tool_choice_to_request`:
+- [x] **Step 3.6.2: Failing test** `test_chat_with_tools_passes_tools_and_tool_choice_to_request`:
   Verify the request body contains `"tools": [...]` and `"tool_choice": "auto"` and forwards `tool_schemas` byte-for-byte.
 
-- [ ] **Step 3.6.3: Failing test** `test_chat_without_tools_omits_tools_field`:
+- [x] **Step 3.6.3: Failing test** `test_chat_without_tools_omits_tools_field`:
   When `tools=None`, request body MUST NOT contain `tools` or `tool_choice`. (Some LMS backends 400 on empty `tools=[]`.)
 
-- [ ] **Step 3.6.4: Failing test** `test_chat_streamed_tool_calls_assembled_correctly`:
+- [x] **Step 3.6.4: Failing test** `test_chat_streamed_tool_calls_assembled_correctly`:
   SSE chunks deliver `tool_calls` deltas progressively (`{"index":0,"id":"call_1"}` then `{"index":0,"function":{"name":"read_file"}}` then `{"index":0,"function":{"arguments":"{\\"path\\":"}}` then `{"index":0,"function":{"arguments":"\\"a.py\\"}"}`); assert the final `ChatResponse.tool_calls[0].function.arguments == '{"path":"a.py"}'`.
 
-- [ ] **Step 3.6.5: Implement** `chat()` extension:
+- [x] **Step 3.6.5: Implement** `chat()` extension:
 
   ```python
   async def chat(
@@ -850,7 +850,7 @@ The contract:
       )
   ```
 
-- [ ] **Step 3.6.6: Documentation in the docstring (CRITICAL).** Add this verbatim to `chat()`:
+- [x] **Step 3.6.6: Documentation in the docstring (CRITICAL).** Add this verbatim to `chat()`:
 
   ```
   This method handles ONE chat-completion round-trip. When the assistant
@@ -863,22 +863,22 @@ The contract:
   Iteration controller: senex.tools.loop.ToolLoop (M5 Task 5.8).
   ```
 
-- [ ] **Step 3.6.7: Verification command:**
+- [x] **Step 3.6.7: Verification command:**
   ```bash
   pytest tests/unit/test_lmstudio_client.py -v -k "tools or tool_calls or tool_choice"
   ```
   Expected: `4 passed`.
 
-- [ ] **Step 3.6.8: Pitfalls.**
+- [x] **Step 3.6.8: Pitfalls.**
   - Implementing iteration / `_tool_loop()` here violates the M3↔M5 boundary. **Do not** dispatch tools from `LMStudioClient`. If you find yourself writing `await tools.registry.dispatch(...)` inside this file, you have wandered into M5's territory — stop.
   - Sending `tools=[]` (empty list) instead of omitting the field — some LMS backends 400 on empty arrays. The `if tools:` guard (truthy check) handles both `None` and `[]`.
   - Assembling `tool_calls` from SSE deltas requires accumulating by `index` across chunks; argument strings arrive piecewise. A naive `latest_chunk.tool_calls` overwrite loses earlier deltas.
   - Setting `finish_reason="stop"` on a tool-calls response — if the model emits tool_calls, the OpenAI spec sets `finish_reason="tool_calls"`. Validate the field; do not invent it.
   - Schema validation when `finish_reason="tool_calls"` — the `content` is `None` (or empty); validating it as JSON fails. Skip schema validation entirely on tool-calls responses; M5 `ToolLoop` will validate the eventual `finish_reason="stop"` response.
 
-- [ ] **Step 3.6.9: Definition of done.** All 4 tests green; docstring includes the M3↔M5 boundary note byte-matching the literal above; `tool_calls` propagation works under both single-chunk and split-across-chunks SSE delivery.
+- [x] **Step 3.6.9: Definition of done.** All 4 tests green; docstring includes the M3↔M5 boundary note byte-matching the literal above; `tool_calls` propagation works under both single-chunk and split-across-chunks SSE delivery.
 
-- [ ] **Step 3.6.10: Commit** `feat(M3): tools= parameter passes through to LMS request; single round-trip only`.
+- [x] **Step 3.6.10: Commit** `feat(M3): tools= parameter passes through to LMS request; single round-trip only`.
 
 ---
 
@@ -901,14 +901,14 @@ Where:
 
 **Per-call verification.** LM Studio doesn't (yet) emit a fingerprint header. The fallback: re-probe `/v1/models` lazily — once per N calls (configurable, default 50) OR on any heartbeat-detected model state change. Cache the probe result for the run; on mismatch with `self._fingerprint_pinned`, raise `FingerprintChanged`.
 
-- [ ] **Step 3.7.1: Failing tests.**
+- [x] **Step 3.7.1: Failing tests.**
   - `test_compute_fingerprint_canonical`: given `LoadedModelInfo(id="gemma-4", quantization="Q4_K_M", digest="abc123")`, assert `compute_fingerprint(...)` returns the literal sha256 of `'["gemma-4","Q4_K_M","abc123"]'` (sort_keys=True → tuple-as-list). Lock the byte-exact value in the test.
   - `test_compute_fingerprint_missing_quant_uses_empty_string`: `quantization=""` does not crash; produces a stable hash.
   - `test_compute_fingerprint_missing_path_marks_unknown`: `digest=""` → `checkpoint_digest="unknown"` baked into the tuple; emits `ModelFingerprintIndeterminate` warning event.
   - `test_per_call_fingerprint_mismatch_raises_FingerprintChanged`: pin `client._fingerprint_pinned = "abc..."`; respx returns a chat completion AND a separate `/v1/models` probe with a different model digest; assert `FingerprintChanged` raised AND `ModelFingerprintChanged` event published.
   - `test_per_call_fingerprint_match_proceeds_silently`: pin matches probe; assert no event published; chat returns normally.
 
-- [ ] **Step 3.7.2: Implement.**
+- [x] **Step 3.7.2: Implement.**
 
   ```python
   def compute_fingerprint(self, model_info: LoadedModelInfo) -> str:
@@ -950,21 +950,21 @@ Where:
 
   Call `_verify_fingerprint()` at the start of every `chat()`, before the request body is built. M4's lifecycle layer pins `self._fingerprint_pinned` once at runlock acquisition.
 
-- [ ] **Step 3.7.3: Verification command:**
+- [x] **Step 3.7.3: Verification command:**
   ```bash
   pytest tests/unit/test_lmstudio_client.py -v -k "fingerprint"
   ```
   Expected: `5 passed`.
 
-- [ ] **Step 3.7.4: Pitfalls.**
+- [x] **Step 3.7.4: Pitfalls.**
   - Hashing the raw weight file → multi-GB read on every preflight; spec §5.5.2.3 explicitly forbids this. Hash the manifest (`config.json`) only.
   - `json.dumps` without `separators=(",", ":")` → whitespace differences across Python versions yield divergent fingerprints. Lock the canonical separators.
   - Probing `/v1/models` on every chat call → unnecessarily slow under tool-loop iteration. Cache for `fingerprint_recheck_interval_s` (default 60s).
   - Forgetting to set `self._fingerprint_pinned` from M4 → first chat treats every observed fingerprint as a match (since pinned is None); set explicitly during M4 wiring.
 
-- [ ] **Step 3.7.5: Definition of done.** All 5 fingerprint tests green; canonical bytes asserted byte-exactly; `ModelFingerprintChanged` event published before `FingerprintChanged` raised (event order matters for replay).
+- [x] **Step 3.7.5: Definition of done.** All 5 fingerprint tests green; canonical bytes asserted byte-exactly; `ModelFingerprintChanged` event published before `FingerprintChanged` raised (event order matters for replay).
 
-- [ ] **Step 3.7.6: Commit** `feat(M3): model fingerprint computation + per-call verification`.
+- [x] **Step 3.7.6: Commit** `feat(M3): model fingerprint computation + per-call verification`.
 
 ---
 
@@ -972,9 +972,9 @@ Where:
 
 **Spec/conv refs:** §8.1 ("LM Studio reachable at `/v1/models` — Exit 3"; "LM Studio model supports `tools` parameter (probe)"; "LM Studio model supports `tools` + `response_format=json_schema` simultaneously (probe)"; "Streaming works").
 
-- [ ] **Step 3.8.1: Implement `list_loaded_models()`** — `GET /v1/models`, parse `{"data": [{"id": ..., "quantization": ..., "path": ...}, ...]}` into `list[LoadedModelInfo]`. On non-200 → `LMSConnectionLost`. Used by M4 lifecycle (status reporting) and by `_verify_fingerprint` (Task 3.7).
+- [x] **Step 3.8.1: Implement `list_loaded_models()`** — `GET /v1/models`, parse `{"data": [{"id": ..., "quantization": ..., "path": ...}, ...]}` into `list[LoadedModelInfo]`. On non-200 → `LMSConnectionLost`. Used by M4 lifecycle (status reporting) and by `_verify_fingerprint` (Task 3.7).
 
-- [ ] **Step 3.8.2: Implement `probe_capabilities(model_id) -> ProbedCapabilities`.** Sends ONE chat call with:
+- [x] **Step 3.8.2: Implement `probe_capabilities(model_id) -> ProbedCapabilities`.** Sends ONE chat call with:
   - `messages=[{"role":"user","content":"hi"}]`
   - `tools=[NOOP_TOOL_SCHEMA]` where `NOOP_TOOL_SCHEMA` is a fixed `{"type":"function","function":{"name":"noop","description":"...","parameters":{"type":"object"}}}`
   - `response_format={"type":"json_schema","json_schema":{...minimal schema...}}`
@@ -1023,7 +1023,7 @@ Where:
       return caps
   ```
 
-- [ ] **Step 3.8.3: Failing tests.**
+- [x] **Step 3.8.3: Failing tests.**
   - `test_list_loaded_models_parses_response`: respx returns `/v1/models` JSON; assert `[LoadedModelInfo(id=..., quantization=..., path=...)]`.
   - `test_list_loaded_models_unreachable_raises_LMSConnectionLost`: respx raises `httpx.ConnectError`; assert `LMSConnectionLost`.
   - `test_probe_capabilities_full_support`: respx returns 2xx SSE; assert all four flags True.
@@ -1031,21 +1031,21 @@ Where:
   - `test_probe_capabilities_schema_with_tools_unsupported`: respx returns 400 with body `{"error":{"message":"response_format json_schema cannot combine with tools"}}`; assert `supports_schema_with_tools=False, supports_tools=True`.
   - `test_probe_capabilities_cached`: two calls; assert respx received exactly the probe-burst-count of requests on first call and ZERO on second.
 
-- [ ] **Step 3.8.4: Verification command:**
+- [x] **Step 3.8.4: Verification command:**
   ```bash
   pytest tests/unit/test_lmstudio_client.py -v -k "list_loaded or probe_capabilities"
   ```
   Expected: `6 passed`.
 
-- [ ] **Step 3.8.5: Pitfalls.**
+- [x] **Step 3.8.5: Pitfalls.**
   - Forgetting `additionalProperties: False` on the noop tool's parameters → some backends reject the probe with a confusing error, masking real capability detection.
   - Confusing `supports_tools` and `supports_schema_with_tools` → the spec lists them as **separate** preflight probes; don't collapse them. A model can support tools alone but not tools-with-json-schema.
   - Caching probe failure as success → on transient 503, `self._caps_cached` should remain `None`. Cache only on successful determinations.
   - Probing with `max_tokens=0` → some backends reject; use `max_tokens=1` per spec.
 
-- [ ] **Step 3.8.6: Definition of done.** All 6 probe tests green; capability cache observable; noop tool schema byte-exact match the literal in the test fixture.
+- [x] **Step 3.8.6: Definition of done.** All 6 probe tests green; capability cache observable; noop tool schema byte-exact match the literal in the test fixture.
 
-- [ ] **Step 3.8.7: Commit** `feat(M3): LM Studio health + capability probing`.
+- [x] **Step 3.8.7: Commit** `feat(M3): LM Studio health + capability probing`.
 
 ---
 
@@ -1064,7 +1064,7 @@ sha256(json.dumps({"messages": [...], "tools": [...], "response_format": {...}},
 ```
 This makes replay deterministic for identical request bodies and forces re-capture when bodies change.
 
-- [ ] **Step 3.9.1: Implement the `recorded_lms` fixture** in `tests/recorded/conftest.py`:
+- [x] **Step 3.9.1: Implement the `recorded_lms` fixture** in `tests/recorded/conftest.py`:
 
   ```python
   @pytest.fixture
@@ -1125,7 +1125,7 @@ This makes replay deterministic for identical request bodies and forces re-captu
       yield respx_mock
   ```
 
-- [ ] **Step 3.9.2: Sample fixture file structure** at `tests/fixtures/lms_responses/<sha>.json`:
+- [x] **Step 3.9.2: Sample fixture file structure** at `tests/fixtures/lms_responses/<sha>.json`:
 
   ```json
   {
@@ -1153,7 +1153,7 @@ This makes replay deterministic for identical request bodies and forces re-captu
 
   Note: streaming responses are stored as `{"sse_chunks": ["data: ...\\n\\n", "data: [DONE]\\n\\n"]}` instead of `body` so replay can reconstruct the SSE stream.
 
-- [ ] **Step 3.9.3: End-to-end test** `tests/recorded/test_audit_replay.py::test_replayed_audit_produces_valid_response`:
+- [x] **Step 3.9.3: End-to-end test** `tests/recorded/test_audit_replay.py::test_replayed_audit_produces_valid_response`:
   ```python
   @pytest.mark.asyncio
   async def test_replayed_audit_produces_valid_response(recorded_lms, fixture_dir):
@@ -1173,7 +1173,7 @@ This makes replay deterministic for identical request bodies and forces re-captu
       assert isinstance(response.content_dict["findings"], list)
   ```
 
-- [ ] **Step 3.9.4: Verification commands.**
+- [x] **Step 3.9.4: Verification commands.**
   - Replay (default):
     ```bash
     pytest tests/recorded/test_audit_replay.py -v
@@ -1185,15 +1185,15 @@ This makes replay deterministic for identical request bodies and forces re-captu
     ```
     Expected: `1 passed` AND new files appear under `tests/fixtures/lms_responses/`. Verify by `git status` showing untracked `.json` fixtures.
 
-- [ ] **Step 3.9.5: Pitfalls.**
+- [x] **Step 3.9.5: Pitfalls.**
   - Including transient fields (timestamps, request IDs, random seeds when `seed_random=true`) in the hash key → cache key changes per run; replay always misses. The `key = {messages, tools, response_format}` subset ignores them.
   - Hashing the raw `req.content` bytes → ordering of dict keys may differ; use `json.loads` + `sort_keys=True`.
   - Forgetting to add `tests/fixtures/lms_responses/` to git → CI runs without fixtures and every test fails. Commit fixtures with the test changes.
   - `RECORD_LMS=1` mode silently overwriting fixtures → mass-fixture corruption if the live LMS gives a different response. Print a warning on overwrite; gate destructive overwrites behind `RECORD_LMS=overwrite`.
 
-- [ ] **Step 3.9.6: Definition of done.** Replay test green offline (no LMS running); capture mode tested manually once with the live LMS and the resulting fixture committed; `RECORD_LMS` env var documented in test docstring.
+- [x] **Step 3.9.6: Definition of done.** Replay test green offline (no LMS running); capture mode tested manually once with the live LMS and the resulting fixture committed; `RECORD_LMS` env var documented in test docstring.
 
-- [ ] **Step 3.9.7: Commit** `feat(M3): recorded-LMS replay test harness`.
+- [x] **Step 3.9.7: Commit** `feat(M3): recorded-LMS replay test harness`.
 
 ---
 
@@ -1218,7 +1218,7 @@ _THINK_TAG_RE: Final = re.compile(r"<think>.*?</think>", re.DOTALL)
 
 If any step is reordered, secrets can leak into the JSON validation error message (which gets logged). Fail-closed.
 
-- [ ] **Step 3.10.1: Failing tests.**
+- [x] **Step 3.10.1: Failing tests.**
   - `test_ansi_stripped_from_content`: SSE delivers `content="\x1b[31mERROR\x1b[0m: failed"`; assert `ChatResponse.content == "ERROR: failed"`.
   - `test_ansi_osc_sequence_stripped`: SSE delivers `content="\x1b]0;title\x07hello"`; assert content `== "hello"`.
   - `test_ansi_NOT_stripped_from_reasoning_content`: reasoning_content contains ANSI; assert it survives untouched (reasoning is rendered separately; ANSI in reasoning is informational).
@@ -1229,7 +1229,7 @@ If any step is reordered, secrets can leak into the JSON validation error messag
   - `test_secret_redacted_BEFORE_history_append`: drive a chat call where the response contains `AKIA...`; verify that the value RETURNED to the caller is already redacted. (The fact that the caller appends to history is the caller's concern — what M3 guarantees is that everything in `ChatResponse` is post-redaction.)
   - `test_redaction_order_strip_then_redact`: response has `content="<think>secret=AKIA...EXAMPLE</think>safe"`; assert ChatResponse.content is `"safe"` (think strip happens first; the secret was inside the think tag and never reaches the redactor's input — but if it had leaked, it would still be redacted).
 
-- [ ] **Step 3.10.2: Wire `secret_redactor`** into the post-stream path:
+- [x] **Step 3.10.2: Wire `secret_redactor`** into the post-stream path:
 
   ```python
   async def _finalize_stream_result(self, raw: _RawStreamResult) -> _StreamResult:
@@ -1266,22 +1266,22 @@ If any step is reordered, secrets can leak into the JSON validation error messag
       )
   ```
 
-- [ ] **Step 3.10.3: Verification command:**
+- [x] **Step 3.10.3: Verification command:**
   ```bash
   pytest tests/unit/test_lmstudio_client.py -v -k "ansi or redact or secret"
   ```
   Expected: `9 passed`.
 
-- [ ] **Step 3.10.4: Pitfalls.**
+- [x] **Step 3.10.4: Pitfalls.**
   - ANSI-stripping `reasoning_content` → reasoning rendered with ANSI escapes is informational; `<file>.thinking.md` consumers handle ANSI safely. Spec §SEC-7 explicitly says `content`-only.
   - ANSI-stripping `tool_call.function.arguments` → ANSI bytes inside a JSON string literal are legitimate structured data, not display control. Stripping them silently corrupts tool inputs.
   - Redacting **before** ANSI strip → secret regex can match across ANSI escape boundaries and miss the secret; strip ANSI first so redactor sees clean text.
   - Redacting **after** schema validation → if validation fails on a response containing a secret, the error message gets logged with the secret embedded. Always redact first; validation runs on already-redacted text.
   - Mutating the original `raw.tool_calls` list in-place → if the same object is referenced by event payloads (already published), the published events would silently get redacted retroactively. Build a new list of new `ToolCall` instances.
 
-- [ ] **Step 3.10.5: Definition of done.** All 9 ANSI/redaction tests green; ANSI regex byte-matches `re.compile(r"\x1b\[[0-9;]*[a-zA-Z]|\x1b\][^\x07]*\x07")` exactly; order-of-operations test passes asserting strip-then-redact.
+- [x] **Step 3.10.5: Definition of done.** All 9 ANSI/redaction tests green; ANSI regex byte-matches `re.compile(r"\x1b\[[0-9;]*[a-zA-Z]|\x1b\][^\x07]*\x07")` exactly; order-of-operations test passes asserting strip-then-redact.
 
-- [ ] **Step 3.10.6: Commit** `feat(M3): redaction + ANSI strip integrated into chat path`.
+- [x] **Step 3.10.6: Commit** `feat(M3): redaction + ANSI strip integrated into chat path`.
 
 ---
 

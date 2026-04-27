@@ -1,0 +1,33 @@
+{
+  "_comment": "Example fixture for tests/recorded/conftest.py::recorded_lms. Real fixture files are named '<sha>.json' where the sha is the canonical hash of the request body's messages+tools+response_format. This file is documentation only and is never matched by any test.",
+  "request_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "status_code": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "id": "chatcmpl-example",
+    "object": "chat.completion",
+    "created": 0,
+    "model": "google/gemma-4-26b-a4b",
+    "choices": [
+      {
+        "index": 0,
+        "finish_reason": "stop",
+        "message": {
+          "role": "assistant",
+          "content": "{\"schema_version\":1,\"overall_assessment\":\"...\",\"findings\":[],\"recommendations\":[]}",
+          "reasoning_content": "Reasoning trace recorded from the live model would appear here."
+        }
+      }
+    ],
+    "usage": {"prompt_tokens": 100, "completion_tokens": 50}
+  },
+  "_alternate_streaming_form": {
+    "_comment": "Streaming responses are stored under 'sse_chunks' instead of 'body'; the fixture loader reconstructs the SSE stream by joining these chunks.",
+    "sse_chunks": [
+      "data: {\"choices\":[{\"index\":0,\"delta\":{\"content\":\"{\"},\"finish_reason\":null}]}\n\n",
+      "data: [DONE]\n\n"
+    ]
+  }
+}

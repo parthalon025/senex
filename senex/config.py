@@ -127,6 +127,17 @@ class LmStudioCfg(_StrictModel):
     model: str = "google/gemma-4-26b-a4b"
     preset: str = ""
     allow_non_loopback: bool = False
+    # Token budget enforcement (M3 §3.4): pre-call check fails the request when
+    # count_tokens(messages) > token_budget_pct * context_window. M4 sets these
+    # per-model after probing /v1/models. The defaults are conservative starting
+    # points for a 32K-context model; real values are populated by the lifecycle
+    # layer at runlock acquisition.
+    context_window: int = Field(default=32768, gt=0)
+    token_budget_pct: float = Field(default=0.9, gt=0.0, le=1.0)
+    # Fingerprint cache TTL (M3 §3.7). Re-probing /v1/models on every chat() is
+    # wasteful under tool-loop iteration; cache the observed fingerprint for
+    # this many seconds before re-verifying.
+    fingerprint_recheck_interval_s: float = Field(default=60.0, gt=0.0)
     sampling: SamplingCfg = Field(default_factory=SamplingCfg)
     thinking: ThinkingCfg = Field(default_factory=ThinkingCfg)
     tasks: TasksCfg = Field(default_factory=TasksCfg)
