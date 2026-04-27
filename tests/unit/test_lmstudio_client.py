@@ -1087,3 +1087,151 @@ async def test_chat_streamed_tool_calls_assembled_correctly(
     assert resp.tool_calls[0].id == "call_1"
     assert resp.tool_calls[0].function.name == "read_file"
     assert resp.tool_calls[0].function.arguments == '{"path":"a.py"}'
+
+
+# --- Task 3.7: fingerprint computation + per-call verification --------------
+
+import hashlib  # noqa: E402
+
+from senex.events import ModelFingerprintChanged  # noqa: E402
+from senex.lmstudio_client import LoadedModelInfo  # noqa: E402
+from senex.lmstudio_errors import FingerprintChanged  # noqa: E402
+
+
+def test_compute_fingerprint_canonical(client: LMStudioClient) -> None:
+    """Byte-exact: sha256 of compact JSON list ['gemma-4','Q4_K_M','abc123']."""
+    info = LoadedModelInfo(
+        id="gemma-4", quantization="Q4_K_M", path="/m", digest="abc123"
+    )
+    expected_payload = '["gemma-4","Q4_K_M","abc123"]'
+    expected_hash = hashlib.sha256(expected_payload.encode("utf-8")).hexdigest()
+    assert client.compute_fingerprint(info) == expected_hash
+
+
+def test_compute_fingerprint_missing_quant_uses_empty_string(
+    client: LMStudioClient,
+) -> None:
+    """quantization='' produces a stable hash; no crash."""
+    info = LoadedModelInfo(id="m", quantization="", path="/m", digest="d")
+    fp1 = client.compute_fingerprint(info)
+    fp2 = client.compute_fingerprint(info)
+    assert fp1 == fp2
+    expected_payload = '["m","","d"]'
+    expected_hash = hashlib.sha256(expected_payload.encode("utf-8")).hexdigest()
+    assert fp1 == expected_hash
+
+
+def test_compute_fingerprint_missing_digest_uses_unknown_sentinel(
+    client: LMStudioClient,
+) -> None:
+    """When digest is empty, 'unknown' is baked into the canonical tuple."""
+    info = LoadedModelInfo(id="m", quantization="Q4", path="", digest="")
+    expected_payload = '["m","Q4","unknown"]'
+    expected_hash = hashlib.sha256(expected_payload.encode("utf-8")).hexdigest()
+    assert client.compute_fingerprint(info) == expected_hash
+
+
+@pytest.mark.asyncio
+async def test_per_call_fingerprint_mismatch_raises_FingerprintChanged(
+    respx_mock: Any,
+    client: LMStudioClient,
+    audit_schema: dict[str, Any],
+    captured_events: list[Any],
+) -> None:
+    """Pin a fingerprint; observed differs → ModelFingerprintChanged event then raise."""
+    # Re-subscribe captured_events to ModelFingerprintChanged too.
+    fp_events: list[Any] = []
+
+    async def _cb(event: Any) -> None:
+        fp_events.append(event)
+
+    client._bus.subscribe_local(  # type: ignore[attr-defined]
+        "fp", (ModelFingerprintChanged,), _cb
+    )
+
+    client._fingerprint_pinned = "deadbeef" * 8  # type: ignore[attr-defined]
+
+    # /v1/models returns a model with a different digest → different fingerprint.
+    respx_mock.get("http://localhost:1234/v1/models").respond(
+        json={
+            "data": [
+                {
+                    "id": "google/gemma-4-26b-a4b",
+                    "quantization": "Q4_K_M",
+                    "path": "/models/gemma",
+                    "digest": "different-digest",
+                }
+            ]
+        }
+    )
+    # Even though chat would respond, fingerprint check fires first.
+    respx_mock.post("http://localhost:1234/v1/chat/completions").respond(
+        json=_success_payload(_valid_audit_json())
+    )
+
+    with pytest.raises(FingerprintChanged):
+        await client.chat(
+            task="file_audit",
+            messages=[ChatMessage(role="user", content="hi")],
+            schema=audit_schema,
+            tools=None,
+        )
+
+    # ModelFingerprintChanged event MUST have been published BEFORE raise.
+    assert any(
+        isinstance(e, ModelFingerprintChanged) for e in fp_events
+    ), "ModelFingerprintChanged event should have been published before raise"
+
+
+@pytest.mark.asyncio
+async def test_per_call_fingerprint_match_proceeds_silently(
+    respx_mock: Any,
+    client: LMStudioClient,
+    audit_schema: dict[str, Any],
+) -> None:
+    """Pinned matches probe → no event published; chat returns normally."""
+    fp_events: list[Any] = []
+
+    async def _cb(event: Any) -> None:
+        fp_events.append(event)
+
+    client._bus.subscribe_local(  # type: ignore[attr-defined]
+        "fp", (ModelFingerprintChanged,), _cb
+    )
+
+    info = LoadedModelInfo(
+        id="google/gemma-4-26b-a4b",
+        quantization="Q4_K_M",
+        path="/models/gemma",
+        digest="abc",
+    )
+    expected_fp = client.compute_fingerprint(info)
+    client._fingerprint_pinned = expected_fp  # type: ignore[attr-defined]
+
+    respx_mock.get("http://localhost:1234/v1/models").respond(
+        json={
+            "data": [
+                {
+                    "id": "google/gemma-4-26b-a4b",
+                    "quantization": "Q4_K_M",
+                    "path": "/models/gemma",
+                    "digest": "abc",
+                }
+            ]
+        }
+    )
+    respx_mock.post("http://localhost:1234/v1/chat/completions").respond(
+        json=_success_payload(_valid_audit_json())
+    )
+
+    resp = await client.chat(
+        task="file_audit",
+        messages=[ChatMessage(role="user", content="hi")],
+        schema=audit_schema,
+        tools=None,
+    )
+    assert resp.content_dict is not None
+    assert resp.fingerprint == expected_fp
+    assert not [
+        e for e in fp_events if isinstance(e, ModelFingerprintChanged)
+    ], "match should not publish ModelFingerprintChanged"
