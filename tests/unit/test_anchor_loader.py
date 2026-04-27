@@ -5,6 +5,7 @@ trust-boundary template, 7.4 handoff, plus prompt-hash regression net).
 """
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 
 import pytest
@@ -162,3 +163,69 @@ def test_anchor_loader_module_has_nonempty_docstring() -> None:
     from senex.prompts import _anchor_loader as al
 
     assert al.__doc__ and al.__doc__.strip() != ""
+
+
+# ----------------------------------------------------------------------
+# Task 2.4 — system prompt + per-file user template (hash + shape)
+# ----------------------------------------------------------------------
+
+EXPECTED_SYSTEM_PROMPT_SHA256 = (
+    "b901a49bcf3848f5c0afd934d6d9be12fc9ba25714a67a6e9c5f15d684c123b9"
+)
+
+
+def test_system_senior_dev_hash_matches_spec_5_1() -> None:
+    """sha256 over `system_senior_dev.md` MUST equal the spec section 5.1 pin.
+
+    Section POL-9 + spec section 5.1: the system prompt is the audit's
+    behavioral contract. Drift is a spec change, not an implementation
+    change.
+    """
+    body = (_PROMPTS / "system_senior_dev.md").read_bytes()
+    # Reject CRLF and BOM; the test is intentionally strict on byte-shape.
+    assert b"\r\n" not in body, (
+        "system_senior_dev.md must use LF line endings, not CRLF"
+    )
+    assert not body.startswith(b"\xef\xbb\xbf"), (
+        "system_senior_dev.md must not start with UTF-8 BOM"
+    )
+    digest = hashlib.sha256(body).hexdigest()
+    assert digest == EXPECTED_SYSTEM_PROMPT_SHA256, (
+        "system_senior_dev.md sha256 mismatch.\n"
+        f"  expected: {EXPECTED_SYSTEM_PROMPT_SHA256}\n"
+        f"  actual:   {digest}\n"
+        "If the spec section 5.1 prompt has changed intentionally, update "
+        "both the file and EXPECTED_SYSTEM_PROMPT_SHA256 + "
+        "tests/fixtures/expected_prompt_hashes.json in the same commit, "
+        "and cite the spec edit in the commit body."
+    )
+
+
+def test_system_senior_dev_contains_required_anchors() -> None:
+    body = (_PROMPTS / "system_senior_dev.md").read_text(encoding="utf-8")
+    for required in [
+        "ROLE",
+        "TRUST BOUNDARY",
+        "<UNTRUSTED_FILE_CONTENT>",
+        "TRIAGE GATE",
+        "PRIORITY RUBRIC",
+        "WHAT TO LOOK FOR",
+        "WHAT TO NOT FLAG",
+        "OUTPUT DISCIPLINE",
+        "TOOL USE",
+        "CONFIDENCE RUBRIC",
+    ]:
+        assert required in body, f"missing required anchor: {required}"
+
+
+def test_per_file_user_template_has_four_placeholders_and_trust_boundary() -> None:
+    body = (_PROMPTS / "per_file_user.md").read_text(encoding="utf-8")
+    for placeholder in [
+        "{file_relpath}",
+        "{language}",
+        "{graph_context}",
+        "{numbered_source}",
+    ]:
+        assert placeholder in body, f"template missing {placeholder}"
+    assert "<UNTRUSTED_FILE_CONTENT>" in body
+    assert "</UNTRUSTED_FILE_CONTENT>" in body

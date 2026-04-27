@@ -1454,9 +1454,9 @@ Anchors are exactly **one paragraph each** (per spec §5.3: "A single short para
 
 > **CRITICAL.** The system prompt is the audit's behavioral contract. It governs every audit response from M3 onward. A typo or paraphrase here produces silently bad findings forever. The hash-pin test below is what catches drift.
 
-- [ ] **Open `E:/senex/docs/superpowers/specs/2026-04-26-senex-audit-tool-design.md`.** Locate **§5.1 System Prompt** (line 310 in the current spec). Copy the body of the fenced code block (the lines BETWEEN the two ```` ``` ```` fence markers; do NOT include the fences themselves) into `senex/prompts/system_senior_dev.md`.
+- [x] **Open `E:/senex/docs/superpowers/specs/2026-04-26-senex-audit-tool-design.md`.** Locate **§5.1 System Prompt** (line 310 in the current spec). Copy the body of the fenced code block (the lines BETWEEN the two ```` ``` ```` fence markers; do NOT include the fences themselves) into `senex/prompts/system_senior_dev.md`.
 
-- [ ] **Normalization rules** (must hold byte-for-byte):
+- [x] **Normalization rules** (must hold byte-for-byte):
   - Encoding: UTF-8 with no BOM.
   - Line endings: LF only (no CRLF). On Windows, write with `newline="\n"` explicitly:
     ```python
@@ -1466,7 +1466,7 @@ Anchors are exactly **one paragraph each** (per spec §5.3: "A single short para
   - No leading blank lines, no trailing blank lines beyond the single `\n`.
   - All internal blank lines preserved as single `\n`.
 
-- [ ] **Failing test (hash pin) in `tests/unit/test_anchor_loader.py`:**
+- [x] **Failing test (hash pin) in `tests/unit/test_anchor_loader.py`:**
   ```python
   import hashlib
 
@@ -1488,7 +1488,7 @@ Anchors are exactly **one paragraph each** (per spec §5.3: "A single short para
       )
   ```
 
-- [ ] **Sanity-check structural anchors are present** (a defense-in-depth check; the hash test catches everything but is opaque on failure):
+- [x] **Sanity-check structural anchors are present** (a defense-in-depth check; the hash test catches everything but is opaque on failure):
   ```python
   def test_system_senior_dev_contains_required_anchors() -> None:
       body = Path("senex/prompts/system_senior_dev.md").read_text(encoding="utf-8")
@@ -1509,7 +1509,7 @@ Anchors are exactly **one paragraph each** (per spec §5.3: "A single short para
 
 #### Step 2.4.2: Write `per_file_user.md` template
 
-- [ ] **Create `senex/prompts/per_file_user.md`** with this exact content (LF line endings, single trailing newline):
+- [x] **Create `senex/prompts/per_file_user.md`** with this exact content (LF line endings, single trailing newline):
   ```
   ### Awareness
   {graph_context}
@@ -1522,7 +1522,7 @@ Anchors are exactly **one paragraph each** (per spec §5.3: "A single short para
   </UNTRUSTED_FILE_CONTENT>
   ```
 
-- [ ] **Failing test:**
+- [x] **Failing test:**
   ```python
   def test_per_file_user_template_has_four_placeholders_and_trust_boundary() -> None:
       body = Path("senex/prompts/per_file_user.md").read_text(encoding="utf-8")
@@ -1534,7 +1534,7 @@ Anchors are exactly **one paragraph each** (per spec §5.3: "A single short para
 
 #### Step 2.4.3: Run
 
-- [ ] ```bash
+- [x] ```bash
   pytest tests/unit/test_anchor_loader.py -v
   ```
   Expected: all PASSED. Specifically:
@@ -1546,7 +1546,7 @@ Anchors are exactly **one paragraph each** (per spec §5.3: "A single short para
 
 #### Step 2.4.4: Commit
 
-- [ ] ```bash
+- [x] ```bash
   git add senex/prompts/system_senior_dev.md senex/prompts/per_file_user.md tests/unit/test_anchor_loader.py
   git commit -m "feat(M2): system prompt (verbatim §5.1) + per-file user template
 
@@ -1555,10 +1555,10 @@ Anchors are exactly **one paragraph each** (per spec §5.3: "A single short para
 
 #### Definition of done (Task 2.4)
 
-- [ ] `system_senior_dev.md` exists; sha256 over its bytes equals `b901a49bcf3848f5c0afd934d6d9be12fc9ba25714a67a6e9c5f15d684c123b9`.
-- [ ] No CRLF or BOM in the file.
-- [ ] `per_file_user.md` contains all 4 named placeholders and the `<UNTRUSTED_FILE_CONTENT>` boundary.
-- [ ] `build_user_prompt` (Task 2.3) substitutes correctly against the new template.
+- [x] `system_senior_dev.md` exists; sha256 over its bytes equals `b901a49bcf3848f5c0afd934d6d9be12fc9ba25714a67a6e9c5f15d684c123b9`.
+- [x] No CRLF or BOM in the file.
+- [x] `per_file_user.md` contains all 4 named placeholders and the `<UNTRUSTED_FILE_CONTENT>` boundary.
+- [x] `build_user_prompt` (Task 2.3) substitutes correctly against the new template.
 
 #### Pitfalls (Task 2.4)
 
