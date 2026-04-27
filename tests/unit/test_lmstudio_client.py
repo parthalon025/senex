@@ -1235,3 +1235,125 @@ async def test_per_call_fingerprint_match_proceeds_silently(
     assert not [
         e for e in fp_events if isinstance(e, ModelFingerprintChanged)
     ], "match should not publish ModelFingerprintChanged"
+
+
+# --- Task 3.8: list_loaded_models + probe_capabilities ----------------------
+
+
+@pytest.mark.asyncio
+async def test_list_loaded_models_parses_response(
+    respx_mock: Any, client: LMStudioClient
+) -> None:
+    """GET /v1/models → list[LoadedModelInfo]; preserves id/quantization/path/digest."""
+    respx_mock.get("http://localhost:1234/v1/models").respond(
+        json={
+            "data": [
+                {
+                    "id": "google/gemma-4-26b-a4b",
+                    "quantization": "Q4_K_M",
+                    "path": "/models/gemma",
+                    "digest": "abc123",
+                },
+                {
+                    "id": "qwen/qwen3-30b",
+                    "quantization": "Q5_K_M",
+                    "path": "/models/qwen",
+                },
+            ]
+        }
+    )
+    models = await client.list_loaded_models()
+    assert len(models) == 2
+    assert models[0].id == "google/gemma-4-26b-a4b"
+    assert models[0].quantization == "Q4_K_M"
+    assert models[0].path == "/models/gemma"
+    assert models[0].digest == "abc123"
+    assert models[1].id == "qwen/qwen3-30b"
+    assert models[1].digest == ""  # missing field defaults to empty
+
+
+@pytest.mark.asyncio
+async def test_list_loaded_models_unreachable_raises_LMSConnectionLost(
+    respx_mock: Any, client: LMStudioClient
+) -> None:
+    """ConnectError on /v1/models → LMSConnectionLost."""
+    respx_mock.get("http://localhost:1234/v1/models").mock(
+        side_effect=httpx.ConnectError("server down")
+    )
+    with pytest.raises(LMSConnectionLost):
+        await client.list_loaded_models()
+
+
+@pytest.mark.asyncio
+async def test_probe_capabilities_full_support(
+    respx_mock: Any, client: LMStudioClient
+) -> None:
+    """200 SSE → all four capability flags True."""
+    sse_chunks = (
+        'data: {"choices":[{"index":0,"delta":{"content":"x"},"finish_reason":null}]}\n\n'
+        "data: [DONE]\n\n"
+    )
+    respx_mock.post("http://localhost:1234/v1/chat/completions").respond(
+        status_code=200,
+        headers={"content-type": "text/event-stream"},
+        text=sse_chunks,
+    )
+    caps = await client.probe_capabilities("google/gemma-4-26b-a4b")
+    assert caps.supports_tools is True
+    assert caps.supports_schema_with_tools is True
+    assert caps.supports_streaming is True
+    assert caps.supports_reasoning_effort is True
+
+
+@pytest.mark.asyncio
+async def test_probe_capabilities_tools_unsupported(
+    respx_mock: Any, client: LMStudioClient
+) -> None:
+    """400 mentioning 'tools' (not schema) → supports_tools=False."""
+    respx_mock.post("http://localhost:1234/v1/chat/completions").respond(
+        status_code=400,
+        json={"error": {"message": "tools parameter not supported by this model"}},
+    )
+    caps = await client.probe_capabilities("some-model")
+    assert caps.supports_tools is False
+    assert caps.supports_schema_with_tools is False
+
+
+@pytest.mark.asyncio
+async def test_probe_capabilities_schema_with_tools_unsupported(
+    respx_mock: Any, client: LMStudioClient
+) -> None:
+    """400 mentioning response_format/json_schema → tools True, schema_with_tools False."""
+    respx_mock.post("http://localhost:1234/v1/chat/completions").respond(
+        status_code=400,
+        json={
+            "error": {
+                "message": "response_format json_schema cannot combine with tools"
+            }
+        },
+    )
+    caps = await client.probe_capabilities("some-model")
+    assert caps.supports_tools is True
+    assert caps.supports_schema_with_tools is False
+
+
+@pytest.mark.asyncio
+async def test_probe_capabilities_cached(
+    respx_mock: Any, client: LMStudioClient
+) -> None:
+    """Second probe call hits zero requests (cache)."""
+    sse_chunks = (
+        'data: {"choices":[{"index":0,"delta":{"content":"x"},"finish_reason":null}]}\n\n'
+        "data: [DONE]\n\n"
+    )
+    route = respx_mock.post("http://localhost:1234/v1/chat/completions").respond(
+        status_code=200,
+        headers={"content-type": "text/event-stream"},
+        text=sse_chunks,
+    )
+    caps1 = await client.probe_capabilities("model-a")
+    first_count = route.call_count
+    caps2 = await client.probe_capabilities("model-a")
+    assert caps1 == caps2
+    assert first_count == 1
+    assert route.call_count == 1  # second call did not re-issue
