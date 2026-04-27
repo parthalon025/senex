@@ -17,7 +17,21 @@ iterations; the final iteration is reserved for the no-tools turn so the
 model can emit its structured response.
 
 The compaction hook is called between turns and does NOT count against
-``max_calls``; M6 supplies the real compactor, M5 ships a no-op stub.
+``max_calls``; M6 (``senex.compaction.Compactor.maybe_compact``) supplies
+the real compactor wired via a closure that captures the model's
+``context_window``. M5 ships a no-op stub for testing.
+
+M6 integration contract:
+
+* The closure passed as ``compactor`` invokes ``Compactor.maybe_compact``,
+  which (per spec section 5.5.1) emits ``CompactionTriggered`` /
+  ``CompactionComplete`` / ``CompactionError`` events and rewrites the
+  history when the trigger fires. The closure returns the (possibly
+  unchanged) history; ``ToolLoop`` swaps it in regardless.
+* ``CompactionFailed``, ``CompactionLoopExceeded``, and ``ContextOverflow``
+  raised inside the hook propagate out of ``ToolLoop.run`` so M8
+  ``FileAuditPhase`` can map them to per-file ``<file>.ERROR.md``
+  artifacts.
 """
 from __future__ import annotations
 
