@@ -29,9 +29,11 @@ from senex.subscribers.base import (
     SubscriberShutdownError,
 )
 from senex.subscribers.disk_writer import DiskWriterSubscriber
+from senex.subscribers.headless_subscriber import HeadlessSubscriber
 
 __all__ = [
     "DiskWriterSubscriber",
+    "HeadlessSubscriber",
     "Subscriber",
     "SubscriberQueueFull",
     "SubscriberShutdownError",
