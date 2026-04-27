@@ -20,9 +20,15 @@ import os
 import re
 import shutil
 from datetime import datetime, timezone
-from typing import Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict
+
+if TYPE_CHECKING:
+    from senex.config import LifecycleCfg
+    from senex.events import EventBus
+    from senex.runlock import RunLock as RunLockType
+    from senex.secret_redactor import SecretRedactor
 
 
 # Exceptions ----------------------------------------------------------------
@@ -338,3 +344,242 @@ def _utc_now_iso() -> str:
 
 def _current_pid() -> int:
     return os.getpid()
+
+
+# Lifecycle high-level API --------------------------------------------------
+
+
+class Lifecycle:
+    """High-level lifecycle policy: decides whether to load, attach, hold, unload.
+
+    Mechanism (load/unload, list_loaded) lives in the LifecycleBackend; events
+    are emitted from this class only (per spec 5.5.2.5 / watch-out: backends are
+    mechanism-only).
+    """
+
+    def __init__(
+        self,
+        backend: LifecycleBackend,
+        bus: "EventBus | Any",
+        config: "LifecycleCfg",
+        redactor: "SecretRedactor",
+    ) -> None:
+        self._backend = backend
+        self._bus = bus
+        self._config = config
+        self._redactor = redactor
+        # Cache (model_id, run_id) -> fingerprint set at acquire so release can
+        # find the right runlock without re-probing.
+        self._fingerprints: dict[tuple[str, str], str] = {}
+
+    async def _publish(self, event_cls_name: str, **fields: Any) -> None:
+        """Construct an event by name and publish to the bus."""
+        from senex import events as _events
+
+        cls = getattr(_events, event_cls_name)
+        event = cls(ts=datetime.now(tz=timezone.utc), run_id=fields.pop("run_id"), **fields)
+        await self._bus.publish(event)
+
+    async def _probe_info(self, model_id: str) -> ModelInfo:
+        """Find the ModelInfo for an already-loaded model via list_loaded()."""
+        records = await self._backend.list_loaded()
+        for r in records:
+            if r.model_id == model_id:
+                return r
+        # If we can't find it but is_loaded reported True, synthesize a minimal record.
+        fp = _compute_fingerprint(model_id, "unknown", "unknown")
+        return ModelInfo(
+            model_id=model_id,
+            quant="unknown",
+            checkpoint_digest="unknown",
+            fingerprint=fp,
+            backend=getattr(self._backend, "backend_name", "unknown"),
+        )
+
+    async def acquire(
+        self,
+        model_id: str,
+        run_id: str,
+        runlock: "type[RunLockType]",
+        *,
+        auto_load: bool,
+    ) -> tuple[ModelInfo, bool]:
+        """Acquire the runlock for ``model_id``.
+
+        Returns (info, loaded_by_us). See spec 5.5.2.1.
+        - not loaded + auto_load=True  -> load -> runlock.acquire(loaded_by_us=True)  -> (info, True)
+        - not loaded + auto_load=False -> raise ModelNotLoaded BEFORE any runlock touch
+        - already loaded               -> probe info -> runlock.acquire(loaded_by_us=False) -> (info, False)
+        """
+        validate_model_id(model_id)
+        if not await self._backend.is_loaded(model_id):
+            if not auto_load:
+                raise ModelNotLoaded(
+                    f"model {model_id!r} is not loaded and auto_load is disabled"
+                )
+            # Emit ModelLoadRequested -> ModelLoadStarted -> backend.load -> ModelLoadComplete.
+            await self._publish(
+                "ModelLoadRequested",
+                run_id=run_id,
+                model_id=model_id,
+                target_fingerprint="",  # unknown until load completes
+            )
+            await self._publish("ModelLoadStarted", run_id=run_id, model_id=model_id)
+            started_at = datetime.now(tz=timezone.utc)
+            try:
+                info = await asyncio.wait_for(
+                    self._backend.load(model_id, timeout=self._config.load_timeout_seconds),
+                    timeout=self._config.load_timeout_seconds,
+                )
+            except asyncio.TimeoutError as exc:
+                await self._publish(
+                    "ModelLoadFailed",
+                    run_id=run_id,
+                    model_id=model_id,
+                    error_kind="timeout",
+                    error_message=self._redactor.redact(repr(exc)),
+                )
+                raise ModelLoadTimeout(
+                    f"load({model_id!r}) timed out after "
+                    f"{self._config.load_timeout_seconds}s"
+                ) from exc
+            except Exception as exc:
+                await self._publish(
+                    "ModelLoadFailed",
+                    run_id=run_id,
+                    model_id=model_id,
+                    error_kind="load_failed",
+                    error_message=self._redactor.redact(repr(exc)),
+                )
+                raise ModelLoadFailed(
+                    f"load({model_id!r}) failed: {self._redactor.redact(str(exc))}"
+                ) from exc
+            duration = (datetime.now(tz=timezone.utc) - started_at).total_seconds()
+            await self._publish(
+                "ModelLoadComplete",
+                run_id=run_id,
+                model_id=model_id,
+                duration_seconds=duration,
+                fingerprint=info.fingerprint,
+            )
+            count = runlock.acquire(
+                info.fingerprint, run_id, _current_pid(), True
+            )
+            self._fingerprints[(model_id, run_id)] = info.fingerprint
+            await self._publish(
+                "RunLockAcquired",
+                run_id=run_id,
+                model_fingerprint=info.fingerprint,
+                holder_count=count,
+            )
+            return info, True
+
+        # Already loaded: attach.
+        info = await self._probe_info(model_id)
+        count = runlock.acquire(info.fingerprint, run_id, _current_pid(), False)
+        self._fingerprints[(model_id, run_id)] = info.fingerprint
+        await self._publish(
+            "RunLockAcquired",
+            run_id=run_id,
+            model_fingerprint=info.fingerprint,
+            holder_count=count,
+        )
+        return info, False
+
+    async def release(
+        self,
+        model_id: str,
+        run_id: str,
+        runlock: "type[RunLockType]",
+        *,
+        auto_unload: bool,
+        loaded_by_us: bool,
+        resumed: bool = False,
+    ) -> None:
+        """Release the runlock; conditionally unload the model.
+
+        Spec 5.5.2.1 release algorithm:
+            count = runlock.release(fp, run_id)
+            if count == 0 and we_loaded and auto_unload and not resumed:
+                unload -> emit ModelUnloadComplete
+            else:
+                emit ModelUnloadSkipped(reason=<enum>)
+        """
+        validate_model_id(model_id)
+        # Use the fingerprint cached at acquire time. For resume paths or
+        # external callers that didn't go through acquire(), fall back to a
+        # probe; if the model was unloaded externally we use a deterministic
+        # synthesized fingerprint as a last resort.
+        fingerprint = self._fingerprints.pop((model_id, run_id), None)
+        if fingerprint is None:
+            try:
+                info = await self._probe_info(model_id)
+                fingerprint = info.fingerprint
+            except Exception:
+                fingerprint = _compute_fingerprint(model_id, "unknown", "unknown")
+
+        remaining = runlock.release(fingerprint, run_id)
+        await self._publish(
+            "RunLockReleased",
+            run_id=run_id,
+            model_fingerprint=fingerprint,
+            remaining_holders=remaining,
+        )
+
+        if resumed:
+            await self._publish(
+                "ModelUnloadSkipped",
+                run_id=run_id,
+                model_id=model_id,
+                reason="resumed_run_does_not_own_load",
+            )
+            return
+
+        if remaining > 0:
+            await self._publish(
+                "ModelUnloadSkipped",
+                run_id=run_id,
+                model_id=model_id,
+                reason="concurrent_holders",
+            )
+            return
+
+        if not loaded_by_us:
+            await self._publish(
+                "ModelUnloadSkipped",
+                run_id=run_id,
+                model_id=model_id,
+                reason="not_loaded_by_us",
+            )
+            return
+
+        if not auto_unload:
+            await self._publish(
+                "ModelUnloadSkipped",
+                run_id=run_id,
+                model_id=model_id,
+                reason="auto_unload_disabled",
+            )
+            return
+
+        # All conditions met: unload.
+        await self._publish("ModelUnloadStarted", run_id=run_id, model_id=model_id)
+        started_at = datetime.now(tz=timezone.utc)
+        try:
+            await self._backend.unload(model_id)
+        except Exception as exc:
+            await self._publish(
+                "ModelUnloadFailed",
+                run_id=run_id,
+                model_id=model_id,
+                error_kind="unload_failed",
+                error_message=self._redactor.redact(repr(exc)),
+            )
+            return
+        duration = (datetime.now(tz=timezone.utc) - started_at).total_seconds()
+        await self._publish(
+            "ModelUnloadComplete",
+            run_id=run_id,
+            model_id=model_id,
+            duration_seconds=duration,
+        )
