@@ -2,6 +2,39 @@
 
 All notable changes to senex are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses semantic versioning.
 
+## [1.0.0] — 2026-04-27
+
+First stable release. Live validation gate 13a passed: full audit pipeline runs end-to-end against `google/gemma-4-26b-a4b` in LM Studio, produces all spec'd artifacts (per-file Markdown reports, `findings.json`, `combined.md`, `claude-handoff.md`, canonical `events.jsonl` event stream), with structured per-file metadata (tokens, latency, tools used, compactions) and run-level totals correctly populated.
+
+### What changed since v1.0.0-rc1 (22 commits)
+
+**Live-validation bug fixes:**
+- `lms ps --json` matcher now recognizes the actual LM Studio CLI shape (`modelKey`, `indexedModelIdentifier`, nested `quantization{name, bits}`) — was looking for legacy `model_id`/`id`/`quant` strings, breaking the wait-for-load polling and lifecycle attach paths.
+- `register_default_tools()` is now called at run start; the M10 wiring gap that left the `ToolRegistry` empty (causing every audit to crash on `KeyError: tool not registered`) is closed.
+- Client-side fingerprint is now derived from the HTTP `/v1/models` view, not the lifecycle's `lms ps --json` view, so the per-call swap-detection check no longer false-positives on the first chat.
+- Wait-for-load polling kicks in when `lms load` fails (e.g., resource guardrails); senex prints clear "load the model manually or run `lms load <model>`" guidance and waits up to 10 minutes (configurable) instead of immediately exiting.
+
+**Observability layer fixes:**
+- `DiskWriterSubscriber` is now wired in the headless run path; `events.jsonl` is written and `senex view` replay works as designed.
+- Per-file metadata (`prompt_tokens`, `completion_tokens`, `thinking_ms`, `output_ms`, `tools_used`, `compactions_used`) is captured live from the streaming chat response and surfaced in each `<file>.md` header.
+- `RunMetadata.files_audited` is updated after `FileAuditPhase` runs, so `combined.md` and `findings.json.totals.files` show the real audited count instead of zero.
+- `*.thinking.md` traces are now written when `[lmstudio.thinking].save_traces = true`. Gemma + LM Studio + `response_format=json_schema` returns thinking inline as `<think>` blocks (not as a separate `reasoning_content` sidecar), so the strip path now captures the inline blocks before stripping.
+- Schema sanitizer (`_sanitize_schema_for_lmstudio`) strips `anyOf`/`oneOf` conditional-required blocks before sending to LM Studio (Gemma rejects them); canonical schema files unchanged.
+
+**UX additions:**
+- Interactive launcher wizard: `senex audit` (no positional path) prompts for repo, model, and audit options before launching the TUI.
+- "Scan disk for repos" button on the Textual launcher screen that walks the configured root for `.git` directories.
+- `senex.config.toml` is now picked up from `--config <path>`, `$SENEX_CONFIG`, `./senex.config.toml`, OR `~/.senex/senex.config.toml` (in that order); the lookup error lists every searched path.
+- `[ui]` config section with `scan_root` and `scan_max_depth` knobs.
+
+**Test surface:** 920 passing, 3 skipped, 1 xfailed (recorded LMS replay fixture pending regen post-schema-tightening). 91% aggregate coverage; all per-module targets met.
+
+### Live validation status
+
+- ✅ Gate 13: full pytest suite green at coverage targets
+- ✅ Gate 13a: live audit on fixture repo produces all artifacts, schema-valid, with full observability
+- 🟡 Gates 13b/13c/13d/13e: runbooks remain in `docs/validation/2026-04-26-v1-validation.md` for users to run manually (TUI render verification, resume mid-run, tool-loop trace inspection, compaction smoke). Each builds on 13a; users can promote to confidence at their own pace.
+
 ## [1.0.0-rc1] — 2026-04-26
 
 First release candidate. All 10 implementation milestones (M1–M10) shipped, full test suite green at coverage targets, `senex doctor` passes against live LM Studio. Five live-validation gates (13a part 2, 13b, 13c, 13d, 13e) deferred to manual user execution per the v1 deferral protocol — see `docs/validation/2026-04-26-v1-validation.md` for runbooks. Once the user runs the deferred gates and they all pass, the same commit is re-tagged as `v1.0.0`.

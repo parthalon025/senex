@@ -5,5 +5,5 @@ add to ``__all__`` as the public surface stabilizes.
 """
 from __future__ import annotations
 
-__version__ = "1.0.0rc1"
+__version__ = "1.0.0"
 __all__: list[str] = []
