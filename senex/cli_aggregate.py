@@ -174,7 +174,7 @@ def _try_load_lens(config: SenexConfig) -> Lens:
         # Fallback: AggregatePhase doesn't read the lens (it operates on
         # persisted artifacts), but the protocol signature requires one.
         # Return a synthetic lens that won't be queried.
-        return Lens(  # type: ignore[call-arg]
+        return Lens(
             name="(stub)",
             version="",
             description="",

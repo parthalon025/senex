@@ -116,7 +116,8 @@ def _redact_dump(config: SenexConfig, redactor: SecretRedactor) -> dict[str, Any
     """
     raw = config.model_dump()
     keyed = redactor.redact_dict(raw)
-    return _redact_strings_recursive(keyed, redactor)
+    out: dict[str, Any] = _redact_strings_recursive(keyed, redactor)
+    return out
 
 
 def _redact_strings_recursive(node: Any, redactor: SecretRedactor) -> Any:

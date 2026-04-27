@@ -308,9 +308,9 @@ None — M10 is the leaf milestone. After M10 ships, downstream is real users.
 
 ### Task 10.8: Full test suite green
 
-- [ ] **Step 10.8.1: Run** `pytest tests/ -v --ignore=tests/live`. Must report `failed=0`. If anything fails, fix before proceeding.
+- [x] **Step 10.8.1: Run** `pytest tests/ -v --ignore=tests/live`. Must report `failed=0`. If anything fails, fix before proceeding.
 
-- [ ] **Step 10.8.2: Coverage check** `pytest tests/ -v --ignore=tests/live --cov=senex --cov-report=term-missing --cov-report=xml`. Expected output snippet to pin (numbers will vary, structure must match):
+- [x] **Step 10.8.2: Coverage check** `pytest tests/ -v --ignore=tests/live --cov=senex --cov-report=term-missing --cov-report=xml`. Expected output snippet to pin (numbers will vary, structure must match):
   ```
   ============================== test session starts ===============================
   ...
@@ -328,9 +328,9 @@ None — M10 is the leaf milestone. After M10 ships, downstream is real users.
   ```
   Coverage targets per conventions §6: ≥85% on `auditor`, `renderer`, `walker`, `checkpoint`, `events`, `secret_redactor`, `findings_aggregator`, `phases/*`, `tools/*`; ≥60% elsewhere. CI fails if any module below its target.
 
-- [ ] **Step 10.8.3: Fix gaps** until per-module targets met. Add tests where coverage is low; do NOT add `# pragma: no cover` except for genuine `if __name__ == "__main__":` blocks.
+- [x] **Step 10.8.3: Fix gaps** until per-module targets met. Add tests where coverage is low; do NOT add `# pragma: no cover` except for genuine `if __name__ == "__main__":` blocks.
 
-- [ ] **Step 10.8.4: Commit** `test(M10): full test suite green at coverage targets`.
+- [x] **Step 10.8.4: Commit** `test(M10): full test suite green at coverage targets`.
 
 ### Task 10.9: Live validation gates 13a-13e
 
