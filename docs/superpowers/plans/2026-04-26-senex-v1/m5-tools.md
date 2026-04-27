@@ -573,7 +573,7 @@ class ReadFileOutput(BaseModel):
 - `UnicodeDecodeError` -> handled by `errors="replace"`; no error.
 - `ToolDispatchFailed` -> `ToolError(kind="dispatch_failed")`.
 
-- [ ] **Step 5.5.1: Failing tests** in `tests/unit/test_tool_read_file.py` (uses real fs with `tests/fixtures/repos/tiny_python/`):
+- [x] **Step 5.5.1: Failing tests** in `tests/unit/test_tool_read_file.py` (uses real fs with `tests/fixtures/repos/tiny_python/`):
   - `test_happy_path_full_file` — `relpath="src/main.py"`; result content matches file bytes.
   - `test_happy_path_line_range` — `line_start=10, line_end=20` -> exactly 11 lines.
   - `test_invalid_path_traversal` — `relpath="../etc/passwd"` -> `path_rejected`.
@@ -583,11 +583,11 @@ class ReadFileOutput(BaseModel):
   - `test_file_not_found` — `relpath="does_not_exist.py"` -> `dispatch_failed`.
   - `test_oversize_file_truncated` — file > `max_result_tokens` -> result content ends with truncation marker.
 
-- [ ] **Step 5.5.2: Implement** `senex/tools/read_file.py`.
+- [x] **Step 5.5.2: Implement** `senex/tools/read_file.py`.
 
-- [ ] **Step 5.5.3: Run** `pytest tests/unit/test_tool_read_file.py -v` -> green. Expected: `8 passed`.
+- [x] **Step 5.5.3: Run** `pytest tests/unit/test_tool_read_file.py -v` -> green. Expected: `8 passed`.
 
-- [ ] **Step 5.5.4: Commit** `feat(M5): read_file tool with path-safety enforcement`.
+- [x] **Step 5.5.4: Commit** `feat(M5): read_file tool with path-safety enforcement`.
 
 ### Task 5.6: grep tool
 
