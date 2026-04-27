@@ -647,7 +647,7 @@ The retry decision tree:
 | `httpx.HTTPStatusError` with `400 <= status < 500` | NO retry. Re-raise immediately. |
 | `httpx.ConnectError` (TCP refused / network unreachable) | Raise `LMSConnectionLost` immediately. The auditor (M8) catches this, pauses the loop, calls `await self._reprobe_until_alive(interval=10s)`, then resumes. |
 
-- [ ] **Step 3.5.1: Failing tests.**
+- [x] **Step 3.5.1: Failing tests.**
   - `test_5xx_retried_with_correct_backoff`: respx returns 503 three times then 200; patch `asyncio.sleep` to a recording fake; assert sleep was called with `[5, 15, 45]` in order.
   - `test_5xx_exhausted_after_3_retries_reraises`: respx returns 503 four times; assert final `httpx.HTTPStatusError` propagates AFTER exactly 3 retries (4 total requests).
   - `test_4xx_not_retried`: respx returns 401 once; assert `httpx.HTTPStatusError` raised on first call; assert respx received exactly 1 request.
@@ -655,7 +655,7 @@ The retry decision tree:
   - `test_connect_error_raises_LMSConnectionLost`: respx raises `httpx.ConnectError`; assert `LMSConnectionLost` (NOT bare `httpx.ConnectError`) bubbles up.
   - `test_reprobe_until_alive_polls_models_every_10s`: drive `_reprobe_until_alive()` with respx returning ConnectError twice then 200 on `/v1/models`; assert two sleeps of 10s, returns when reachable. (This method is exercised by M8; M3 just provides it.)
 
-- [ ] **Step 3.5.2: Implement retry decorator** as an instance method (configurable from `LmStudioCfg`):
+- [x] **Step 3.5.2: Implement retry decorator** as an instance method (configurable from `LmStudioCfg`):
 
   ```python
   async def _post_with_retry(
@@ -707,22 +707,22 @@ The retry decision tree:
       raise LMSConnectionLost(f"reprobe gave up after {max_iterations * interval_s}s")
   ```
 
-- [ ] **Step 3.5.3: Verification command:**
+- [x] **Step 3.5.3: Verification command:**
   ```bash
   pytest tests/unit/test_lmstudio_client.py -v -k "retry or backoff or reprobe or connect_error"
   ```
   Expected: `6 passed`.
 
-- [ ] **Step 3.5.4: Pitfalls.**
+- [x] **Step 3.5.4: Pitfalls.**
   - Retrying 4xx → wastes the budget; 4xx is by definition "your request is wrong, retrying won't help". Test `test_4xx_not_retried` exists to catch regressions here.
   - Forgetting to convert `ConnectError` → `LMSConnectionLost` → callers receive an httpx-specific type instead of the senex exception hierarchy; downstream `error_kind` mapping breaks.
   - Sleeping on the **last** attempt → adds 45s of latency before the final exception. The `if attempt < max_attempts - 1` guard skips that sleep.
   - Using `asyncio.sleep()` without making it patch-able → tests can't assert backoff cadence. Tests must use `monkeypatch.setattr(asyncio, "sleep", recording_fake)` or use `freezegun`.
   - Reprobe loop without `max_iterations` cap → §3 conventions violation. Default cap is 1 hour (360 × 10s); after that, fail loudly.
 
-- [ ] **Step 3.5.5: Definition of done.** All 6 retry-policy tests green; backoff cadence asserted by recording sleep calls; 4xx fail-fast asserted with respx call count; `_reprobe_until_alive` bounded.
+- [x] **Step 3.5.5: Definition of done.** All 6 retry-policy tests green; backoff cadence asserted by recording sleep calls; 4xx fail-fast asserted with respx call count; `_reprobe_until_alive` bounded.
 
-- [ ] **Step 3.5.6: Commit** `feat(M3): bounded retry with exponential backoff + reprobe loop`.
+- [x] **Step 3.5.6: Commit** `feat(M3): bounded retry with exponential backoff + reprobe loop`.
 
 ---
 

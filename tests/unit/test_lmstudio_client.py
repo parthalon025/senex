@@ -732,6 +732,178 @@ async def test_chat_raises_token_budget_exceeded_above_90_percent(
     await tight_client.aclose()
 
 
+# --- Task 3.5: retry + backoff policy ---------------------------------------
+
+from senex.lmstudio_errors import LMSConnectionLost  # noqa: E402
+
+
+@pytest.fixture
+def sleep_recorder(monkeypatch: pytest.MonkeyPatch) -> list[float]:
+    """Patch asyncio.sleep to a recording fake; tests assert backoff cadence."""
+    import asyncio as _asyncio
+
+    recorded: list[float] = []
+
+    async def _fake_sleep(seconds: float) -> None:
+        recorded.append(seconds)
+
+    monkeypatch.setattr(_asyncio, "sleep", _fake_sleep)
+    return recorded
+
+
+@pytest.mark.asyncio
+async def test_5xx_retried_with_correct_backoff(
+    respx_mock: Any,
+    client: LMStudioClient,
+    audit_schema: dict[str, Any],
+    sleep_recorder: list[float],
+) -> None:
+    """503×3 then 200; backoff sleeps assert [5, 15, 45]."""
+    route = respx_mock.post("http://localhost:1234/v1/chat/completions")
+    route.side_effect = [
+        httpx.Response(503, json={"error": "down"}),
+        httpx.Response(503, json={"error": "down"}),
+        httpx.Response(503, json={"error": "down"}),
+        httpx.Response(200, json=_success_payload(_valid_audit_json())),
+    ]
+    resp = await client.chat(
+        task="file_audit",
+        messages=[ChatMessage(role="user", content="hi")],
+        schema=audit_schema,
+        tools=None,
+    )
+    assert resp.content_dict is not None
+    assert sleep_recorder == [5, 15, 45]
+    assert route.call_count == 4
+
+
+@pytest.mark.asyncio
+async def test_5xx_exhausted_after_3_retries_reraises(
+    respx_mock: Any,
+    client: LMStudioClient,
+    audit_schema: dict[str, Any],
+    sleep_recorder: list[float],
+) -> None:
+    """503×4 → HTTPStatusError after exactly 3 retries (4 total requests)."""
+    route = respx_mock.post("http://localhost:1234/v1/chat/completions")
+    route.side_effect = [httpx.Response(503, json={"e": "x"})] * 4
+    with pytest.raises(httpx.HTTPStatusError):
+        await client.chat(
+            task="file_audit",
+            messages=[ChatMessage(role="user", content="hi")],
+            schema=audit_schema,
+            tools=None,
+        )
+    assert route.call_count == 4  # 1 initial + 3 retries
+    assert sleep_recorder == [5, 15, 45]  # no sleep on the final attempt
+
+
+@pytest.mark.asyncio
+async def test_4xx_not_retried(
+    respx_mock: Any,
+    client: LMStudioClient,
+    audit_schema: dict[str, Any],
+    sleep_recorder: list[float],
+) -> None:
+    """401 fails fast — exactly 1 request, no sleeps."""
+    route = respx_mock.post("http://localhost:1234/v1/chat/completions")
+    route.return_value = httpx.Response(401, json={"error": "unauthorized"})
+    with pytest.raises(httpx.HTTPStatusError):
+        await client.chat(
+            task="file_audit",
+            messages=[ChatMessage(role="user", content="hi")],
+            schema=audit_schema,
+            tools=None,
+        )
+    assert route.call_count == 1
+    assert sleep_recorder == []
+
+
+@pytest.mark.asyncio
+async def test_read_timeout_retried_like_5xx(
+    respx_mock: Any,
+    client: LMStudioClient,
+    audit_schema: dict[str, Any],
+    sleep_recorder: list[float],
+) -> None:
+    """ReadTimeout twice then 200; backoffs [5, 15]; success on third attempt."""
+    route = respx_mock.post("http://localhost:1234/v1/chat/completions")
+    route.side_effect = [
+        httpx.ReadTimeout("timeout 1"),
+        httpx.ReadTimeout("timeout 2"),
+        httpx.Response(200, json=_success_payload(_valid_audit_json())),
+    ]
+    resp = await client.chat(
+        task="file_audit",
+        messages=[ChatMessage(role="user", content="hi")],
+        schema=audit_schema,
+        tools=None,
+    )
+    assert resp.content_dict is not None
+    assert sleep_recorder == [5, 15]
+    assert route.call_count == 3
+
+
+@pytest.mark.asyncio
+async def test_connect_error_raises_LMSConnectionLost(
+    respx_mock: Any,
+    client: LMStudioClient,
+    audit_schema: dict[str, Any],
+    sleep_recorder: list[float],
+) -> None:
+    """httpx.ConnectError → LMSConnectionLost (not bare httpx exception)."""
+    respx_mock.post("http://localhost:1234/v1/chat/completions").mock(
+        side_effect=httpx.ConnectError("connection refused")
+    )
+    with pytest.raises(LMSConnectionLost):
+        await client.chat(
+            task="file_audit",
+            messages=[ChatMessage(role="user", content="hi")],
+            schema=audit_schema,
+            tools=None,
+        )
+    # ConnectError raises immediately — no sleeps, no retries.
+    assert sleep_recorder == []
+
+
+@pytest.mark.asyncio
+async def test_reprobe_until_alive_polls_models_every_10s(
+    respx_mock: Any,
+    client: LMStudioClient,
+    sleep_recorder: list[float],
+) -> None:
+    """ConnectError ×2 then 200 on /v1/models; two sleeps of 10s, returns clean."""
+    route = respx_mock.get("http://localhost:1234/v1/models")
+    route.side_effect = [
+        httpx.ConnectError("down"),
+        httpx.ConnectError("down"),
+        httpx.Response(200, json={"data": []}),
+    ]
+    await client._reprobe_until_alive(interval_s=10.0)  # type: ignore[attr-defined]
+    # Loop iterations 1,2 sleep 10s after the failed probe; iteration 3 succeeds
+    # before the sleep is reached. So exactly two sleeps of 10s.
+    assert sleep_recorder == [10.0, 10.0]
+    assert route.call_count == 3
+
+
+@pytest.mark.asyncio
+async def test_reprobe_until_alive_bounded_by_max_iterations(
+    respx_mock: Any,
+    client: LMStudioClient,
+    sleep_recorder: list[float],
+) -> None:
+    """After max_iterations failed probes, raise LMSConnectionLost (§3 conventions)."""
+    respx_mock.get("http://localhost:1234/v1/models").mock(
+        side_effect=httpx.ConnectError("never up")
+    )
+    with pytest.raises(LMSConnectionLost):
+        await client._reprobe_until_alive(  # type: ignore[attr-defined]
+            interval_s=1.0, max_iterations=3
+        )
+    # 3 iterations × 1s sleep each.
+    assert sleep_recorder == [1.0, 1.0, 1.0]
+
+
 @pytest.mark.asyncio
 async def test_schema_negotiation_failed_when_both_modes_refused(
     respx_mock: Any,
