@@ -289,7 +289,7 @@ None — M10 is the leaf milestone. After M10 ships, downstream is real users.
 - Edit: `senex.config.toml.example`
 - Create: `tests/unit/test_config_example_in_sync.py`
 
-- [ ] **Step 10.7.1: Replace one-line README** with full quickstart. Required sections:
+- [x] **Step 10.7.1: Replace one-line README** with full quickstart. Required sections:
   - **Overview** (1 paragraph from spec §1)
   - **Prerequisites** — Python 3.11+, LM Studio (download URL), `google/gemma-4-26b-a4b` model loaded, GitNexus optional but recommended
   - **Install** — `git clone …; cd senex; .\scripts\setup.ps1` (Windows) or `python -m pip install -e .` (manual)
@@ -302,9 +302,9 @@ None — M10 is the leaf milestone. After M10 ships, downstream is real users.
   - **Troubleshooting** — common doctor failures + fixes
   - **License + contribution links**
 
-- [ ] **Step 10.7.2: Verify `senex.config.toml.example`** is in sync with current `SenexConfig`. Failing test: `tests/unit/test_config_example_in_sync.py` loads the example, validates it against `SenexConfig`, and asserts every field in `SenexConfig` (including nested) appears as a comment or active key in the example file. Refresh the example file as needed.
+- [x] **Step 10.7.2: Verify `senex.config.toml.example`** is in sync with current `SenexConfig`. Failing test: `tests/unit/test_config_example_in_sync.py` loads the example, validates it against `SenexConfig`, and asserts every field in `SenexConfig` (including nested) appears as a comment or active key in the example file. Refresh the example file as needed.
 
-- [ ] **Step 10.7.3: Test pass + commit** `docs(M10): README quickstart + config example sync`.
+- [x] **Step 10.7.3: Test pass + commit** `docs(M10): README quickstart + config example sync`.
 
 ### Task 10.8: Full test suite green
 
