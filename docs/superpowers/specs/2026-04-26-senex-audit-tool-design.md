@@ -203,9 +203,13 @@ Phase 3 — Per-file audit loop  (sequential, resumable, idempotent)
     c) pre-LMS token count via tiktoken / model tokenizer; if > 90% of context
        window (262144 default), skip with <file>.SKIPPED.md ("token budget
        exceeded: X / 262144"). Avoids HTTP 4xx waste path.
-    d) lmstudio_client.chat(task='file_audit', messages, schema)
-       - streams; emits ThinkingTick/OutputTick events
-       - returns ChatResponse{content_json, reasoning_content, latencies}
+    d) lmstudio_client.chat(task='file_audit', messages, schema,
+                            tools=registry.openai_tools())
+       - runs the bounded tool-call loop in tools/loop.py (§5.5, §5.11.3)
+       - streams; emits ThinkingTick/OutputTick events; emits
+         ToolCall/ToolResult/ToolError; may invoke compaction (§5.5.1)
+       - returns ChatResponse{content_json, reasoning_content, latencies,
+                              tool_calls_made}
     e) VALIDATE JSON against audit_response schema FIRST.
        - on failure: retry once with stricter prompt.
        - on second failure: write <file>.RAW.json + <file>.ERROR.md and
@@ -734,6 +738,10 @@ After each tool result is added to the message history, the loop computes total 
 - The replaced slice is removed from history. A single message with `role = "system"` and content `[COMPACTED]\n<evidence_summary>\n\nKey findings noted: <list>\nUnanswered: <list>` is inserted in its place.
 - The loop continues with the rebuilt history.
 
+#### Budget accounting
+
+Compaction LMS calls do **NOT** count against `[lmstudio.tools].max_calls_per_file`. Compaction is a safety-net mechanism, not a tool. Compactions are bounded only by `[lmstudio.compaction].max_compactions_per_file`. The two budgets are independent: a file may exhaust one without affecting the other.
+
 #### Configuration
 
 ```toml
@@ -815,6 +823,21 @@ Run completion phase (success OR failure path):
 
 If neither is available: refuse to enable `auto_load`/`auto_unload` at preflight (Exit 3 with diagnostic).
 
+**Fingerprint computation (canonical).** `model_fingerprint` is `sha256` over the JSON-serialized tuple `(model_id, quant, checkpoint_digest)` where:
+
+- `model_id` is the resolved id returned by LM Studio (sentinel `@auto`/`@first` already collapsed to a concrete id at preflight).
+- `quant` is the quantization label reported by the active backend (`lmstudio.list_loaded_models()[i].quantization` for the SDK; the `QUANT` column of `lms ps` for the CLI). Empty string if the field is absent.
+- `checkpoint_digest` is the `sha256` of the model's local weight blob path resolved through the backend (SDK: `model.path`; CLI: `lms ps --json` `path` field). When the backend exposes only a directory, the digest is computed over the manifest file (`config.json` or equivalent) — never over multi-GB weight files. If no path is exposed, `checkpoint_digest = "unknown"` and a `ModelFingerprintIndeterminate` warning is logged at preflight.
+
+Computation rules:
+
+1. **`auto_load = true` path** — fingerprint is computed immediately after the load completes, using the same backend that performed the load.
+2. **`auto_load = false` attach path** — fingerprint is computed by probing the **already-loaded** model via the backend before `runlock.acquire()`. The probe is the same code path; the only difference is `loaded_by_us = false` is recorded in the lock.
+3. **Fingerprint mismatch on probe** — if the computed fingerprint differs from a fingerprint already present in the runlock for the same `model_id` (i.e. a different quant/checkpoint loaded under the same id), preflight exits 3 with `model_fingerprint_conflict`; the user resolves manually.
+4. **Per-completion verification** — the same computation is re-run after each chat completion (cheap: cached for the run, re-probed only if the LMS server reports a model state change via `/v1/models` heartbeat). A change emits `ModelFingerprintChanged` and aborts the current file (§5.5.2.6).
+
+Both backends MUST produce identical fingerprints for the same loaded model; this is asserted in the lifecycle backend-fallback test (§9 test 34).
+
 #### 5.5.2.4 Failure modes
 
 | Failure | Behavior |
@@ -840,6 +863,27 @@ All events carry `schema_version`, `seq`, `run_id`, `ts` per universal event con
 | Malicious config sets `model = "@auto"` then concurrent run swaps loaded model mid-audit | runlock pins the fingerprint that was acquired; if mid-run the model fingerprint changes (detected at chat-completion time), abort the file with `ModelFingerprintChanged` event. Future runs use the new fingerprint. |
 | Race between two senex runs both auto-loading | The second run's load call is a no-op (LM Studio detects model already loaded); refcount still goes to 2; both runs proceed. |
 | Subprocess injection via `model_id` to `lms load` | Use list-form `subprocess.run(["lms", "load", model_id], ...)`; validate `model_id` matches `^[A-Za-z0-9_./-]+$` before any subprocess call (mirrors §SEC-4). |
+
+#### 5.5.2.7 Resume integration
+
+When `senex audit --resume` re-attaches to an existing audit dir, the lifecycle handshake re-runs in attach-only mode regardless of the original `auto_load` setting. The protocol is:
+
+1. **Re-probe** LM Studio: list loaded models; verify the original model identifier is still loaded.
+2. **Recompute fingerprint** using the §5.5.2.3 canonical fingerprint protocol.
+3. **Compare** against `checkpoint.json.model_fingerprint`. On mismatch:
+   - Default: refuse resume; exit 3 with `"model fingerprint differs from checkpoint; loaded=<observed>, expected=<checkpoint>; pass --allow-mixed-resume to merge across fingerprints"`.
+   - With `--allow-mixed-resume`: proceed; emit `ModelFingerprintChanged` event; aggregation buckets findings by fingerprint per §8.5.
+4. **Acquire runlock** with `loaded_by_us = false` even if the original (now-dead) run had `loaded_by_us = true`. The original load is owned by the dead process; resume MUST NOT claim responsibility for unload — that ownership cannot be transferred safely. The model stays loaded for the duration of the resumed run; on resume completion, `auto_unload` is forced to `false` for this run regardless of config (with `ModelUnloadSkipped {reason: "resumed_run_does_not_own_load"}`).
+5. **Stale-lock cleanup** runs as part of `runlock.acquire()`: any holder entry whose PID is no longer alive is pruned before the resumed run's holder is appended.
+
+This is intentionally conservative: a resumed run never unloads a model it didn't load this invocation, even if it inherited a fingerprint match. The user can manually `senex lifecycle clear-locks` to prune leftover holder entries from crashed runs.
+
+| Resume scenario | Behavior |
+|---|---|
+| Crashed run, model still loaded, fingerprint matches | Acquire as `loaded_by_us=false`; resume proceeds; no unload at completion. |
+| Crashed run, model unloaded externally | Re-probe fails; if `--no-load` not set and `auto_load=true`, lifecycle re-loads the model AND records `loaded_by_us=true` for the resumed run. The runlock now reflects the resumed run as the loader. |
+| Crashed run, different model loaded | Fingerprint mismatch → refuse resume unless `--allow-mixed-resume`. |
+| Two concurrent crashed runs share the same lock file | Stale-PID prune handles both at acquire time; the resumed run's holder is the only live entry. |
 
 ### 5.6 Event Bus & Subscribers
 
@@ -885,6 +929,8 @@ Event types (pydantic models, serialized to `events.jsonl` newline-delimited). E
 | `RunLockReleased` | `model_fingerprint`, `remaining_holders` |
 
 **Event payload persistence.** `tool_input` and full tool-result text are persisted in full to `<file>.thinking.md` (when `save_traces=true`) but redacted/truncated in `events.jsonl` to keep event lines bounded. The `ToolCall.tool_input` field in the event stream is truncated to 512 chars; `ToolResult` carries only `result_tokens` and `latency_ms`, never the result text.
+
+**Tick scoping.** `ThinkingTick.tokens_so_far` and `OutputTick.tokens_so_far` are **per-turn** counters. With tool use, a single file audit produces multiple thinking/output turns (one per tool round-trip). Each turn's ticks reset their counter to 0 at `ThinkingStarted` / `OutputStarted` and grow until the matching `ThinkingComplete` / `OutputComplete`. The per-file totals are computed by summing `ThinkingComplete.total_thinking_tokens` (and `OutputComplete.total_output_tokens`) across all turns for that file. The TUI maintains both: per-turn live counters from ticks, and per-file rolling sums from completes. The per-file report header (§7.1) shows the per-file totals.
 
 Three always-on subscribers:
 - `DiskWriterSubscriber`: write-ahead persistence.
@@ -1229,6 +1275,7 @@ Mirrors the empirical sample format the user has validated. Generated by `render
 
 **Date:** 2026-04-26  **Run ID:** 01jz3k7b  **Model:** google/gemma-4-26b-a4b  **Lens:** correctness
 **Tokens in/out:** 8423 / 1276  **Latency:** 47s (thinking 32s, output 15s)
+**Tools used:** 3 / 5 (`gitnexus_context`×1, `read_file`×2)  **Compactions:** 0 / 3
 **GitNexus context:** cluster=`retrieval/factory` | callers d=1: 14 | processes: build_retrieval_pipeline, search_pipeline_init
 
 <overall_assessment paragraph>
