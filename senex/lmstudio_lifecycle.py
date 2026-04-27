@@ -382,6 +382,61 @@ def _resume_holder_record(
     }
 
 
+# Doctor check (spec section 8.1) -------------------------------------------
+
+
+class DoctorCheck(BaseModel):
+    """A single preflight/doctor row.
+
+    TODO(M10): when ``senex/phases/preflight.py`` is created, re-export this
+    model from there and have callers import it from preflight; M4 declares
+    it inline so the lifecycle backend check can be tested in isolation.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str
+    status: str  # "pass" | "warn" | "fail"
+    message: str
+
+
+async def doctor_check_lifecycle_backend(config: Any) -> DoctorCheck:
+    """Probe ``LifecycleBackendFactory.select`` and return a 3-branch DoctorCheck.
+
+    Spec section 8.1 row "lmstudio_lifecycle_backend":
+    - backend reachable           -> status='pass'.
+    - no backend AND auto_load=T  -> status='fail' (run will not start).
+    - no backend AND auto_load=F  -> status='warn' (manual load still works).
+    """
+    auto_load = bool(config.lmstudio.lifecycle.auto_load)
+    try:
+        backend = await LifecycleBackendFactory.select()
+    except LifecycleBackendUnavailable as exc:
+        if auto_load:
+            return DoctorCheck(
+                name="lmstudio_lifecycle_backend",
+                status="fail",
+                message=(
+                    f"no lifecycle backend available and auto_load is enabled: "
+                    f"{exc!s}"
+                ),
+            )
+        return DoctorCheck(
+            name="lmstudio_lifecycle_backend",
+            status="warn",
+            message=(
+                f"no lifecycle backend available; auto_load is disabled so the "
+                f"run can still attach to a manually-loaded model: {exc!s}"
+            ),
+        )
+    backend_name = getattr(backend, "backend_name", "unknown")
+    return DoctorCheck(
+        name="lmstudio_lifecycle_backend",
+        status="pass",
+        message=f"lifecycle backend selected: {backend_name}",
+    )
+
+
 # Lifecycle high-level API --------------------------------------------------
 
 

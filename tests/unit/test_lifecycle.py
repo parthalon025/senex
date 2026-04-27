@@ -654,3 +654,74 @@ async def test_subprocess_uses_list_form_and_shell_false(
     assert args[2] == "google/gemma-4-26b-a4b"
     assert "shell" not in kwargs or kwargs["shell"] is False
     assert all(isinstance(a, str) and ";" not in a and "&" not in a for a in args)
+
+
+
+# ---------------------------------------------------------------------------
+# Task 4.5 - Doctor lifecycle backend check (spec section 8.1)
+# ---------------------------------------------------------------------------
+
+
+async def test_doctor_fail_when_auto_load_and_no_backend(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """auto_load=True + no backend -> status='fail'."""
+    from senex.config import LifecycleCfg, SenexConfig
+    from senex.lmstudio_lifecycle import (
+        DoctorCheck,
+        LifecycleBackendUnavailable,
+        doctor_check_lifecycle_backend,
+    )
+
+    monkeypatch.setattr(
+        "senex.lmstudio_lifecycle.LifecycleBackendFactory.select",
+        AsyncMock(side_effect=LifecycleBackendUnavailable("no backend")),
+    )
+    cfg = SenexConfig()
+    cfg.lmstudio.lifecycle = LifecycleCfg(auto_load=True)
+    result: DoctorCheck = await doctor_check_lifecycle_backend(cfg)
+    assert result.name == "lmstudio_lifecycle_backend"
+    assert result.status == "fail"
+
+
+async def test_doctor_warn_when_no_backend_but_auto_load_false(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """auto_load=False + no backend -> status='warn' (run can still attach)."""
+    from senex.config import LifecycleCfg, SenexConfig
+    from senex.lmstudio_lifecycle import (
+        LifecycleBackendUnavailable,
+        doctor_check_lifecycle_backend,
+    )
+
+    monkeypatch.setattr(
+        "senex.lmstudio_lifecycle.LifecycleBackendFactory.select",
+        AsyncMock(side_effect=LifecycleBackendUnavailable("no backend")),
+    )
+    cfg = SenexConfig()
+    cfg.lmstudio.lifecycle = LifecycleCfg(auto_load=False)
+    result = await doctor_check_lifecycle_backend(cfg)
+    assert result.status == "warn"
+
+
+async def test_doctor_pass_when_backend_available(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Backend reachable -> status='pass', message names which backend."""
+    from senex.config import LifecycleCfg, SenexConfig
+    from senex.lmstudio_lifecycle import (
+        LMStudioSDKBackend,
+        doctor_check_lifecycle_backend,
+    )
+
+    fake_backend = MagicMock(spec=LMStudioSDKBackend)
+    fake_backend.backend_name = "sdk"
+    monkeypatch.setattr(
+        "senex.lmstudio_lifecycle.LifecycleBackendFactory.select",
+        AsyncMock(return_value=fake_backend),
+    )
+    cfg = SenexConfig()
+    cfg.lmstudio.lifecycle = LifecycleCfg(auto_load=True)
+    result = await doctor_check_lifecycle_backend(cfg)
+    assert result.status == "pass"
+    assert "sdk" in result.message.lower()
