@@ -214,7 +214,7 @@ The bus dispatcher reads `subscriber.drop_policy` and applies it when the per-su
 
 **Spec anchors:** §5.6 (events), §5.6.1 (drop_oldest tick policy); conventions §3 (no sync I/O), §6 (capture stdout via `capsys`).
 
-- [ ] **Step 9.2.1: Failing tests.**
+- [x] **Step 9.2.1: Failing tests.**
   - `test_headless_prints_one_line_per_file_complete` — feed `RunStart` + 3× `(FileStart, FileComplete)` + `RunComplete`; capture stdout; assert exactly 3 `[N/M] auditing <path> — X findings (high=H, medium=M, low=L)` lines.
   - `test_headless_suppresses_tick_events` — feed 100× `ThinkingTick`; assert stdout produces 0 lines.
   - `test_headless_run_complete_prints_final_summary` — assert final line contains rollup totals + duration + exit_status from `RunComplete`.
@@ -222,7 +222,7 @@ The bus dispatcher reads `subscriber.drop_policy` and applies it when the per-su
   - `test_headless_file_error_prints_error_line` — feed `FileError`; assert stdout contains `ERROR <path>: <error_kind>`.
   - `test_headless_handles_unicode_paths` — feed `FileStart(path="src/héllo.py")`; assert stdout encodes UTF-8 cleanly.
 
-- [ ] **Step 9.2.2: Implement.**
+- [x] **Step 9.2.2: Implement.**
   - `name = "headless"`, `queue_capacity = 1024`, `drop_policy = "drop_oldest"`.
   - Format per spec §5.7-style: `[12/87] auditing src/foo.py — 2 findings (high=1, medium=1, low=0)`.
   - Stdout writes via `await asyncio.to_thread(sys.stdout.write, line)`; `flush()` on each line.
@@ -236,7 +236,7 @@ The bus dispatcher reads `subscriber.drop_policy` and applies it when the per-su
     ```
   - Suppress all `*Tick` event types (match by `isinstance(event, (ThinkingTick, OutputTick))`).
 
-- [ ] **Step 9.2.3: Verify** + **commit** `feat(M9): HeadlessSubscriber with concise progress lines + final summary`.
+- [x] **Step 9.2.3: Verify** + **commit** `feat(M9): HeadlessSubscriber with concise progress lines + final summary`.
 
 ### Task 9.3: MetricsCollectorSubscriber
 
@@ -246,7 +246,7 @@ The bus dispatcher reads `subscriber.drop_policy` and applies it when the per-su
 
 **Spec anchors:** §5.6 (events), §5.6.1 (drop_oldest tick policy); conventions §3 (no I/O in pure aggregator).
 
-- [ ] **Step 9.3.1: Failing tests.**
+- [x] **Step 9.3.1: Failing tests.**
   - `test_metrics_starts_zeroed` — assert `sub.metrics == Metrics(files_done=0, ...)`.
   - `test_metrics_increments_files_done_on_file_complete` — feed 5× `FileComplete`; assert `metrics.files_done == 5`.
   - `test_metrics_aggregates_findings_by_priority` — feed `FileComplete(finding_counts={"high":2,"medium":1,"low":3,"healthy":0})` × 2; assert `metrics.findings_by_priority == {"high":4,"medium":2,"low":6,"healthy":0}`.
@@ -257,13 +257,13 @@ The bus dispatcher reads `subscriber.drop_policy` and applies it when the per-su
   - `test_metrics_drop_policy_is_drop_oldest` — assert `sub.drop_policy == "drop_oldest"`.
   - `test_metrics_no_io` — patch `builtins.open`; feed 100 events; assert `open` never called.
 
-- [ ] **Step 9.3.2: Implement.**
+- [x] **Step 9.3.2: Implement.**
   - `Metrics` is a Pydantic v2 model with `extra="forbid"`: `files_done: int`, `findings_by_priority: dict[Literal["high","medium","low","healthy"], int]`, `tool_calls: int`, `compactions: int`, `total_thinking_seconds: float`, `total_output_seconds: float`.
   - `MetricsCollectorSubscriber.metrics` is a read-only `@property` returning a frozen copy (`Metrics.model_validate(self._metrics.model_dump())`).
   - `name = "metrics"`, `queue_capacity = 1024`, `drop_policy = "drop_oldest"`.
   - `consume(event)` is a `match`/`case` on event subclasses (conventions §1: prefer pattern matching).
 
-- [ ] **Step 9.3.3: Verify** + **commit** `feat(M9): MetricsCollectorSubscriber with running totals`.
+- [x] **Step 9.3.3: Verify** + **commit** `feat(M9): MetricsCollectorSubscriber with running totals`.
 
 ### Task 9.4: Textual app skeleton
 
@@ -276,14 +276,14 @@ The bus dispatcher reads `subscriber.drop_policy` and applies it when the per-su
 
 **Spec anchors:** §5.7 (TUI overview); ARCH-16 (keybinding namespacing); conventions §3 (cancellation), §4 (named exceptions).
 
-- [ ] **Step 9.4.1: Failing tests** (Pilot smoke).
+- [x] **Step 9.4.1: Failing tests** (Pilot smoke).
   - `test_senex_app_constructs_with_required_args` — `SenexApp(config_path=Path("..."), repo_path_default=Path("..."))` returns instance with both screens registered.
   - `test_senex_app_on_mount_pushes_launcher` — `async with app.run_test() as pilot: await pilot.pause(); assert isinstance(pilot.app.screen, LauncherScreen)`.
   - `test_senex_app_start_audit_pushes_monitor_and_spawns_task` — call `app.start_audit(rt_cfg)`; `await pilot.pause()`; assert current screen is `MonitorScreen` AND `app._audit_task` is a non-done `asyncio.Task`.
   - `test_senex_app_audit_task_exception_renders_error_screen` — feed a `start_audit` whose `run_audit` immediately raises `RuntimeError("boom")`; assert the done-callback caught it AND the error banner shows `"boom"`; assert NO exception propagates from `run_test`.
   - `test_senex_app_ctrl_q_cancels_audit_task_and_exits` — push Monitor; press `ctrl+q`; assert task is cancelled (`task.cancelled() is True`) AND app exited cleanly.
 
-- [ ] **Step 9.4.2: Implement** `SenexApp(App)`:
+- [x] **Step 9.4.2: Implement** `SenexApp(App)`:
   ```python
   class SenexApp(App):
       def __init__(
@@ -326,11 +326,11 @@ The bus dispatcher reads `subscriber.drop_policy` and applies it when the per-su
   ```
   - `_render_error(exc: BaseException) -> None` — pushes ErrorBanner update; logs structured event; never raises.
 
-- [ ] **Step 9.4.3: Implement WidgetRenderError** in `senex/tui/exceptions.py` per "Named exceptions" section above. Add `SenexApp._handle_widget_error(self, error: WidgetRenderError) -> None` that catches at the Textual boundary.
+- [x] **Step 9.4.3: Implement WidgetRenderError** in `senex/tui/exceptions.py` per "Named exceptions" section above. Add `SenexApp._handle_widget_error(self, error: WidgetRenderError) -> None` that catches at the Textual boundary.
 
-- [ ] **Step 9.4.4: Verify** Pilot tests + `mypy senex/tui/app.py`.
+- [x] **Step 9.4.4: Verify** Pilot tests + `mypy senex/tui/app.py`.
 
-- [ ] **Step 9.4.5: Commit** `feat(M9): SenexApp skeleton with Launcher/Monitor screens + audit task lifecycle`.
+- [x] **Step 9.4.5: Commit** `feat(M9): SenexApp skeleton with Launcher/Monitor screens + audit task lifecycle`.
 
 ### Task 9.5: Launcher screen
 
@@ -357,7 +357,7 @@ The bus dispatcher reads `subscriber.drop_policy` and applies it when the per-su
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-- [ ] **Step 9.5.1: Failing tests** (one per field; one for resume detection; one for submission).
+- [x] **Step 9.5.1: Failing tests** (one per field; one for resume detection; one for submission).
   - `test_launcher_renders_all_form_fields` — Pilot: assert each `#repo_path`, `#lens_select`, `#model_select`, `#temperature`, `#max_tokens`, `#seed`, `#include_tests`, `#save_traces`, `#start_btn`, `#reset_btn` is mounted.
   - `test_launcher_repo_path_input_typing` — `await pilot.click("#repo_path"); await pilot.type("/tmp/my-repo"); assert query_one("#repo_path", Input).value == "/tmp/my-repo"`.
   - `test_launcher_model_dropdown_populated_from_lms` — patch `client.list_loaded_models()` → `["a", "b"]`; mount; assert Select options are `["a", "b"]`.
@@ -368,14 +368,14 @@ The bus dispatcher reads `subscriber.drop_policy` and applies it when the per-su
   - `test_launcher_start_button_invalid_repo_path_shows_error_label` — type a non-existent path; click Start; assert `app.start_audit` NOT called AND `#error_label` visible.
   - `test_launcher_reset_button_restores_defaults_from_config` — change values; click Reset; assert all fields back to defaults from `SenexConfig`.
 
-- [ ] **Step 9.5.2: Implement** `LauncherScreen(Screen)`:
+- [x] **Step 9.5.2: Implement** `LauncherScreen(Screen)`:
   - `compose() -> ComposeResult` yields `Container(Vertical(Input, Select, ...))`.
   - `on_mount()` — `await self._populate_models()` and `await self._detect_resumable_runs()`.
   - `on_button_pressed(event: Button.Pressed)` — dispatches by `event.button.id`.
   - `_build_runtime_config()` — pure function, validates, returns `RuntimeConfig` (Pydantic v2; `extra="forbid"`).
   - All input validation produces `ValueError` caught locally and surfaced via `#error_label`; never raises out of the screen.
 
-- [ ] **Step 9.5.3: Verify** + **commit** `feat(M9): Launcher screen with model dropdown + resume detection`.
+- [x] **Step 9.5.3: Verify** + **commit** `feat(M9): Launcher screen with model dropdown + resume detection`.
 
 ### Task 9.6: Monitor screen widgets
 
@@ -401,16 +401,16 @@ The bus dispatcher reads `subscriber.drop_policy` and applies it when the per-su
 [  ████████░░░░░░░  ]  12/87 files  14%  ETA 23m
 ```
 
-- [ ] **Step 9.6a.1: Failing tests.**
+- [x] **Step 9.6a.1: Failing tests.**
   - `test_progress_initial_render_shows_zero` — mount; assert `query_one("#progress_label").renderable == "0/0 files 0% — ETA --"`.
   - `test_progress_updates_on_file_start_total` — feed `FileStart(idx=1, total=87, path="x")`; assert label shows `1/87 files 1% — ETA --` (no ETA until first complete).
   - `test_progress_eta_after_first_complete` — feed `FileStart(idx=1)` at t=0, `FileComplete(idx=1)` at t=10s; feed `FileStart(idx=2, total=10)`; assert ETA = `9 × 10s = 90s` (≈ "1m30s").
   - `test_progress_eta_uses_rolling_window_n10` — feed 11 file completes with varying durations; assert ETA computed from last 10, not all 11.
   - `test_progress_handles_zero_total` — feed `FileStart(idx=0, total=0)`; assert no ZeroDivisionError; label shows `"0/0 files — — ETA --"`.
 
-- [ ] **Step 9.6a.2: Implement.** Use `textual.widgets.ProgressBar` for the bar; a `Label` for the text. `on_event` matches on `FileStart` (capture `total`) and `FileComplete` (append duration to `collections.deque(maxlen=10)`).
+- [x] **Step 9.6a.2: Implement.** Use `textual.widgets.ProgressBar` for the bar; a `Label` for the text. `on_event` matches on `FileStart` (capture `total`) and `FileComplete` (append duration to `collections.deque(maxlen=10)`).
 
-- [ ] **Step 9.6a.3: Verify** + **commit** `feat(M9): ProgressWidget with rolling ETA`.
+- [x] **Step 9.6a.3: Verify** + **commit** `feat(M9): ProgressWidget with rolling ETA`.
 
 #### Task 9.6b: CurrentFileWidget
 
@@ -429,7 +429,7 @@ Thinking tokens: 1,247   In: 4,096   Out: 312
 
 Phase enum (string): `"context"` (after `FileContextBuilt`) → `"thinking"` (after `ThinkingStarted`) → `"writing"` (after `OutputStarted`) → `"rendering"` (after `OutputComplete`).
 
-- [ ] **Step 9.6b.1: Failing tests.**
+- [x] **Step 9.6b.1: Failing tests.**
   - `test_current_file_initial_state_is_blank` — assert filename label empty; phase = `"-"`.
   - `test_current_file_file_start_sets_filename` — feed `FileStart(path="src/foo.py", idx=1, total=10)`; assert `#filename` shows `"src/foo.py"`.
   - `test_current_file_phase_transitions` — feed each of the 4 phase-starting events in order; after each, assert `#phase` label updates.
@@ -438,9 +438,9 @@ Phase enum (string): `"context"` (after `FileContextBuilt`) → `"thinking"` (af
   - `test_current_file_tool_call_increments_tools_used` — feed 3× `ToolCall`; assert `#tools_used` shows `"3"`.
   - `test_current_file_file_complete_resets_for_next_file` — feed `FileComplete` then `FileStart(path="src/bar.py")`; assert all fields reflect bar.py with counters reset to 0.
 
-- [ ] **Step 9.6b.2: Implement.** Per-file counters reset on `FileStart` (NOT on `FileComplete` — the user briefly sees the final state).
+- [x] **Step 9.6b.2: Implement.** Per-file counters reset on `FileStart` (NOT on `FileComplete` — the user briefly sees the final state).
 
-- [ ] **Step 9.6b.3: Verify** + **commit** `feat(M9): CurrentFileWidget with live phase + token counters`.
+- [x] **Step 9.6b.3: Verify** + **commit** `feat(M9): CurrentFileWidget with live phase + token counters`.
 
 #### Task 9.6c: FindingsPanelWidget
 
@@ -459,16 +459,16 @@ Recent findings (30 max):
   ...
 ```
 
-- [ ] **Step 9.6c.1: Failing tests.**
+- [x] **Step 9.6c.1: Failing tests.**
   - `test_findings_panel_initial_empty` — assert no rows.
   - `test_findings_panel_appends_on_file_complete` — feed `FileComplete(path="x", last_finding_summary={"priority":"high","title":"t"})`; assert 1 row.
   - `test_findings_panel_deque_maxlen_30` — feed 31 file completes; assert exactly 30 rows; assert the first event evicted.
   - `test_findings_panel_priority_badge_styling` — assert each priority renders with the correct CSS class (`.priority-high`, `.priority-medium`, `.priority-low`).
   - `test_findings_panel_skips_file_complete_without_finding_summary` — feed `FileComplete(last_finding_summary=None)`; assert no row added.
 
-- [ ] **Step 9.6c.2: Implement.** Use `collections.deque(maxlen=30)`. Render via `DataTable` widget (Textual built-in); recompose on each event.
+- [x] **Step 9.6c.2: Implement.** Use `collections.deque(maxlen=30)`. Render via `DataTable` widget (Textual built-in); recompose on each event.
 
-- [ ] **Step 9.6c.3: Verify** + **commit** `feat(M9): FindingsPanelWidget with deque(maxlen=30) eviction`.
+- [x] **Step 9.6c.3: Verify** + **commit** `feat(M9): FindingsPanelWidget with deque(maxlen=30) eviction`.
 
 **Watch-out:** `last_finding_summary` is now a first-class field on `FileComplete` (M1 Task 1.3 per R12). If a downstream change ever removes it, this widget MUST degrade to "show priority counters only" rather than silently break — coordinate via plan addendum, not silent code drift.
 
@@ -485,7 +485,7 @@ Recent findings (30 max):
 ⚠  3 errors — last: ToolError tool=read_file kind=path_rejected   [press e to dismiss]
 ```
 
-- [ ] **Step 9.6d.1: Failing tests.**
+- [x] **Step 9.6d.1: Failing tests.**
   - `test_error_banner_hidden_initially` — assert `#error_banner.display == False`.
   - `test_error_banner_appears_on_first_error_event` — feed `FileError(path="x", phase="thinking", error_kind="lms", error_message="boom")`; assert `display == True` AND label shows `"1 errors — last: FileError x: boom"`.
   - `test_error_banner_count_increments` — feed 3 errors; assert label shows `"3 errors"`.
@@ -494,9 +494,9 @@ Recent findings (30 max):
   - `test_error_banner_resurfaces_on_new_error_after_dismiss` — dismiss; feed new error; assert display flips back to True.
   - `test_error_banner_handles_tool_error_kinds` — feed each of the 6 documented `ToolError.kind` values; assert each renders without crash.
 
-- [ ] **Step 9.6d.2: Implement.**
+- [x] **Step 9.6d.2: Implement.**
 
-- [ ] **Step 9.6d.3: Verify** + **commit** `feat(M9): ErrorBannerWidget with sticky errors + dismiss key`.
+- [x] **Step 9.6d.3: Verify** + **commit** `feat(M9): ErrorBannerWidget with sticky errors + dismiss key`.
 
 #### Task 9.6e: StatusStripWidget
 
@@ -511,16 +511,16 @@ Recent findings (30 max):
 HIGH 4 │ MEDIUM 17 │ LOW 22 │ HEALTHY 9 │ TOOLS 12 │ COMPACTIONS 0
 ```
 
-- [ ] **Step 9.6e.1: Failing tests.**
+- [x] **Step 9.6e.1: Failing tests.**
   - `test_status_strip_initial_zeros` — mount with fresh `MetricsCollectorSubscriber`; assert all counters render `"0"`.
   - `test_status_strip_updates_on_file_complete` — drive a `FileComplete` through the metrics subscriber; trigger widget update; assert counters reflect new totals.
   - `test_status_strip_does_not_update_on_tick` — feed `ThinkingTick`; assert no widget render call (mock the render method; assert call_count unchanged).
   - `test_status_strip_handles_tool_calls_counter` — feed 5× `ToolCall`; assert `TOOLS 5`.
   - `test_status_strip_handles_compactions` — feed 2× `CompactionComplete`; assert `COMPACTIONS 2`.
 
-- [ ] **Step 9.6e.2: Implement.** Construction takes `metrics: MetricsCollectorSubscriber`. `on_event(event)` skips `*Tick` event subclasses; on any other event, calls `_refresh()` which reads `self._metrics.metrics` and updates labels.
+- [x] **Step 9.6e.2: Implement.** Construction takes `metrics: MetricsCollectorSubscriber`. `on_event(event)` skips `*Tick` event subclasses; on any other event, calls `_refresh()` which reads `self._metrics.metrics` and updates labels.
 
-- [ ] **Step 9.6e.3: Verify** + **commit** `feat(M9): StatusStripWidget driven by metrics subscriber`.
+- [x] **Step 9.6e.3: Verify** + **commit** `feat(M9): StatusStripWidget driven by metrics subscriber`.
 
 ### Task 9.7: TuiSubscriber
 
@@ -530,7 +530,7 @@ HIGH 4 │ MEDIUM 17 │ LOW 22 │ HEALTHY 9 │ TOOLS 12 │ COMPACTIONS 0
 
 **Spec anchors:** §5.6.1 (drop_token_only policy; never drop boundary events); §5.7 (10 Hz refresh).
 
-- [ ] **Step 9.7.1: Failing tests.**
+- [x] **Step 9.7.1: Failing tests.**
   - `test_tui_subscriber_drop_policy_is_drop_token_only` — assert constant.
   - `test_tui_subscriber_dispatches_to_widgets_on_phase_events` — register 5 mock widgets; feed `FileStart`; assert all 5 received `on_event` exactly once.
   - `test_tui_subscriber_drops_thinking_ticks_under_pressure` — fill internal batch buffer with 100 `ThinkingTick` events in 100ms; assert ≤ 10 widget update calls (~10 Hz).
@@ -541,13 +541,13 @@ HIGH 4 │ MEDIUM 17 │ LOW 22 │ HEALTHY 9 │ TOOLS 12 │ COMPACTIONS 0
   - `test_tui_subscriber_shutdown_flushes_pending_batch` — buffer 5 events; call `shutdown()`; assert all 5 dispatched before return.
   - `test_tui_subscriber_propagates_cancelled_error` — start the rate-limit loop; cancel; assert `CancelledError` re-raised after cleanup.
 
-- [ ] **Step 9.7.2: Implement.**
+- [x] **Step 9.7.2: Implement.**
   - `name = "tui"`, `queue_capacity = 1024`, `drop_policy = "drop_token_only"`.
   - Internal `asyncio.Queue` of pending events; `_pump()` task batches with `await asyncio.sleep(0.1)` between flushes; coalesces consecutive `*Tick` for the same path.
   - `consume(event)` → `await self._queue.put(event)` if not a tick OR if the queue isn't full; otherwise drop tick (log at DEBUG).
   - `register_widget(widget)` — appends to `self._widgets`; `_dispatch_batch(events)` calls `widget.on_event(evt)` for each (evt, widget); catches `WidgetRenderError`, logs, continues.
 
-- [ ] **Step 9.7.3: Verify** + **commit** `feat(M9): TuiSubscriber with 10 Hz rate-limit + drop_token_only`.
+- [x] **Step 9.7.3: Verify** + **commit** `feat(M9): TuiSubscriber with 10 Hz rate-limit + drop_token_only`.
 
 ### Task 9.8: Command bus wiring
 
@@ -568,7 +568,7 @@ HIGH 4 │ MEDIUM 17 │ LOW 22 │ HEALTHY 9 │ TOOLS 12 │ COMPACTIONS 0
 | `p` | Pause/Resume toggle | No | `Command(type="Pause")` then `"Resume"` on next press |
 | `t` | Toggle min-priority display | No | (local widget toggle; no Command) |
 
-- [ ] **Step 9.8.1: Failing tests.**
+- [x] **Step 9.8.1: Failing tests.**
   - `test_p_posts_pause_command` — `await pilot.press("p"); await pilot.pause(); assert command_bus.received == [Command(type="Pause", ...)]`.
   - `test_p_second_press_posts_resume` — press `p` twice; assert `[Pause, Resume]`.
   - `test_q_shows_confirm_dialog_then_posts_quit` — press `q`; assert dialog visible; press `enter`; assert `Command(type="Quit")` posted.
@@ -579,7 +579,7 @@ HIGH 4 │ MEDIUM 17 │ LOW 22 │ HEALTHY 9 │ TOOLS 12 │ COMPACTIONS 0
   - `test_t_toggles_min_priority_display_locally` — press `t`; assert local state flipped; assert NO command posted.
   - `test_keybindings_only_active_on_monitor_not_launcher` — push Launcher; press `p`; assert NO command posted (ARCH-16: keybinding namespacing).
 
-- [ ] **Step 9.8.2: Implement.**
+- [x] **Step 9.8.2: Implement.**
   ```python
   class MonitorScreen(Screen):
       BINDINGS = [
@@ -593,7 +593,7 @@ HIGH 4 │ MEDIUM 17 │ LOW 22 │ HEALTHY 9 │ TOOLS 12 │ COMPACTIONS 0
   ```
   Action methods (`action_request_quit`, etc.) post on `self.app._command_bus` after optional `await self._confirm(...)` modal.
 
-- [ ] **Step 9.8.3: Verify** + **commit** `feat(M9): Monitor command bus keybindings (q/ctrl+q/s/r/p/t)`.
+- [x] **Step 9.8.3: Verify** + **commit** `feat(M9): Monitor command bus keybindings (q/ctrl+q/s/r/p/t)`.
 
 ### Task 9.9: View command (replay completed run)
 
@@ -605,7 +605,7 @@ HIGH 4 │ MEDIUM 17 │ LOW 22 │ HEALTHY 9 │ TOOLS 12 │ COMPACTIONS 0
 
 **Spec anchors:** §5.6 (event-line schema for replay parsing); §5.7 (Monitor reuse).
 
-- [ ] **Step 9.9.1: Failing tests.**
+- [x] **Step 9.9.1: Failing tests.**
   - `test_view_replays_events_through_monitor` — call `await run_view(audit_dir=fixture_dir, speed=1000.0)`; capture final widget state; assert it matches the expected post-run state.
   - `test_view_warns_on_truncated_run_no_run_complete` — point at `recorded_run_truncated.jsonl`; assert error banner shows `"audit was interrupted"`.
   - `test_view_speed_flag_accelerates_replay` — at `speed=10.0`, total replay duration ≤ original / 10 (within tolerance).
@@ -614,7 +614,7 @@ HIGH 4 │ MEDIUM 17 │ LOW 22 │ HEALTHY 9 │ TOOLS 12 │ COMPACTIONS 0
   - `test_view_offline_no_lms_call` — patch `client.list_loaded_models` to raise; assert `run_view` completes successfully (no LMS dependency).
   - `test_view_disables_skip_and_rerun_in_replay_mode` — load Monitor in replay mode; press `s`; assert NO Command posted (replay mode mutes mutating commands per ARCH-16).
 
-- [ ] **Step 9.9.2: Implement.**
+- [x] **Step 9.9.2: Implement.**
   ```python
   async def run_view(audit_dir: Path, speed: float = 1.0) -> None:
       events_path = audit_dir / "events.jsonl"
@@ -631,7 +631,7 @@ HIGH 4 │ MEDIUM 17 │ LOW 22 │ HEALTHY 9 │ TOOLS 12 │ COMPACTIONS 0
   - Replay loop awaits `asyncio.sleep((next.ts - prev.ts).total_seconds() / speed)` between events, capped at 1.0s for sanity.
   - Monitor screen receives a `replay_mode=True` flag that disables `s`/`r` keybindings.
 
-- [ ] **Step 9.9.3: Verify** + **commit** `feat(M9): senex view replay handler with controllable speed`.
+- [x] **Step 9.9.3: Verify** + **commit** `feat(M9): senex view replay handler with controllable speed`.
 
 ## Acceptance criteria
 
