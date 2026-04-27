@@ -643,7 +643,7 @@ class GrepOutput(BaseModel):
 - `regex.TimeoutError` during scan -> individual file skipped, logged; not a `ToolError`.
 - `OSError` walking -> `dispatch_failed`.
 
-- [ ] **Step 5.6.1: Failing tests** in `tests/unit/test_tool_grep.py` (uses `tests/fixtures/repos/tiny_python/`):
+- [x] **Step 5.6.1: Failing tests** in `tests/unit/test_tool_grep.py` (uses `tests/fixtures/repos/tiny_python/`):
   - `test_happy_path_finds_matches` — `pattern="def\\s+\\w+"` -> list of function defs.
   - `test_glob_filter_narrows_search` — `glob="**/*.py"` only matches Python files.
   - `test_max_matches_caps_results` — `max_matches=2` returns exactly 2 even when more exist; `truncated=True`.
@@ -653,11 +653,11 @@ class GrepOutput(BaseModel):
   - `test_runtime_timeout_skips_file` — synthetic large file with adversarial content; per-line timeout fires; other files still scanned. Verify warning logged, result returned.
   - `test_no_matches_returns_empty_list` — `pattern="ZZZNEVERMATCHESZZZ"` -> `matches=[], truncated=False`.
 
-- [ ] **Step 5.6.2: Implement** `senex/tools/grep.py` using `regex` library with `timeout` argument.
+- [x] **Step 5.6.2: Implement** `senex/tools/grep.py` using `regex` library with `timeout` argument.
 
-- [ ] **Step 5.6.3: Run** `pytest tests/unit/test_tool_grep.py -v` -> green. Expected: `8 passed`.
+- [x] **Step 5.6.3: Run** `pytest tests/unit/test_tool_grep.py -v` -> green. Expected: `8 passed`.
 
-- [ ] **Step 5.6.4: Commit** `feat(M5): grep tool with regex-library timeouts and ReDoS guards`.
+- [x] **Step 5.6.4: Commit** `feat(M5): grep tool with regex-library timeouts and ReDoS guards`.
 
 ### Task 5.7: search_code (claude-context MCP) tool
 
