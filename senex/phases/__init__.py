@@ -16,6 +16,7 @@ from .base import (
     RenderFatal,
     ResumeIncompatible,
 )
+from .aggregate import AggregatePhase
 from .crosscut import CrosscutPhase
 from .discovery import DiscoveryPhase
 from .file_audit import FileAuditPhase
@@ -23,6 +24,7 @@ from .preflight import PreflightInputs, PreflightPhase
 
 __all__ = [
     "AggregateFailed",
+    "AggregatePhase",
     "CrosscutPhase",
     "DiscoveryPhase",
     "FileAuditPhase",

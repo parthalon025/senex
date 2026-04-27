@@ -474,13 +474,13 @@ async def do_work(self, state, lens, config, bus, command_bus):
 - Create: `senex/phases/aggregate.py`
 - Create: `tests/unit/test_phases_aggregate.py`
 
-- [ ] **Step 8.6.1: Failing test** — given partial findings + themes fixtures, `AggregatePhase` writes `combined.md`, `findings.json`, `claude-handoff.md` atomically. Failure path: any sub-step raises → wrapped in `AggregateFailed` (with `exit_code=1` per R11 — partial success; per-file work survived; recoverable via `senex aggregate`).
+- [x] **Step 8.6.1: Failing test** — given partial findings + themes fixtures, `AggregatePhase` writes `combined.md`, `findings.json`, `claude-handoff.md` atomically. Failure path: any sub-step raises → wrapped in `AggregateFailed` (with `exit_code=1` per R11 — partial success; per-file work survived; recoverable via `senex aggregate`).
 
-- [ ] **Step 8.6.2: Implement `AggregatePhase`** — `Aggregator.run()` → `HandoffWriter.write()` → `Renderer.render_combined()` → all writes via `write_atomic` (tmp + rename). On any failure, raise `AggregateFailed(exit_code=1, message=...)` (per R11; collapsed into the spec §8.1 0/1/2/3/130 set).
+- [x] **Step 8.6.2: Implement `AggregatePhase`** — `Aggregator.run()` → `HandoffWriter.write()` → `Renderer.render_combined()` → all writes via `write_atomic` (tmp + rename). On any failure, raise `AggregateFailed(exit_code=1, message=...)` (per R11; collapsed into the spec §8.1 0/1/2/3/130 set).
 
-- [ ] **Step 8.6.3: Test atomic-write semantics** — kill the process mid-aggregate; verify no partial `combined.md` exists (only `.tmp` files).
+- [x] **Step 8.6.3: Test atomic-write semantics** — kill the process mid-aggregate; verify no partial `combined.md` exists (only `.tmp` files).
 
-- [ ] **Step 8.6.4: Commit** `feat(M8): aggregate phase + atomic finalization`.
+- [x] **Step 8.6.4: Commit** `feat(M8): aggregate phase + atomic finalization`.
 
 ### Task 8.7: Auditor coroutine (run_audit)
 
