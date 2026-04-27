@@ -76,11 +76,20 @@ Minimum edits to ship:
 ## Run
 
 ```powershell
-senex audit C:\path\to\your\repo            # interactive (TUI)
+senex audit                                 # interactive launcher wizard
+senex audit C:\path\to\your\repo            # direct TUI launch
 senex audit C:\path\to\your\repo --no-tui   # headless (stdout progress)
 senex audit --nightly                       # iterate every [[repos]]
 senex audit C:\path\to\your\repo --resume   # continue an interrupted run
+senex audit --no-wizard                     # error: requires a positional path
 ```
+
+Run `senex audit` with no path to launch the interactive wizard. The wizard
+walks you through repo selection (from `[[repos]]`, on-disk discovery, or a
+custom path), model selection (probed live from `GET /v1/models`), and a
+handful of yes/no prompts before handing off to the TUI or headless flow.
+Pass `--no-wizard` to disable it (a positional path is then required) — useful
+for scripts and CI.
 
 Scheduled-task entrypoint for Windows Task Scheduler: `scripts\run_senex.bat`. It
 activates the venv and runs `python -m senex audit --nightly`.
