@@ -223,19 +223,23 @@ async def run_audit(
     audit_dir = compute_audit_dir(repo, output_root, run_id_short)
     audit_dir.mkdir(parents=True, exist_ok=True)
 
-    # ---- Tool registry: M5 registers all 6 tools at module import; we
-    # build a registry instance and let downstream code wire handlers. For
-    # M8 the registry is empty — tool handlers live in senex.tools.* and are
-    # wired by M10 CLI; the per-file phase tolerates missing tools.
+    # ---- Tool registry: register the v1 6-tool default pack so the lens's
+    # declared tools resolve to handlers at runtime. The registry is the
+    # single source of truth for what tool calls the model can make per file.
+    from senex.tools import register_default_tools  # local import: lazy load
+
     registry = ToolRegistry()
+    register_default_tools(registry)
     enabled_tools = lens.openai_tools_for(
         registry=registry, config_subset=config.lmstudio.tools.enabled_tools
     )
-    # Compute tool_pack_hash even when empty (resume discipline §8.5).
+    # Compute tool_pack_hash; with the default pack registered, every lens-declared
+    # tool is present and the hash is stable across runs (resume discipline §8.5).
     try:
         tool_pack_hash = compute_tool_pack_hash(enabled_tools, registry)
     except KeyError:
-        # Tools not registered in the registry (M8 stub). Use empty hash.
+        # Defensive: if a lens declares a tool not in the default pack and not
+        # registered elsewhere, fall back to an empty pack hash rather than crash.
         tool_pack_hash = ""
 
     # ---- Hash bundle (resume discipline §8.5) ----

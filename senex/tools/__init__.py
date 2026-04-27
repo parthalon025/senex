@@ -37,6 +37,37 @@ from .safety import (
     validate_repo_path,
 )
 
+
+def register_default_tools(registry: ToolRegistry) -> None:
+    """Register the v1 6-tool default pack with ``registry``.
+
+    Calls each tool module's per-tool register_<name>() function. After
+    this, the registry can serve any of the 6 tools the correctness lens
+    (and any future lens) declares in its ``tools.toml``.
+
+    Spec §5.11.1 lists the v1 tool set; conventions §13 documents the
+    side-effect-free import convention so this helper is the explicit
+    wiring point. Imports are local to defer subprocess-related imports
+    until the function is actually called (e.g. preflight skips this on
+    --no-tui paths that never invoke tools).
+    """
+    from . import (
+        gitnexus_context,
+        gitnexus_impact,
+        gitnexus_query,
+        grep,
+        read_file,
+        search_code,
+    )
+
+    gitnexus_query.register_gitnexus_query(registry)
+    gitnexus_context.register_gitnexus_context(registry)
+    gitnexus_impact.register_gitnexus_impact(registry)
+    read_file.register_read_file(registry)
+    grep.register_grep(registry)
+    search_code.register_search_code(registry)
+
+
 __all__ = [
     "PathOutsideRepo",
     "RegexTimeoutExceeded",
@@ -53,6 +84,7 @@ __all__ = [
     "ToolingError",
     "compute_tool_pack_hash",
     "redact_tool_result",
+    "register_default_tools",
     "strip_ansi",
     "validate_regex_pattern",
     "validate_repo_path",
