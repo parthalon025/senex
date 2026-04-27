@@ -60,6 +60,7 @@ from senex.render_models import RunMetadata
 from senex.renderer import Renderer
 from senex.runlock import RunLock
 from senex.secret_redactor import SecretRedactor
+from senex.subscribers import DiskWriterSubscriber
 from senex.tools.pack_hash import compute_tool_pack_hash
 from senex.tools.registry import ToolRegistry
 
@@ -292,6 +293,16 @@ async def run_audit(
         cp.data.get("model_fingerprint")
         if cp.data.get("model_fingerprint") not in ("", "pending", None)
         else None
+    )
+
+    # ---- Wire DiskWriterSubscriber (events.jsonl persistence, §5.6.1) ----
+    # The audit_dir is now known; DiskWriter MUST be wired before any phase
+    # publishes (PreflightPhase emits PreflightWarning before any file work).
+    # The subscriber is local-fire (synchronous in publish loop) so the
+    # "block" policy collapses to a direct await — events.jsonl is lossless.
+    disk_writer = DiskWriterSubscriber(audit_dir=audit_dir)
+    _disk_writer_handle = bus.subscribe_local(
+        "DiskWriter", _events_BaseEvent(), _disk_writer_dispatch(disk_writer)
     )
 
     # ---- Lifecycle bracket ----
@@ -548,6 +559,15 @@ async def run_audit(
     finally:
         if partial_writer is not None:
             partial_writer.close()
+        # Unsubscribe + close the DiskWriter so the file handle is released.
+        try:
+            _disk_writer_handle.unsubscribe()
+        except Exception as exc:  # noqa: BLE001
+            log.warning("disk_writer unsubscribe: %s", exc)
+        try:
+            await disk_writer.shutdown()
+        except Exception as exc:  # noqa: BLE001
+            log.warning("disk_writer shutdown: %s", exc)
 
     return exit_code
 
@@ -555,6 +575,37 @@ async def run_audit(
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+
+def _events_BaseEvent() -> type:
+    """Return the ``BaseEvent`` type so we can subscribe to all events.
+
+    Local helper to avoid leaking the ``BaseEvent`` import at module top
+    (the import-boundary test forbids ``senex.tui`` here, but ``events`` is
+    fine; this helper just keeps the wiring expressive at the call site).
+    """
+    from senex.events import BaseEvent
+
+    return BaseEvent
+
+
+def _disk_writer_dispatch(sub: DiskWriterSubscriber):
+    """Build a callback that forwards events to the subscriber.
+
+    Errors during disk write are logged but never propagated — they are
+    persisted into ``events.jsonl`` only for read-side replay (M9). A bad
+    write should not abort the run (vs. e.g. ``ENOSPC`` which the audit's
+    own per-file artifact writes will surface as ``DiskFatalError``).
+    """
+    from senex.events import BaseEvent
+
+    async def _forward(event: BaseEvent) -> None:
+        try:
+            await sub.consume(event)
+        except Exception as exc:  # noqa: BLE001 — never propagate to bus.
+            log.error("disk_writer consume failed: %s", exc)
+
+    return _forward
 
 
 def _runcomplete(run_id: str, exit_status: int, totals: dict[str, int]) -> RunComplete:

@@ -347,6 +347,99 @@ def test_runcomplete_helper_includes_run_id() -> None:
 
 
 @pytest.mark.asyncio
+async def test_run_audit_writes_events_jsonl(tmp_path: Path) -> None:
+    """``run_audit`` MUST wire ``DiskWriterSubscriber`` so ``events.jsonl``
+    lands in the audit dir for ``senex view`` replay (M9).
+
+    The bug this guards: pre-fix, ``cli_audit._run_headless`` wired Metrics
+    + Headless subscribers but never DiskWriter; the comment claimed it was
+    wired "inside ``run_audit``" but it wasn't. We verify the file exists
+    AND has at least one valid JSON line after a normal short-circuit run.
+    """
+    import json
+
+    import senex.auditor as auditor_mod
+    from senex.auditor import run_audit
+    from senex.config import SenexConfig
+    from senex.events import CommandBus, EventBus
+    from senex.lens import Lens
+    from senex.phases.base import PreflightFailure
+
+    repo = tmp_path / "myrepo"
+    repo.mkdir()
+    (repo / ".git").mkdir()
+
+    cfg_path = tmp_path / "config.toml"
+    cfg_path.write_text("[lmstudio]\nmodel='m'\n", encoding="utf-8")
+
+    cfg = SenexConfig()
+    cfg.lmstudio.lifecycle = cfg.lmstudio.lifecycle.model_copy(
+        update={
+            "auto_load": False,
+            "auto_unload": False,
+            "runlock_dir": str(tmp_path / "locks"),
+        }
+    )
+
+    audit_dir = auditor_mod.compute_audit_dir(repo, tmp_path / "audits", "01JZRUND")
+
+    fake = _FakeBackend()
+    fake.loaded = True
+    with patch(
+        "senex.auditor.LifecycleBackendFactory.select",
+        new=lambda: _async_return(fake),
+    ), patch(
+        "senex.runlock.RunLock.acquire", new=lambda *args, **kw: 1
+    ), patch(
+        "senex.runlock.RunLock.release", new=lambda *args, **kw: 0
+    ), patch(
+        "senex.auditor.LMStudioClient"
+    ) as lms_class, patch(
+        "senex.auditor.compute_audit_dir",
+        new=lambda r, o, run_id_short: audit_dir,
+    ):
+        lms_instance = lms_class.return_value
+        lms_instance._fingerprint_pinned = ""
+
+        async def _aclose() -> None:
+            return None
+
+        lms_instance.aclose = _aclose
+
+        # Short-circuit at preflight so the run terminates before file work,
+        # but RunStart still publishes -> events.jsonl gets written.
+        async def fail_preflight(*args: Any, **kw: Any) -> Any:
+            raise PreflightFailure(
+                check_name="test",
+                message="forced for test",
+                exit_code=3,
+            )
+
+        with patch(
+            "senex.phases.preflight.PreflightPhase.do_work",
+            new=fail_preflight,
+        ):
+            await run_audit(
+                repo=repo,
+                config=cfg,
+                lens=Lens.load("correctness"),
+                bus=EventBus(),
+                command_bus=CommandBus(),
+                config_path=cfg_path,
+                output_root=tmp_path / "audits",
+                resume=False,
+            )
+
+    events_jsonl = audit_dir / "events.jsonl"
+    assert events_jsonl.exists(), "DiskWriter must persist events.jsonl"
+    body = events_jsonl.read_text(encoding="utf-8").strip()
+    assert body, "events.jsonl must have at least one event"
+    # Every non-empty line is a JSON object.
+    for line in body.splitlines():
+        json.loads(line)
+
+
+@pytest.mark.asyncio
 async def test_run_audit_keyboard_interrupt_returns_130(tmp_path: Path) -> None:
     """SIGINT in lifecycle propagates as exit code 130."""
     from senex.auditor import EXIT_INTERRUPTED, run_audit
