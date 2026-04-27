@@ -30,10 +30,13 @@ from senex.subscribers.base import (
 )
 from senex.subscribers.disk_writer import DiskWriterSubscriber
 from senex.subscribers.headless_subscriber import HeadlessSubscriber
+from senex.subscribers.metrics import Metrics, MetricsCollectorSubscriber
 
 __all__ = [
     "DiskWriterSubscriber",
     "HeadlessSubscriber",
+    "Metrics",
+    "MetricsCollectorSubscriber",
     "Subscriber",
     "SubscriberQueueFull",
     "SubscriberShutdownError",
