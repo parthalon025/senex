@@ -31,6 +31,7 @@ from senex.subscribers.base import (
 from senex.subscribers.disk_writer import DiskWriterSubscriber
 from senex.subscribers.headless_subscriber import HeadlessSubscriber
 from senex.subscribers.metrics import Metrics, MetricsCollectorSubscriber
+from senex.subscribers.tui_subscriber import TuiSubscriber
 
 __all__ = [
     "DiskWriterSubscriber",
@@ -40,4 +41,5 @@ __all__ = [
     "Subscriber",
     "SubscriberQueueFull",
     "SubscriberShutdownError",
+    "TuiSubscriber",
 ]
