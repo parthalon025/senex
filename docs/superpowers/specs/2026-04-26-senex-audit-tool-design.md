@@ -49,6 +49,8 @@ E:\senex\
 │   ├── graph_awareness.py              # GitNexusCLIProvider (v1) — pre-flight awareness-block builder (was gitnexus_context.py)
 │   ├── llm_client.py                   # LLMClient protocol
 │   ├── lmstudio_client.py              # LMStudioClient (v1); streaming; thinking-aware
+│   ├── lmstudio_lifecycle.py           # load / unload / probe model state
+│   ├── runlock.py                      # interprocess refcount for concurrent senex runs
 │   ├── lens.py                         # Lens loader/validator
 │   ├── tools/
 │   │   ├── __init__.py
@@ -134,6 +136,8 @@ Each module owns exactly one responsibility:
 | `graph_awareness` | `GitNexusCLIProvider` — v1 implementation of `GraphContextProvider`; the **pre-flight awareness-block builder** (CLI calls only; no MCP); batch-fetch + cache. (Renamed from `gitnexus_context.py` to disambiguate from the runtime tool of the same conceptual name; see `senex/tools/gitnexus_context.py`.) |
 | `llm_client` | `LLMClient` protocol declaration |
 | `lmstudio_client` | `LMStudioClient` — v1 implementation of `LLMClient`; OpenAI-compatible HTTP client; streaming; thinking content extraction; structured-output negotiation |
+| `lmstudio_lifecycle` | model load/unload via `lms` CLI or `lmstudio` Python SDK; probes loaded models; respects refcount (§5.5.2). Invoked from preflight + run-end hooks only. |
+| `runlock` | filesystem-based interprocess lock + refcount under `~/.senex/locks/<model_fingerprint>.lock`; tracks which senex runs currently hold the model (§5.5.2.2). |
 | `lens` | loads + validates a `Lens` object from a `lens/<name>/` directory (§5.0) |
 | `auditor` | end-to-end run orchestration; phase scheduler over `senex/phases/`; emits events; catches exceptions and converts to event-stream errors |
 | `phases/preflight` | Phase 1 implementation (`PreflightPhase`) |
@@ -160,6 +164,7 @@ Forbidden imports:
 - `auditor.py` MUST NOT import from `tui/*`.
 - `subscribers/*` MUST NOT mutate the bus or call back into `auditor.py`.
 - `tools/*` MUST NOT import from `auditor.py`, `lmstudio_client.py`, or `tui/*`. Tools receive their dependencies (graph provider, repo root, secret redactor) via injection from `tools/loop`.
+- `lmstudio_lifecycle.py` MUST NOT import from `auditor.py` or `tui/*`. It is invoked from preflight + run-end hooks only.
 
 ## 4. Data Flow
 
@@ -756,6 +761,86 @@ Recorded LMS fixtures for tests MUST include compaction events. The compaction p
 
 Set `[lmstudio.compaction].enabled = false` to surface raw context-overflow errors instead of compacting (useful when diagnosing model behavior). When disabled, the file audit aborts on context overflow with `kind = "context_overflow"` and the run continues.
 
+### 5.5.2 Model Lifecycle Management
+
+senex manages LM Studio model state across the run lifecycle so that audits can run unattended without requiring a pre-loaded model, and so that nightly audits release GPU/RAM after completion.
+
+#### 5.5.2.1 Lifecycle Phases
+
+```
+Pre-flight phase:
+  if auto_load enabled AND target model not loaded:
+    invoke lifecycle.load(model_id)
+    wait for load completion (default timeout 120s)
+    record runlock.acquire(model_fingerprint)
+  else if target model not loaded AND auto_load disabled:
+    exit 3 with "model <id> not loaded; set [lmstudio.lifecycle].auto_load = true to auto-load"
+  else (model already loaded):
+    runlock.acquire(model_fingerprint)  # refcount only; do not record we loaded it
+
+Run completion phase (success OR failure path):
+  count = runlock.release(model_fingerprint)
+  if count == 0 AND we loaded it AND auto_unload enabled:
+    invoke lifecycle.unload(model_id)
+  else:
+    log skipping unload (active runs: count, we_loaded: bool, auto_unload: bool)
+```
+
+#### 5.5.2.2 Run Lock
+
+`~/.senex/locks/<model_fingerprint>.lock` is a JSON file with:
+
+```json
+{
+  "schema_version": 1,
+  "model_id": "google/gemma-4-26b-a4b",
+  "model_fingerprint": "sha256:...",
+  "holders": [
+    {"run_id": "<ulid>", "pid": 12345, "started_at": "<RFC3339>", "loaded_by_us": true}
+  ]
+}
+```
+
+- `runlock.acquire(fp)` appends the current `(run_id, pid)` and notes whether this run was the loader.
+- `runlock.release(fp)` removes the current run; returns remaining holder count.
+- Stale entries (PID no longer alive) are pruned at acquire time.
+- File operations use `portalocker` or equivalent advisory locking.
+
+#### 5.5.2.3 Implementation Backends
+
+`lmstudio_lifecycle` selects between two backends, probed at preflight:
+
+1. **`lmstudio` Python SDK** (preferred): if `pip show lmstudio` succeeds AND `lmstudio.list_loaded_models()` is reachable. Provides typed APIs.
+2. **`lms` CLI fallback**: shells out to `lms ps`, `lms load <model>`, `lms unload <model>` with list-form args (per §SEC-4 hardening). Used when the Python SDK isn't installed. Slower but always available with LM Studio.
+
+If neither is available: refuse to enable `auto_load`/`auto_unload` at preflight (Exit 3 with diagnostic).
+
+#### 5.5.2.4 Failure modes
+
+| Failure | Behavior |
+|---|---|
+| Load timeout (>120s default) | Abort run with `<audit-dir>/lifecycle.ERROR.md`; do NOT acquire runlock. Exit 3. |
+| Load fails (model not downloaded, GPU OOM) | Abort run; surface LM Studio's error message; exit 3. |
+| Unload fails post-run | Log to `audit.log` as WARN; do NOT fail the run (audit artifacts already complete). The model stays loaded; user can manually `lms unload`. |
+| Stale runlock entries (PID dead) | Pruned at acquire time. If JSON parse fails, the lock file is renamed to `.corrupt-<ts>` and recreated; warning logged. |
+| Crash before runlock release | Stale entry persists; pruned next time another run touches the same lock. Worst case: a model stays loaded longer than expected — never silently lost. |
+| User invokes during another senex run | Refcount increments; the second run does NOT trigger unload at completion (refcount stays > 0). |
+| User invokes when LM Studio loaded the model from a prior non-senex action | `loaded_by_us = false`; senex does NOT unload at completion regardless of `auto_unload`. |
+
+#### 5.5.2.5 Events
+
+Emit `ModelLoadRequested {model_id, target_fingerprint}`, `ModelLoadStarted {model_id}`, `ModelLoadComplete {model_id, duration_seconds, fingerprint}`, `ModelLoadFailed {model_id, error_kind, error_message}`, `ModelUnloadStarted {model_id}`, `ModelUnloadComplete {model_id, duration_seconds}`, `ModelUnloadSkipped {model_id, reason: "concurrent_holders"|"not_loaded_by_us"|"auto_unload_disabled"}`, `ModelUnloadFailed {model_id, error_kind, error_message}`.
+
+All events carry `schema_version`, `seq`, `run_id`, `ts` per universal event contract (§5.6, SCHEMA-2).
+
+#### 5.5.2.6 Threat surface
+
+| Vector | Mitigation |
+|---|---|
+| Malicious config sets `model = "@auto"` then concurrent run swaps loaded model mid-audit | runlock pins the fingerprint that was acquired; if mid-run the model fingerprint changes (detected at chat-completion time), abort the file with `ModelFingerprintChanged` event. Future runs use the new fingerprint. |
+| Race between two senex runs both auto-loading | The second run's load call is a no-op (LM Studio detects model already loaded); refcount still goes to 2; both runs proceed. |
+| Subprocess injection via `model_id` to `lms load` | Use list-form `subprocess.run(["lms", "load", model_id], ...)`; validate `model_id` matches `^[A-Za-z0-9_./-]+$` before any subprocess call (mirrors §SEC-4). |
+
 ### 5.6 Event Bus & Subscribers
 
 Event types (pydantic models, serialized to `events.jsonl` newline-delimited). Every line carries `{"v": 1, "type": "<EventType>", "ts": "<RFC3339>", "seq": <int>, "run_id": "<ulid>", ...}`. `seq` is monotonic per run; gaps indicate crash-during-write. `type` is the discriminator.
@@ -787,6 +872,17 @@ Event types (pydantic models, serialized to `events.jsonl` newline-delimited). E
 | `CrosscutStart` | |
 | `CrosscutComplete` | theme_count |
 | `RunComplete` | duration_seconds, totals, exit_status |
+| `ModelLoadRequested` | `model_id`, `target_fingerprint` |
+| `ModelLoadStarted` | `model_id` |
+| `ModelLoadComplete` | `model_id`, `duration_seconds`, `fingerprint` |
+| `ModelLoadFailed` | `model_id`, `error_kind`, `error_message` |
+| `ModelUnloadStarted` | `model_id` |
+| `ModelUnloadComplete` | `model_id`, `duration_seconds` |
+| `ModelUnloadSkipped` | `model_id`, `reason` (`"concurrent_holders" \| "not_loaded_by_us" \| "auto_unload_disabled"`) |
+| `ModelUnloadFailed` | `model_id`, `error_kind`, `error_message` |
+| `ModelFingerprintChanged` | `path`, `expected_fingerprint`, `observed_fingerprint` |
+| `RunLockAcquired` | `model_fingerprint`, `holder_count` |
+| `RunLockReleased` | `model_fingerprint`, `remaining_holders` |
 
 **Event payload persistence.** `tool_input` and full tool-result text are persisted in full to `<file>.thinking.md` (when `save_traces=true`) but redacted/truncated in `events.jsonl` to keep event lines bounded. The `ToolCall.tool_input` field in the event stream is truncated to 512 chars; `ToolResult` carries only `result_tokens` and `latency_ms`, never the result text.
 
@@ -809,7 +905,7 @@ The bus is the single coordination point. The auditor publishes once; the bus fa
 | `TuiSubscriber` | Drop `ThinkingTick`, `OutputTick`. NEVER drop `RunStart`, `FileComplete`, `FileError`, `RunComplete`. |
 | `MetricsCollectorSubscriber` | Drop oldest tick events; preserve all phase events. |
 
-- **Coalesce-safe events** (subscribers MAY drop or merge consecutive events of these types): `ThinkingTick`, `OutputTick`. All other events are non-coalescable. In particular, `ToolCall`, `ToolResult`, `ToolError`, `ToolBudgetExhausted`, `CompactionTriggered`, `CompactionComplete`, and `CompactionError` are NOT coalesce-safe — each MUST be persisted.
+- **Coalesce-safe events** (subscribers MAY drop or merge consecutive events of these types): `ThinkingTick`, `OutputTick`. All other events are non-coalescable. In particular, `ToolCall`, `ToolResult`, `ToolError`, `ToolBudgetExhausted`, `CompactionTriggered`, `CompactionComplete`, `CompactionError`, `ModelLoadRequested`, `ModelLoadStarted`, `ModelLoadComplete`, `ModelLoadFailed`, `ModelUnloadStarted`, `ModelUnloadComplete`, `ModelUnloadSkipped`, `ModelUnloadFailed`, `ModelFingerprintChanged`, `RunLockAcquired`, and `RunLockReleased` are NOT coalesce-safe — each MUST be persisted.
 
 ### 5.6.2 Command Bus
 
@@ -1056,6 +1152,12 @@ target_pct               = 0.50
 preserve_recent_turns    = 2
 max_compactions_per_file = 3
 
+[lmstudio.lifecycle]
+auto_load            = true     # load model at preflight if not already loaded
+auto_unload          = true     # unload at run completion if we loaded it AND no concurrent holders
+load_timeout_seconds = 120
+runlock_dir          = ""       # empty = ~/.senex/locks; override to share locks across machines (NFS, etc.)
+
 # Repo entries (nightly iterates these; ad-hoc may target any repo by path)
 [[repos]]
 name                     = "pensiv"
@@ -1067,6 +1169,8 @@ include_tests            = false
 # Inline-table form for nested overrides (§API-2, the unambiguous form):
 lmstudio = { tasks = { file_audit = { temperature = 0.5 } } }
 ```
+
+When `[lmstudio.lifecycle].auto_unload = false`, unload events still fire as `ModelUnloadSkipped {reason: "auto_unload_disabled"}` for observability (§5.5.2.5).
 
 Equivalent dotted-key form, when declared inside the same `[[repos]]` block (also accepted):
 
@@ -1319,7 +1423,10 @@ Top findings (titles only — full text in per-file reports):
 | Output directory writable; estimated free space ≥ `<file count> × 100KB + <repo bytes> × (2 if save_traces else 0.5)` | Exit 2, naming the estimate |
 | LM Studio reachable at `/v1/models` | Exit 3 |
 | `[lmstudio].base_url` host is loopback (`127.0.0.1`/`::1`/`localhost`) — OR `[lmstudio].allow_non_loopback = true` is set | Exit 3 (security refusal); bound interface logged in run header |
-| Selected model loaded (`@auto`/`@first` sentinels resolve here) | Exit 3 |
+| If `[lmstudio.lifecycle].auto_load = true`: target model loadable (download present, sufficient resources); `@auto`/`@first` sentinels resolve here | Exit 3 |
+| If `auto_load = false`: target model already loaded (`@auto`/`@first` sentinels resolve here) | Exit 3 with "model not loaded; set auto_load=true to auto-load" |
+| `lmstudio_lifecycle` backend available (Python SDK OR `lms` CLI) when `auto_load=true` OR `auto_unload=true` | Exit 3 with "neither lmstudio Python SDK nor lms CLI available; install one or disable lifecycle" |
+| `runlock_dir` writable; existing locks parseable | Exit 2 with diagnostic |
 | `response_format=json_schema` works WITH thinking (probe) | Warn + fall back to `json_object` |
 | `reasoning_effort` field accepted by model (probe call with `effort="high"`) | Warn + omit field for run; logged in pre-flight output |
 | Streaming works | Warn (TUI experience degraded) |
@@ -1389,6 +1496,9 @@ Crash mid-sequence → next resume re-audits this file (idempotent). The `.md` o
 | GitNexus index becomes stale mid-run | Tolerated. |
 | Cross-cutting pass failure | Don't fail run; combined report notes gap. |
 | Aggregation failure | Crash; recoverable via `senex aggregate <audit-dir>`. |
+| Run completes (success OR `Ctrl-C`) | `runlock.release(fp)`; if `we_loaded AND no_holders AND auto_unload`: invoke unload, emit `ModelUnloadStarted`/`ModelUnloadComplete`. Else emit `ModelUnloadSkipped`. (See §5.5.2.) |
+| Process dies mid-run (kernel OOM, power loss) | Lock entry orphaned. Next senex run prunes by checking PID liveness. Worst case: model stays loaded until next run touches the lock or user manually clears `~/.senex/locks/`. |
+| Mid-run model fingerprint change (different model loaded out from under us) | Detected on next chat completion via fingerprint compare. Auditor aborts current file with `ModelFingerprintChanged` error; refuses to continue. User restarts run with `--resume` after stabilizing LM Studio. |
 
 **Checkpoint integrity (§SEC-8).** `checkpoint.json` is signed with an HMAC computed under a per-run key stored in `<audit-dir>/.run_key` (mode 0600). On resume, the HMAC is validated; on mismatch the resume refuses to start. Every `completed_files[].path` is verified to be relative and to resolve under `repo_root` before the path is trusted.
 
@@ -1481,8 +1591,15 @@ Required tests:
 26. Tool-replay fixtures: recorded LMS conversations including tool calls + results replay deterministically through the loop.
 27. Per-lens tool pack: lens tool list filters which tools are exposed; config `enabled_tools` can subset but not extend.
 28. Tool event emission order: `ToolCall` precedes `ToolResult` for same `call_id`; events written to `events.jsonl` in monotonic `seq` order.
+29. Lifecycle: model not loaded → preflight loads → runlock entry recorded → run completes → unload fires → runlock cleaned.
+30. Lifecycle concurrency: two simulated senex runs share a fingerprint; first completes → unload SKIPPED (concurrent holder); second completes → unload fires.
+31. Lifecycle attached: model already loaded by external process → senex acquires lock with `loaded_by_us=false` → run completes → unload SKIPPED (`not_loaded_by_us`).
+32. Lifecycle stale lock prune: lock file with dead PID → next run prunes on acquire.
+33. Lifecycle fingerprint mismatch: simulate mid-run model swap → `ModelFingerprintChanged` event → file aborted.
+34. Lifecycle backend fallback: `lmstudio` Python SDK absent → `lms` CLI used; both absent → preflight fails with diagnostic.
+35. `senex lifecycle status` and `senex lifecycle clear-locks --force` work and respect `--json`.
 
-Coverage targets: 85% on `auditor.py`, `renderer.py`, `walker.py`, `checkpoint.py`, `events.py`, `secret_redactor.py`, `findings_aggregator.py`, `phases/*`, `tools/registry.py`, `tools/safety.py`, `tools/loop.py`. 60% elsewhere.
+Coverage targets: 85% on `auditor.py`, `renderer.py`, `walker.py`, `checkpoint.py`, `events.py`, `secret_redactor.py`, `findings_aggregator.py`, `phases/*`, `tools/registry.py`, `tools/safety.py`, `tools/loop.py`, `lmstudio_lifecycle.py`, `runlock.py`. 60% elsewhere.
 
 `@live` runs manually before release tags; CI runs everything else.
 
@@ -1499,6 +1616,8 @@ senex view [<audit-dir>]                      # replay TUI over completed run (a
 senex doctor [--json]                         # pre-flight diagnostic; --json emits CI-friendly JSON
 senex aggregate [<audit-dir>]                 # re-run aggregation phase only (auto-detects latest)
 senex config show <repo-path>                 # resolve config + print merged TOML (debug override merging)
+senex lifecycle status [--json]               # list LM Studio loaded models + runlock holders + senex loader provenance (§5.5.2)
+senex lifecycle clear-locks [--force]         # prune runlock entries with dead PIDs; --force removes live-process entries (warns)
 senex --version
 senex --help
 
@@ -1508,6 +1627,9 @@ senex --help
 --verbose                # extra log detail
 --quiet                  # suppress info logs
 --json                   # machine-readable output where applicable
+--no-load                # override [lmstudio.lifecycle].auto_load = false for this run (§5.5.2)
+--no-unload              # override [lmstudio.lifecycle].auto_unload = false for this run (§5.5.2)
+--unload-after           # force [lmstudio.lifecycle].auto_unload = true for this run (overrides config)
 
 # audit-only flags
 --model <id>             # override [lmstudio.model]; @auto / @first sentinels supported
@@ -1523,6 +1645,9 @@ senex --help
 - `--min-confidence` is renamed `--min-priority` to match the schema enum (`priority` is the gate; `confidence` is the model's calibration). The `confidence` field name in the structured response is preserved for v1; rename slated for v2.
 - `<audit-dir>` is **optional** everywhere it appears; auto-detect = latest run for the inferred repo. `senex audit --resume` with no explicit dir finds the latest **unfinished** audit and resumes it.
 - Audit-dir naming: `<repo>/<DATE>-<run_id_short>/`. Same-day re-runs no longer collide.
+- `senex audit <repo> --no-unload` is the typical "I'll be auditing more later, leave the model loaded" invocation (§5.5.2).
+- `senex lifecycle status` lists current LM Studio loaded models, runlock holders, and senex's loader provenance for each. Output is a human table by default; `--json` for scripting.
+- `senex lifecycle clear-locks` prunes runlock entries whose PIDs are no longer alive. Refuses to remove live-process entries unless `--force` is passed (warns).
 
 **`senex doctor --json` schema:**
 
@@ -1578,6 +1703,9 @@ python -m senex audit --nightly
 | Tool-call loop denial — model trapped in tool calls indefinitely. | `max_calls_per_file` hard cap; budget-exhaustion injection forces final response. | §5.11.3 |
 | Compaction prompt injection — compressed conversation slice contains attacker text. | Compaction prompt has its own TRUST BOUNDARY clause (mirrors §5.1); compaction output validated against `CompactionResult` schema before re-insertion. | §5.5.1 |
 | Tool-result ANSI injection into TUI. | ANSI / control-sequence stripping (per §5.7) applies to tool results before render. | §5.11.4, §5.7 |
+| Subprocess injection via `model_id` in `lms load` | List-form args; `^[A-Za-z0-9_./-]+$` validation pre-subprocess | §5.5.2.6 |
+| Lockfile poisoning (attacker writes fake holders into runlock to keep model loaded) | PID liveness check at acquire/release; corrupt/un-parseable locks renamed `.corrupt-<ts>` | §5.5.2.4 |
+| Model fingerprint substitution (different model swapped in mid-run) | Fingerprint pinned at acquire; chat completion verifies; abort file on mismatch | §5.5.2.6 |
 
 ## 12. Future Work (v2+)
 
@@ -1593,6 +1721,8 @@ python -m senex audit --nightly
 - `codeprism_*` tools — overlap heavily with `gitnexus_*`; deferred pending v1 evidence that codeprism's analysis surfaces (complexity, security, performance) provide finding-changing signal beyond what `gitnexus_query` / `gitnexus_context` already give the model.
 - Web / network tools — categorically out of scope for the local audit threat model.
 - Tool-call streaming — the v1 loop is synchronous within thinking (the model finishes a turn before the auditor dispatches). Streaming tool calls (dispatching as soon as the model emits a `tool_call` token) is a future optimization that requires LM Studio support.
+- Cross-machine runlock via shared filesystem (NFS/SMB) — already supported via `[lmstudio.lifecycle].runlock_dir` config but not validated. (§5.5.2)
+- Per-task model swapping (`file_audit` and `cross_cutting` using different models) — would require lifecycle to handle multiple concurrent fingerprints. (§5.5.2)
 
 ## 13. Glossary
 
@@ -1608,6 +1738,7 @@ python -m senex audit --nightly
 - **Tick events** — `ThinkingTick` / `OutputTick`; coalesced streaming progress events emitted at most every 256 tokens or 500ms. Per-token data is never persisted. (§5.5, §5.6)
 - **CommandBus** — separate channel for TUI → auditor commands (Pause / Resume / Skip / Rerun / Quit); typed schema; checked at file boundaries, phase boundaries, and after each LMS streaming chunk. (§5.6.2)
 - **Run ID** — ULID (or UUIDv7) generated at run start; emitted on `RunStart`; first 8 chars suffix the audit-dir name to prevent same-day collisions. (§7.3, §POL-1)
+- **Run lock** — filesystem refcount under `~/.senex/locks/` tracking which senex runs are using a given model fingerprint, so concurrent runs don't unload the model out from under each other. (§5.5.2.2)
 - **Theme** — a cross-cutting pattern emitted by the cross-cutting pass (Phase 4); `id = "t-" + sha256(title + run_id)[:12]`; stable per-run, regenerated on re-aggregation. (§5.4.1)
 - **Trust boundary** — the explicit rule that `<UNTRUSTED_FILE_CONTENT>...</UNTRUSTED_FILE_CONTENT>` is data, not instructions; declared in the system prompt and enforced by the user-prompt template. (§5.1, §SEC-2)
 - **Suspicious empty finding** — pipeline signal: `findings == []` AND file > 50 LOC AND no language-anchor matched. Quarantines the file for review without failing the run. (§8.2)
@@ -1616,6 +1747,9 @@ python -m senex audit --nightly
 - **Graph context** — the GitNexus-derived awareness block (cluster + callers + processes).
 - **Addendum** — per-repo file appended to the system prompt; must resolve under repo root.
 - **Language anchor** — short per-language paragraph appended after the addendum.
+- **Lifecycle** — auto-load/auto-unload behavior senex applies to LM Studio at run start and completion. (§5.5.2)
+- **Loader provenance** — whether this run loaded the model itself (`loaded_by_us = true`) or attached to an already-loaded model. Determines unload eligibility. (§5.5.2.2)
+- **Model fingerprint** — sha256 hash of model identifier + quant + checkpoint version, captured at load time; used by run lock and verified per chat completion. (§5.5.2)
 - **Thinking trace** — the model's reasoning content captured to `<file>.thinking.md` when `save_traces=true`.
 - **Reproducibility bucket** — the tuple `(prompt_hash, config_hash, model_fingerprint, lens_version, tool_pack_hash)` that determines whether two findings are comparable across runs. (§8.5)
 - **Compaction** — summarizing the conversation history mid-loop to recover context budget when message tokens approach the model's context window. Safety net, not a primary correctness mechanism. (§5.5.1)
