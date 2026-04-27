@@ -210,15 +210,15 @@ None — M10 is the leaf milestone. After M10 ships, downstream is real users.
 - Edit: `senex/cli.py` (add `cmd_aggregate`)
 - Create: `tests/unit/test_cli_aggregate.py`
 
-- [ ] **Step 10.4.1: Failing tests**:
+- [x] **Step 10.4.1: Failing tests**:
   - happy path: aggregate against a fixture audit dir → produces `findings.json`, `combined.md`, `claude-handoff.md`; exit 0
   - missing `checkpoint.json` → exit 2 with explicit error
   - missing `findings.partial.jsonl` → exit 2 with explicit error
   - corrupt `findings.partial.jsonl` (one bad line) → exit 1 (partial); skip bad line, log warning
 
-- [ ] **Step 10.4.2: Implement `cmd_aggregate(args, config) -> int`** — re-runs Phase 5 (`AggregatePhase` from M8) against an existing audit dir. Validates audit_dir structure (required files: `checkpoint.json`, `findings.partial.jsonl`) before running. Useful when aggregation crashed mid-way.
+- [x] **Step 10.4.2: Implement `cmd_aggregate(args, config) -> int`** — re-runs Phase 5 (`AggregatePhase` from M8) against an existing audit dir. Validates audit_dir structure (required files: `checkpoint.json`, `findings.partial.jsonl`) before running. Useful when aggregation crashed mid-way.
 
-- [ ] **Step 10.4.3: Test pass + commit** `feat(M10): senex aggregate with audit-dir validation`.
+- [x] **Step 10.4.3: Test pass + commit** `feat(M10): senex aggregate with audit-dir validation`.
 
 ### Task 10.5: senex config show
 
