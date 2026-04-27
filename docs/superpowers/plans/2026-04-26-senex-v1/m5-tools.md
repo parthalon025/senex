@@ -746,7 +746,7 @@ For each outer iteration `i` in `range(max_calls + 1)`:
 
 **Bound:** `max_calls + 1` outer iterations total (one extra iteration reserved for the budget-exhaustion final turn).
 
-- [ ] **Step 5.8.1: Failing unit tests** in `tests/unit/test_tool_loop.py` (mocks `LMStudioClient.chat` via `AsyncMock`):
+- [x] **Step 5.8.1: Failing unit tests** in `tests/unit/test_tool_loop.py` (mocks `LMStudioClient.chat` via `AsyncMock`):
   - `test_terminates_when_no_tool_calls` — first `chat()` returns content without tool_calls -> loop returns immediately, 1 chat call total.
   - `test_dispatches_tool_calls_and_appends_results` — first `chat()` returns 2 tool_calls; second `chat()` returns content. Verify: 2 `ToolCall` events, 2 `ToolResult` events (in tool_calls order), 2 `tool` messages appended, 2 chat calls.
   - `test_event_order_per_turn` — capture `bus` events; assert order: `ToolCall(a)` -> `ToolResult(a)` -> `ToolCall(b)` -> `ToolResult(b)`.
@@ -757,17 +757,17 @@ For each outer iteration `i` in `range(max_calls + 1)`:
   - `test_compaction_hook_no_op_returns_none` — `compactor` returns `None`; `messages` unchanged; loop proceeds.
   - `test_unknown_tool_returns_dispatch_error` — model emits `tool_calls=[{name: "shell"}]` but `shell` not registered; `ToolError(kind="unknown_tool")` in event stream + `tool` message; loop continues.
 
-- [ ] **Step 5.8.2: Implement `ToolLoop`** in `senex/tools/loop.py`. Constructor signature exactly per Key contracts. Algorithm exactly per the bullet list above. Include the M5↔M3 reconciliation note verbatim in the `run()` docstring.
+- [x] **Step 5.8.2: Implement `ToolLoop`** in `senex/tools/loop.py`. Constructor signature exactly per Key contracts. Algorithm exactly per the bullet list above. Include the M5↔M3 reconciliation note verbatim in the `run()` docstring.
 
-- [ ] **Step 5.8.3: Run** unit tests `pytest tests/unit/test_tool_loop.py -v` -> green. Expected: `9 passed`.
+- [x] **Step 5.8.3: Run** unit tests `pytest tests/unit/test_tool_loop.py -v` -> green. Expected: `9 passed`.
 
-- [ ] **Step 5.8.4: Failing integration test** in `tests/integration/test_tool_loop_with_client.py`:
+- [x] **Step 5.8.4: Failing integration test** in `tests/integration/test_tool_loop_with_client.py`:
   - `test_real_client_with_real_loop_respects_budget` — uses a **real** `LMStudioClient` with `respx`-mocked LMS HTTP responses, a **real** `ToolRegistry` with `read_file` registered, a **real** `ToolLoop`. Mock LMS responds with: turn 1 -> `read_file("a.py")`, turn 2 -> `read_file("b.py")`, turn 3 -> `read_file("c.py")`, turn 4 (no tools) -> final content. With `max_calls=2`, assert: exactly 3 LMS HTTP calls (2 with tools + 1 final no-tools), `ToolBudgetExhausted` emitted, final response returned.
   - `test_real_client_terminates_early_on_no_tool_calls` — mock LMS responds with content immediately. Assert: 1 LMS HTTP call total; no `ToolBudgetExhausted`.
 
-- [ ] **Step 5.8.5: Run** `pytest tests/integration/test_tool_loop_with_client.py -v` -> green. Expected: `2 passed`.
+- [x] **Step 5.8.5: Run** `pytest tests/integration/test_tool_loop_with_client.py -v` -> green. Expected: `2 passed`.
 
-- [ ] **Step 5.8.6: Commit** `feat(M5): bounded ToolLoop with budget enforcement and compaction hook`.
+- [x] **Step 5.8.6: Commit** `feat(M5): bounded ToolLoop with budget enforcement and compaction hook`.
 
 ### Task 5.9: Lens -> tools wiring (intersection rule)
 
