@@ -108,6 +108,53 @@ print('findings.json schema: OK')
 - At least one `<file>.md` exists for each of the 4 fixture files
 - `findings.json` validates against `senex/schema/findings_index.schema.json`
 
+### Gate 13a (part 2): EXECUTED 2026-04-27 — PASS (observability)
+
+Live re-run after M11 observability bug-fix sprint
+(commits: f534ac6, f5de3cf, 78c886c, b6a56b0):
+
+```
+$ python -m senex audit "E:/senex/tests/fixtures/repos/tiny_python" --no-tui --no-wizard --no-unload
+--- senex audit: E:\senex\tests\fixtures\repos\tiny_python (run 01KQ8K5P) ---
+[0/4] auditing healthy.py — 0 findings
+[1/4] auditing io_helper.py — 0 findings
+[2/4] auditing main.py — 0 findings
+[3/4] auditing util.py — 0 findings
+
+--- Run complete ---
+Duration: 1m07s
+Files: 4 audited, 0 errors, 0 skipped
+Findings: HIGH=0 MEDIUM=0 LOW=0 HEALTHY=0
+Exit status: success
+```
+
+Audit dir: `E:/senex-audits/tiny_python/2026-04-27-01KQ8K5P/`
+
+**Pass criteria checked:**
+- ✅ Exit code 0
+- ✅ `combined.md`, `findings.json`, `claude-handoff.md` exist
+- ✅ Per-file `<file>.md` for all 4 fixtures (healthy.py, io_helper.py, main.py, util.py)
+- ✅ `findings.json` validates against schema
+- ✅ **NEW (M11):** `events.jsonl` exists with 123 events (was missing pre-fix)
+- ✅ **NEW (M11):** `combined.md` shows `Files audited: 4` (was `0` pre-fix)
+- ✅ **NEW (M11):** `findings.json.totals.files = 4` (was `0` pre-fix)
+
+**Observed limitations (out of M11 scope):**
+- LM Studio + gemma-4-26b-a4b returns empty completions when
+  `response_format=json_schema` AND `tools=[...]` are both present, so
+  the per-file `*.md` body and `*.thinking.md` traces are empty in this
+  specific model/server combo. The M11 metadata pipeline itself is
+  verified correct via:
+  - Unit tests: `test_file_metadata_populates_tokens_latency_compactions`,
+    `test_interleaved_think_tags_stripped` (asserts inline `<think>` is
+    captured to `reasoning_content`).
+  - Direct LM Studio test (no tools): produces `content_len=1218`,
+    `output_ms=22351`, `prompt_tokens=2227`, `completion_tokens=226`,
+    with full `OutputStarted`/`OutputTick`/`OutputComplete` event sequence.
+
+  Tracking the upstream model/server compat as a v1.1 follow-up; does
+  not block v1.0.0 promotion since the observability layer is correct.
+
 ---
 
 ## Gate 13b: TUI live render — DEFERRED
