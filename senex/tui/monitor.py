@@ -176,28 +176,34 @@ class MonitorScreen(Screen[None]):
             await self._post(Command(type="Quit", ts=_now()))
             self.app.exit(0)
             return
-        confirmed = await self._confirm("Quit the audit?")
-        if confirmed:
-            await self._post(Command(type="Quit", ts=_now()))
-            self.app.exit(0)
+
+        def _quit_done(confirmed: bool | None) -> None:
+            if confirmed:
+                self._post_then(Command(type="Quit", ts=_now()), exit_after=True)
+
+        await self.app.push_screen(ConfirmDialog("Quit the audit?"), _quit_done)
 
     async def action_request_skip(self) -> None:
         if self._replay_mode or self._current_path is None:
             return
-        confirmed = await self._confirm(f"Skip {self._current_path}?")
-        if confirmed:
-            await self._post(
-                Command(type="Skip", target=self._current_path, ts=_now())
-            )
+        path = self._current_path
+
+        def _done(confirmed: bool | None) -> None:
+            if confirmed:
+                self._post_then(Command(type="Skip", target=path, ts=_now()))
+
+        await self.app.push_screen(ConfirmDialog(f"Skip {path}?"), _done)
 
     async def action_request_rerun(self) -> None:
         if self._replay_mode or self._current_path is None:
             return
-        confirmed = await self._confirm(f"Rerun {self._current_path}?")
-        if confirmed:
-            await self._post(
-                Command(type="Rerun", target=self._current_path, ts=_now())
-            )
+        path = self._current_path
+
+        def _done(confirmed: bool | None) -> None:
+            if confirmed:
+                self._post_then(Command(type="Rerun", target=path, ts=_now()))
+
+        await self.app.push_screen(ConfirmDialog(f"Rerun {path}?"), _done)
 
     async def action_toggle_pause(self) -> None:
         self._paused = not self._paused
@@ -212,9 +218,14 @@ class MonitorScreen(Screen[None]):
     async def _post(self, command: Command) -> None:
         await self._command_bus.publish(command)
 
-    async def _confirm(self, prompt: str) -> bool:
-        result = await self.app.push_screen_wait(ConfirmDialog(prompt))
-        return bool(result)
+    def _post_then(self, command: Command, *, exit_after: bool = False) -> None:
+        """Schedule a command publish on the running loop (callback context)."""
+        async def _do() -> None:
+            await self._command_bus.publish(command)
+            if exit_after:
+                self.app.exit(0)
+
+        self.app.call_later(_do)
 
 
 __all__ = ["ConfirmDialog", "MonitorScreen"]
