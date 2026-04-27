@@ -1580,7 +1580,7 @@ Anchors are exactly **one paragraph each** (per spec §5.3: "A single short para
 
 #### Step 2.5.1: Write `cross_cutting.md`
 
-- [ ] **Create `senex/prompts/cross_cutting.md`** -- instructions for the cross-cut pass (Phase 4). Body:
+- [x] **Create `senex/prompts/cross_cutting.md`** -- instructions for the cross-cut pass (Phase 4). Body:
   ```
   ROLE
   You are aggregating per-file findings from a code audit into repo-wide
@@ -1613,13 +1613,13 @@ Anchors are exactly **one paragraph each** (per spec §5.3: "A single short para
 
 #### Step 2.5.2: Write `claude_handoff.md` verbatim from spec §7.4
 
-- [ ] **Open spec §7.4** (line 1431). Copy the fenced block body verbatim into `senex/prompts/claude_handoff.md`. LF endings, single trailing newline, no BOM. The body begins with `You are reviewing senex audit findings for <repo>...` and ends with `...full text in per-file reports):` followed by 3 example lines and the trailing `...`.
+- [x] **Open spec §7.4** (line 1431). Copy the fenced block body verbatim into `senex/prompts/claude_handoff.md`. LF endings, single trailing newline, no BOM. The body begins with `You are reviewing senex audit findings for <repo>...` and ends with `...full text in per-file reports):` followed by 3 example lines and the trailing `...`.
 
-- [ ] **Note:** `<repo>`, run-id, and audit-dir paths are placeholder tokens; the actual handoff writer (M7) substitutes them at runtime via the same `build_user_prompt`-style template engine. M2 only ships the static template.
+- [x] **Note:** `<repo>`, run-id, and audit-dir paths are placeholder tokens; the actual handoff writer (M7) substitutes them at runtime via the same `build_user_prompt`-style template engine. M2 only ships the static template.
 
 #### Step 2.5.3: Write `compaction.md`
 
-- [ ] **Create `senex/prompts/compaction.md`** -- the compaction prompt (per spec §5.5.1). Body:
+- [x] **Create `senex/prompts/compaction.md`** -- the compaction prompt (per spec §5.5.1). Body:
   ```
   ROLE
   You are summarizing a long tool-use conversation history during an audit
@@ -1660,7 +1660,7 @@ Anchors are exactly **one paragraph each** (per spec §5.3: "A single short para
 
 #### Step 2.5.4: Build the prompt-hash fixture
 
-- [ ] **Generate `tests/fixtures/expected_prompt_hashes.json`** programmatically (write a small helper in the commit body, or run inline). Content shape:
+- [x] **Generate `tests/fixtures/expected_prompt_hashes.json`** programmatically (write a small helper in the commit body, or run inline). Content shape:
   ```json
   {
     "schema_version": 1,
@@ -1682,7 +1682,7 @@ Anchors are exactly **one paragraph each** (per spec §5.3: "A single short para
   }
   ```
 
-- [ ] **One-shot generator** (run from repo root after files are written):
+- [x] **One-shot generator** (run from repo root after files are written):
   ```bash
   python -c "
   import hashlib, json
@@ -1701,7 +1701,7 @@ Anchors are exactly **one paragraph each** (per spec §5.3: "A single short para
   "
   ```
 
-- [ ] **Hash-stability test** (added to `tests/unit/test_anchor_loader.py`):
+- [x] **Hash-stability test** (added to `tests/unit/test_anchor_loader.py`):
   ```python
   import json
 
@@ -1724,7 +1724,7 @@ Anchors are exactly **one paragraph each** (per spec §5.3: "A single short para
           )
   ```
 
-- [ ] **CRLF guard test** (single test for the whole prompts dir):
+- [x] **CRLF guard test** (single test for the whole prompts dir):
   ```python
   def test_all_prompts_use_lf_endings_and_no_bom() -> None:
       for p in (Path("senex/prompts")).glob("*.md"):
@@ -1736,19 +1736,19 @@ Anchors are exactly **one paragraph each** (per spec §5.3: "A single short para
 
 #### Step 2.5.5: Run; commit
 
-- [ ] ```bash
+- [x] ```bash
   pytest tests/unit/test_anchor_loader.py -v
   ```
   Expected: all green; specifically `PASSED ...::test_all_prompt_hashes_stable_byte_for_byte`.
 
-- [ ] **Lint + type:**
+- [x] **Lint + type:**
   ```bash
   ruff check senex/prompts/_anchor_loader.py tests/unit/test_anchor_loader.py
   mypy senex/prompts/_anchor_loader.py
   ```
   Expected: clean.
 
-- [ ] **Commit:**
+- [x] **Commit:**
   ```bash
   git add senex/prompts/cross_cutting.md senex/prompts/claude_handoff.md senex/prompts/compaction.md tests/fixtures/expected_prompt_hashes.json tests/unit/test_anchor_loader.py
   git commit -m "feat(M2): crosscut + handoff + compaction prompts + hash regression fixture
@@ -1758,10 +1758,10 @@ Anchors are exactly **one paragraph each** (per spec §5.3: "A single short para
 
 #### Definition of done (Task 2.5)
 
-- [ ] All 10 prompt files exist (5 anchors + system + per-file + crosscut + handoff + compaction).
-- [ ] `tests/fixtures/expected_prompt_hashes.json` exists with sha256 entries for each.
-- [ ] `test_all_prompt_hashes_stable_byte_for_byte` passes.
-- [ ] No CRLF, no BOM in any prompt file.
+- [x] All 10 prompt files exist (5 anchors + system + per-file + crosscut + handoff + compaction).
+- [x] `tests/fixtures/expected_prompt_hashes.json` exists with sha256 entries for each.
+- [x] `test_all_prompt_hashes_stable_byte_for_byte` passes.
+- [x] No CRLF, no BOM in any prompt file.
 
 #### Pitfalls (Task 2.5)
 
@@ -1773,17 +1773,17 @@ Anchors are exactly **one paragraph each** (per spec §5.3: "A single short para
 
 ## Acceptance criteria
 
-- [ ] `pytest tests/unit/test_walker.py tests/unit/test_graph_awareness.py tests/unit/test_anchor_loader.py -v` is 100% green; the final summary line says `XX passed` and includes `0 failed`.
-- [ ] **Symlink-escape regression:** the test `test_walker_rejects_symlink_escape_to_outside_repo` asserts both that the candidate file is absent from `result.kept` AND that a `SymlinkSkipped` event was published with `reason="resolved outside repo_root"`.
-- [ ] **Resolve-order regression:** `test_walker_resolve_happens_before_is_relative_to` asserts that an unresolved-path-`is_relative_to`-then-resolve impl would let the symlink through, and the actual impl rejects it.
-- [ ] **Mocked subprocess regression:** `test_gitnexus_subprocess_uses_listform_args_no_shell` asserts `asyncio.create_subprocess_exec` is called with the absolute `npx` path as `args[0]`, list-form args, and `shell` kwarg either absent or `False`.
-- [ ] **Relpath-regex regression:** every parametrized bad relpath in `test_relpath_regex_rejects_bad_input` returns `available=False` AND never invokes the subprocess layer.
-- [ ] **Anchor regression:** `select_anchor("foo.py")` returns the Python anchor; `select_anchor("foo.unknown")` returns None; the Python anchor contains each of `pathlib`, `async`, `bare except`, `mutable default`.
-- [ ] **System-prompt hash:** `sha256(system_senior_dev.md bytes) == "b901a49bcf3848f5c0afd934d6d9be12fc9ba25714a67a6e9c5f15d684c123b9"`.
-- [ ] **Prompt-hash regression:** `test_all_prompt_hashes_stable_byte_for_byte` passes for all 10 prompts.
-- [ ] **`tests/fixtures/repos/tiny_python/`** exists with 5 trivially-flawed Python files + `.git/` placeholder + `.gitignore` + `README.md` documenting each file's intentional defect.
-- [ ] **`tests/fixtures/gitnexus_outputs/`** contains real captured JSON from `npx gitnexus context|query --repo senex --json` -- at least 3 files (one `context_*.json`, one `query_*.json`, one `context_missing_repo.json` for the failure path).
-- [ ] **Coverage:** `pytest --cov=senex.walker --cov=senex.graph_awareness` reports >= 85% on both modules (Conventions §6).
-- [ ] **Lint + type clean:** `ruff check senex/ tests/` and `mypy senex/` both succeed with no errors on the M2 surface.
-- [ ] **No CRLF, no BOM in any prompt file** (asserted by `test_all_prompts_use_lf_endings_and_no_bom`).
-- [ ] **`gitnexus_detect_changes({scope: "staged"})`** before each commit confirms only the expected files are touched and the affected execution flows match the milestone scope.
+- [x] `pytest tests/unit/test_walker.py tests/unit/test_graph_awareness.py tests/unit/test_anchor_loader.py -v` is 100% green; the final summary line says `XX passed` and includes `0 failed`.
+- [x] **Symlink-escape regression:** the test `test_walker_rejects_symlink_escape_to_outside_repo` asserts both that the candidate file is absent from `result.kept` AND that a `SymlinkSkipped` event was published with `reason="resolved outside repo_root"`.
+- [x] **Resolve-order regression:** `test_walker_resolve_happens_before_is_relative_to` asserts that an unresolved-path-`is_relative_to`-then-resolve impl would let the symlink through, and the actual impl rejects it.
+- [x] **Mocked subprocess regression:** `test_gitnexus_subprocess_uses_listform_args_no_shell` asserts `asyncio.create_subprocess_exec` is called with the absolute `npx` path as `args[0]`, list-form args, and `shell` kwarg either absent or `False`.
+- [x] **Relpath-regex regression:** every parametrized bad relpath in `test_relpath_regex_rejects_bad_input` returns `available=False` AND never invokes the subprocess layer.
+- [x] **Anchor regression:** `select_anchor("foo.py")` returns the Python anchor; `select_anchor("foo.unknown")` returns None; the Python anchor contains each of `pathlib`, `async`, `bare except`, `mutable default`.
+- [x] **System-prompt hash:** `sha256(system_senior_dev.md bytes) == "b901a49bcf3848f5c0afd934d6d9be12fc9ba25714a67a6e9c5f15d684c123b9"`.
+- [x] **Prompt-hash regression:** `test_all_prompt_hashes_stable_byte_for_byte` passes for all 10 prompts.
+- [x] **`tests/fixtures/repos/tiny_python/`** exists with 5 trivially-flawed Python files + `.git/` placeholder + `.gitignore` + `README.md` documenting each file's intentional defect.
+- [x] **`tests/fixtures/gitnexus_outputs/`** contains real captured JSON from `npx gitnexus context|query --repo senex --json` -- at least 3 files (one `context_*.json`, one `query_*.json`, one `context_missing_repo.json` for the failure path).
+- [x] **Coverage:** `pytest --cov=senex.walker --cov=senex.graph_awareness` reports >= 85% on both modules (Conventions §6).
+- [x] **Lint + type clean:** `ruff check senex/ tests/` and `mypy senex/` both succeed with no errors on the M2 surface.
+- [x] **No CRLF, no BOM in any prompt file** (asserted by `test_all_prompts_use_lf_endings_and_no_bom`).
+- [x] **`gitnexus_detect_changes({scope: "staged"})`** before each commit confirms only the expected files are touched and the affected execution flows match the milestone scope.

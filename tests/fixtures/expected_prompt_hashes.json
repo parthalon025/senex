@@ -1,0 +1,18 @@
+{
+  "algorithm": "sha256",
+  "encoding": "utf-8",
+  "newline": "lf",
+  "prompts": {
+    "claude_handoff.md": "934f373694a99272e1eca5b2832fc3cf9892695c37a9fdbe4c52eaf10fa21b8f",
+    "compaction.md": "fa9f2b770ecd68c0103839f72ce22a7154cee5053fc02bf3d6d7264e3fb8f75d",
+    "cross_cutting.md": "ff82ea3d12eaa42a8b803b5eca11aa711f9bb2854a94028d8d2f9db5cbeb1fcc",
+    "lang_csharp.md": "3cf1d27c135d998c02793b981d4baaa634b7982d1349dcc053319d219c0f9a01",
+    "lang_go.md": "555128bca8bc56ed9f5f646d9d56d4b9051fea8d65944b07f82eb60f3d89f6c4",
+    "lang_python.md": "de96945e59d30e503e3358bf8f4731136c227ff719ff30fbe02f0b2bbea7a278",
+    "lang_rust.md": "6a024268ddb18f4e47a4fe3acc1c0cc528c99ea108fa0737a7852623ef0f7cf6",
+    "lang_typescript.md": "221e6c2c91fc9f16d197fe2f7085f15364d54ef74b4f67e0236ac2661135b3e2",
+    "per_file_user.md": "b4f1979ca07f9526dc787bc1a2919e8d6ef0b3d58c17823bc620af83820ca95e",
+    "system_senior_dev.md": "b901a49bcf3848f5c0afd934d6d9be12fc9ba25714a67a6e9c5f15d684c123b9"
+  },
+  "schema_version": 1
+}

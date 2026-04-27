@@ -6,6 +6,7 @@ trust-boundary template, 7.4 handoff, plus prompt-hash regression net).
 from __future__ import annotations
 
 import hashlib
+import json
 from pathlib import Path
 
 import pytest
@@ -229,3 +230,82 @@ def test_per_file_user_template_has_four_placeholders_and_trust_boundary() -> No
         assert placeholder in body, f"template missing {placeholder}"
     assert "<UNTRUSTED_FILE_CONTENT>" in body
     assert "</UNTRUSTED_FILE_CONTENT>" in body
+
+
+# ----------------------------------------------------------------------
+# Task 2.5 — crosscut + handoff + compaction + hash regression net
+# ----------------------------------------------------------------------
+
+
+def test_all_prompt_hashes_stable_byte_for_byte() -> None:
+    """Spec section POL-9: every prompt is byte-pinned by sha256.
+
+    Drift produces a clear diff at review; intentional spec edits update
+    both file + fixture in the same commit.
+    """
+    fixture_path = (
+        _REPO / "tests" / "fixtures" / "expected_prompt_hashes.json"
+    )
+    fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
+    assert fixture["algorithm"] == "sha256"
+    assert fixture["newline"] == "lf"
+    for filename, expected in fixture["prompts"].items():
+        body = (_PROMPTS / filename).read_bytes()
+        assert b"\r\n" not in body, (
+            f"{filename} has CRLF; spec requires LF"
+        )
+        assert not body.startswith(b"\xef\xbb\xbf"), (
+            f"{filename} has UTF-8 BOM; not allowed"
+        )
+        actual = hashlib.sha256(body).hexdigest()
+        assert actual == expected, (
+            f"prompt drift detected: {filename}\n"
+            f"  expected: {expected}\n"
+            f"  actual:   {actual}\n"
+            "If the change is intentional, regenerate "
+            "tests/fixtures/expected_prompt_hashes.json in this commit "
+            "and cite the spec edit in the commit body."
+        )
+
+
+def test_all_prompts_use_lf_endings_and_no_bom() -> None:
+    """Defense-in-depth: CRLF / BOM in any prompt would invalidate the hash."""
+    for p in _PROMPTS.glob("*.md"):
+        b = p.read_bytes()
+        assert b"\r\n" not in b, f"{p} has CRLF"
+        assert not b.startswith(b"\xef\xbb\xbf"), f"{p} has BOM"
+        assert b.endswith(b"\n"), f"{p} missing trailing LF"
+
+
+def test_cross_cutting_prompt_has_required_anchors() -> None:
+    body = (_PROMPTS / "cross_cutting.md").read_text(encoding="utf-8")
+    for required in ["ROLE", "TRUST BOUNDARY", "YOUR JOB", "RULES", "OUTPUT"]:
+        assert required in body, f"cross_cutting.md missing: {required}"
+
+
+def test_compaction_prompt_has_required_anchors() -> None:
+    body = (_PROMPTS / "compaction.md").read_text(encoding="utf-8")
+    for required in [
+        "ROLE",
+        "TRUST BOUNDARY",
+        "evidence_summary",
+        "key_findings_so_far",
+        "unanswered_questions",
+        "OUTPUT",
+    ]:
+        assert required in body, f"compaction.md missing: {required}"
+
+
+def test_claude_handoff_prompt_has_required_anchors() -> None:
+    body = (_PROMPTS / "claude_handoff.md").read_text(encoding="utf-8")
+    # Spec section 7.4 verbatim body markers.
+    for required in [
+        "senex audit findings",
+        "Audit dir:",
+        "Findings index:",
+        "APPLY",
+        "DISMISS",
+        "DEFER",
+        "gitnexus_impact",
+    ]:
+        assert required in body, f"claude_handoff.md missing: {required}"
