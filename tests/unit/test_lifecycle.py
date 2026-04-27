@@ -916,3 +916,186 @@ async def test_cli_backend_list_loaded_returns_models(
     items = await backend.list_loaded()
     assert len(items) == 1
     assert items[0].backend == "cli"
+
+
+# ---------------------------------------------------------------------------
+# M11 - wait-for-load polling loop on auto_load failure
+# ---------------------------------------------------------------------------
+
+
+async def test_acquire_waits_for_manual_load_after_auto_load_failure(
+    recording_bus: _RecordingBus,
+    redactor: SecretRedactor,
+    isolated_runlock: Path,
+) -> None:
+    """LM Studio guardrail rejected ``lms load``; user loads manually mid-wait.
+
+    Lifecycle.acquire must:
+      1. Emit ``ModelLoadFailed`` for the auto_load failure (existing behavior).
+      2. Emit ``ModelLoadWaiting`` to start the wait loop (new in M11).
+      3. Poll ``backend.is_loaded`` until it returns True.
+      4. Emit ``ModelLoadCompleteAfterWait`` and ``RunLockAcquired``.
+      5. Return ``(info, False)`` — we did NOT load it; the user did.
+    """
+    backend = MagicMock()
+    info = _make_info()
+    # is_loaded: False initially (so we go down auto_load path), then False
+    # twice during the poll loop, then True (the user loaded it).
+    is_loaded_calls = [False, False, False, True]
+    backend.is_loaded = AsyncMock(side_effect=is_loaded_calls)
+    backend.load = AsyncMock(side_effect=ModelLoadFailed("guardrail rejected"))
+    backend.list_loaded = AsyncMock(return_value=[info])
+    cfg = LifecycleCfg(
+        auto_load=True,
+        load_timeout_seconds=120,
+        load_wait_timeout_seconds=60,
+        load_wait_poll_interval_seconds=0.01,
+    )
+    lc = Lifecycle(backend, recording_bus, cfg, redactor)
+    out_info, loaded_by_us = await lc.acquire("m", "run-1", RunLock, auto_load=True)
+    assert loaded_by_us is False
+    assert out_info.fingerprint == info.fingerprint
+    types = [e.type for e in recording_bus.published]
+    assert "ModelLoadFailed" in types
+    assert "ModelLoadWaiting" in types
+    assert "ModelLoadCompleteAfterWait" in types
+    assert "RunLockAcquired" in types
+    # Manual-load wait must place ``loaded_by_us=False`` on the runlock holder
+    # so release() never auto-unloads what the user loaded.
+    holders = RunLock.list_holders(info.fingerprint)
+    assert len(holders) == 1
+    assert holders[0]["loaded_by_us"] is False
+    await lc.release("m", "run-1", RunLock, auto_unload=False, loaded_by_us=False)
+
+
+async def test_acquire_wait_respects_timeout(
+    recording_bus: _RecordingBus,
+    redactor: SecretRedactor,
+    isolated_runlock: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """is_loaded never returns True; acquire must raise ModelLoadFailed (or original error)."""
+    backend = MagicMock()
+    backend.is_loaded = AsyncMock(return_value=False)
+    backend.load = AsyncMock(side_effect=ModelLoadFailed("nope"))
+    cfg = LifecycleCfg(
+        auto_load=True,
+        load_timeout_seconds=120,
+        load_wait_timeout_seconds=1,
+        load_wait_poll_interval_seconds=0.05,
+    )
+    lc = Lifecycle(backend, recording_bus, cfg, redactor)
+    runlock_acquire = MagicMock()
+    monkeypatch.setattr("senex.runlock.RunLock.acquire", runlock_acquire)
+    with pytest.raises(ModelLoadFailed):
+        await lc.acquire("m", "run-1", RunLock, auto_load=True)
+    runlock_acquire.assert_not_called()
+    # The wait was attempted (ModelLoadWaiting emitted) before timing out.
+    types = [e.type for e in recording_bus.published]
+    assert "ModelLoadWaiting" in types
+
+
+async def test_acquire_wait_disabled_preserves_v1_0_0_rc1_behavior(
+    recording_bus: _RecordingBus,
+    redactor: SecretRedactor,
+    isolated_runlock: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """``load_wait_timeout_seconds=0`` -> immediate failure, no wait events emitted."""
+    backend = MagicMock()
+    backend.is_loaded = AsyncMock(return_value=False)
+    backend.load = AsyncMock(side_effect=ModelLoadFailed("fail"))
+    cfg = LifecycleCfg(
+        auto_load=True,
+        load_timeout_seconds=120,
+        load_wait_timeout_seconds=0,
+    )
+    lc = Lifecycle(backend, recording_bus, cfg, redactor)
+    runlock_acquire = MagicMock()
+    monkeypatch.setattr("senex.runlock.RunLock.acquire", runlock_acquire)
+    with pytest.raises(ModelLoadFailed):
+        await lc.acquire("m", "run-1", RunLock, auto_load=True)
+    runlock_acquire.assert_not_called()
+    types = [e.type for e in recording_bus.published]
+    # NO wait events at all — original v1.0.0-rc1 behavior.
+    assert "ModelLoadWaiting" not in types
+    assert "ModelLoadStillWaiting" not in types
+    assert "ModelLoadCompleteAfterWait" not in types
+
+
+async def test_acquire_emits_heartbeat_during_wait(
+    recording_bus: _RecordingBus,
+    redactor: SecretRedactor,
+    isolated_runlock: Path,
+) -> None:
+    """``ModelLoadStillWaiting`` heartbeats fire periodically during the poll loop.
+
+    Uses a heartbeat cadence override so the test stays fast but still exercises
+    the heartbeat code path (driven by the same mechanism the production
+    60s heartbeat uses).
+    """
+    backend = MagicMock()
+    info = _make_info()
+    # Force a long wait so multiple heartbeats fire before is_loaded returns True.
+    is_loaded_calls = [False, False, False, False, False, False, False, True]
+    backend.is_loaded = AsyncMock(side_effect=is_loaded_calls)
+    backend.load = AsyncMock(side_effect=ModelLoadFailed("fail"))
+    backend.list_loaded = AsyncMock(return_value=[info])
+    cfg = LifecycleCfg(
+        auto_load=True,
+        load_timeout_seconds=120,
+        load_wait_timeout_seconds=60,
+        load_wait_poll_interval_seconds=0.01,
+    )
+    lc = Lifecycle(backend, recording_bus, cfg, redactor)
+    # Lifecycle exposes a private heartbeat-interval seconds attribute used
+    # so tests can drive heartbeats in milliseconds. Production keeps the
+    # 60s default; we do not change the public config surface.
+    lc._wait_heartbeat_interval_seconds = 0.02  # type: ignore[attr-defined]
+    out_info, loaded_by_us = await lc.acquire("m", "run-1", RunLock, auto_load=True)
+    assert loaded_by_us is False
+    assert out_info.fingerprint == info.fingerprint
+    heartbeats = [
+        e for e in recording_bus.published if e.type == "ModelLoadStillWaiting"
+    ]
+    assert len(heartbeats) >= 1
+    # Heartbeat fields populated.
+    hb = heartbeats[0]
+    assert getattr(hb, "model_id") == "m"
+    assert getattr(hb, "elapsed_seconds") >= 0
+    assert getattr(hb, "remaining_seconds") >= 0
+    await lc.release("m", "run-1", RunLock, auto_unload=False, loaded_by_us=False)
+
+
+async def test_acquire_wait_handles_cancellation(
+    recording_bus: _RecordingBus,
+    redactor: SecretRedactor,
+    isolated_runlock: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """User Ctrl+C during the wait loop -> CancelledError propagates, no runlock taken."""
+    import asyncio as _asyncio
+
+    backend = MagicMock()
+    backend.is_loaded = AsyncMock(return_value=False)
+    backend.load = AsyncMock(side_effect=ModelLoadFailed("fail"))
+    cfg = LifecycleCfg(
+        auto_load=True,
+        load_timeout_seconds=120,
+        load_wait_timeout_seconds=60,
+        load_wait_poll_interval_seconds=0.05,
+    )
+    lc = Lifecycle(backend, recording_bus, cfg, redactor)
+    runlock_acquire = MagicMock()
+    monkeypatch.setattr("senex.runlock.RunLock.acquire", runlock_acquire)
+
+    async def _runner() -> None:
+        await lc.acquire("m", "run-1", RunLock, auto_load=True)
+
+    task = _asyncio.create_task(_runner())
+    # Yield long enough for the task to enter the wait loop's first poll.
+    await _asyncio.sleep(0.1)
+    task.cancel()
+    with pytest.raises(_asyncio.CancelledError):
+        await task
+    runlock_acquire.assert_not_called()
