@@ -130,8 +130,8 @@ The compaction prompt and schema are delivered in earlier milestones; M6 referen
 
 No new files in this task. Validate the upstream artifacts exist and have the expected hashes before proceeding.
 
-- [ ] **Step 6.1.1: Verify** `senex/prompts/compaction.md` exists, contains the `<UNTRUSTED_CONTENT>` clause, and matches the hash in `tests/fixtures/expected_prompt_hashes.json` (M2 Task 2.5.4).
-- [ ] **Step 6.1.2: Verify** `senex/schema/compaction_response.schema.json` exists and matches the spec §5.5.1 verbatim copy committed in M1 Task 1.8.3.
+- [x] **Step 6.1.1: Verify** `senex/prompts/compaction.md` exists, contains the `<UNTRUSTED_CONTENT>` clause, and matches the hash in `tests/fixtures/expected_prompt_hashes.json` (M2 Task 2.5.4).
+- [x] **Step 6.1.2: Verify** `senex/schema/compaction_response.schema.json` exists and matches the spec §5.5.1 verbatim copy committed in M1 Task 1.8.3.
 
 ### Task 6.2: Compaction executor (`Compactor.run`)
 
@@ -139,7 +139,7 @@ No new files in this task. Validate the upstream artifacts exist and have the ex
 - Create: `senex/compaction.py`
 - Create: `tests/unit/test_compaction.py`
 
-- [ ] **Step 6.2.1: Failing tests** (TDD per §6 — write all, run to confirm RED, then implement):
+- [x] **Step 6.2.1: Failing tests** (TDD per §6 — write all, run to confirm RED, then implement):
   - `test_compactor_run_returns_rewritten_history_with_compacted_marker` — assert the returned list contains exactly one `system` message starting with `"[COMPACTED]\n"` at the slice position.
   - `test_compactor_run_preserves_recent_turns_byte_equal` — with `preserve_recent_turns=2`, assert `messages[-2:]` is byte-equal pre/post.
   - `test_compactor_run_preserves_system_prompt_index_0` — `messages[0]` is byte-equal pre/post.
@@ -154,7 +154,7 @@ No new files in this task. Validate the upstream artifacts exist and have the ex
   - `test_compaction_prompt_includes_untrusted_content_clause` — open `senex/prompts/compaction.md`, assert literal substring `"<UNTRUSTED_CONTENT>"` is present (trust-boundary regression).
   - `test_compactor_run_propagates_cancelled_error` — mock client raises `asyncio.CancelledError`; assert it propagates without being wrapped.
 
-- [ ] **Step 6.2.2: Implement `Compactor`** in `senex/compaction.py`:
+- [x] **Step 6.2.2: Implement `Compactor`** in `senex/compaction.py`:
   - `from __future__ import annotations` at top (per §2).
   - Module docstring: "M6 context compaction executor. Implements §5.5.1."
   - `class CompactionResult(BaseModel)` with `extra="forbid"`; fields per spec §5.5.1.
@@ -162,15 +162,15 @@ No new files in this task. Validate the upstream artifacts exist and have the ex
   - `class Compactor` per the Key contracts section above.
   - `async def run(self, messages)` builds the slice, calls `client.chat(task="compaction", ..., tools=None)`, validates with `TypeAdapter(CompactionResult).validate_python`, retries once on validation failure with prompt addendum, raises `CompactionFailed` on second failure or LMS error, builds the `[COMPACTED]` block, applies `SecretRedactor.redact` and ANSI strip, returns rewritten list.
 
-- [ ] **Step 6.2.3: Emit events** in the correct order (per §7): `CompactionTriggered` is emitted by `maybe_compact` BEFORE calling `run`; `CompactionComplete` after `run` returns; `CompactionError` on any exception path before re-raising.
+- [x] **Step 6.2.3: Emit events** in the correct order (per §7): `CompactionTriggered` is emitted by `maybe_compact` BEFORE calling `run`; `CompactionComplete` after `run` returns; `CompactionError` on any exception path before re-raising.
 
-- [ ] **Step 6.2.4: Run** `pytest tests/unit/test_compaction.py -v` → green.
+- [x] **Step 6.2.4: Run** `pytest tests/unit/test_compaction.py -v` → green.
 
-- [ ] **Step 6.2.5: Lint + type** per §11/§12: `ruff check senex/compaction.py tests/unit/test_compaction.py && mypy senex/`.
+- [x] **Step 6.2.5: Lint + type** per §11/§12: `ruff check senex/compaction.py tests/unit/test_compaction.py && mypy senex/`.
 
-- [ ] **Step 6.2.6: Replay determinism test** — record an LMS fixture for one compaction cycle; run the test twice with `RECORD_LMS=0`; assert byte-identical rewritten histories. Document the fixture key derivation: `sha256(messages_canonical_json + compaction_prompt_hash + schema_hash)`.
+- [x] **Step 6.2.6: Replay determinism test** — record an LMS fixture for one compaction cycle; run the test twice with `RECORD_LMS=0`; assert byte-identical rewritten histories. Document the fixture key derivation: `sha256(messages_canonical_json + compaction_prompt_hash + schema_hash)`.
 
-- [ ] **Step 6.2.7: Impact check + commit** — `gitnexus_impact({target: "Compactor", direction: "upstream"})` (expected: no upstream callers yet; M8 wires it). Commit `feat(M6): context compaction executor`.
+- [x] **Step 6.2.7: Impact check + commit** — `gitnexus_impact({target: "Compactor", direction: "upstream"})` (expected: no upstream callers yet; M8 wires it). Commit `feat(M6): context compaction executor`.
 
 ### Task 6.3: Trigger logic + per-file loop counter
 
@@ -178,7 +178,7 @@ No new files in this task. Validate the upstream artifacts exist and have the ex
 - Modify: `senex/compaction.py` (add `should_trigger`, `maybe_compact`)
 - Modify: `tests/unit/test_compaction.py`
 
-- [ ] **Step 6.3.1: Failing tests**:
+- [x] **Step 6.3.1: Failing tests**:
   - `test_should_trigger_returns_true_at_threshold` — craft messages totaling ≥ `trigger_pct * ctx_window` tokens; assert `True`.
   - `test_should_trigger_returns_false_below_threshold` — craft messages well below; assert `False`.
   - `test_should_trigger_returns_false_when_disabled` — `enabled=False`; assert always `False` regardless of token count.
@@ -188,15 +188,15 @@ No new files in this task. Validate the upstream artifacts exist and have the ex
   - `test_maybe_compact_raises_loop_exceeded_at_n_plus_one` — set `max_compactions_per_file=2`, force 3 triggers; assert 3rd raises `CompactionLoopExceeded(compactions_so_far=2, limit=2)`.
   - `test_maybe_compact_emits_triggered_before_call` — event ordering check.
 
-- [ ] **Step 6.3.2: Implement `should_trigger`** as described in Key contracts. Pure function modulo `self._config`. Reuses `count_tokens` from `lmstudio_client`.
+- [x] **Step 6.3.2: Implement `should_trigger`** as described in Key contracts. Pure function modulo `self._config`. Reuses `count_tokens` from `lmstudio_client`.
 
-- [ ] **Step 6.3.3: Implement `maybe_compact`** as described in Key contracts. Bounded by `max_compactions_per_file`; raises `CompactionLoopExceeded` on Nth+1.
+- [x] **Step 6.3.3: Implement `maybe_compact`** as described in Key contracts. Bounded by `max_compactions_per_file`; raises `CompactionLoopExceeded` on Nth+1.
 
-- [ ] **Step 6.3.4: Budget independence test** — craft a scenario where `[lmstudio.tools].max_calls_per_file` is exhausted but `max_compactions_per_file` is not (and vice versa); assert `Compactor` honors only its own budget. This is the explicit test for §5.5.1's budget-accounting clause.
+- [x] **Step 6.3.4: Budget independence test** — craft a scenario where `[lmstudio.tools].max_calls_per_file` is exhausted but `max_compactions_per_file` is not (and vice versa); assert `Compactor` honors only its own budget. This is the explicit test for §5.5.1's budget-accounting clause.
 
-- [ ] **Step 6.3.5: Run** tests → green; lint + type clean.
+- [x] **Step 6.3.5: Run** tests → green; lint + type clean.
 
-- [ ] **Step 6.3.6: Impact check + commit** `feat(M6): compaction trigger + per-file loop counter`.
+- [x] **Step 6.3.6: Impact check + commit** `feat(M6): compaction trigger + per-file loop counter`.
 
 ### Task 6.4: Wire into `ToolLoop`
 
@@ -204,7 +204,7 @@ No new files in this task. Validate the upstream artifacts exist and have the ex
 - Modify: `senex/tools/loop.py` (M5 already accepts `compaction_cb`; this task supplies the binding)
 - Modify: `tests/unit/test_tool_loop.py` or add `tests/unit/test_compaction_integration.py`
 
-- [ ] **Step 6.4.1: Failing integration test**:
+- [x] **Step 6.4.1: Failing integration test**:
   - `test_tool_loop_invokes_compactor_after_tool_result_before_next_chat` — synthetic-bloat fixture: a tool result whose redacted/truncated form still pushes total tokens past `trigger_pct * ctx_window`. Assert the call order is: tool dispatch → tool result append → `compactor.maybe_compact` called → next `client.chat`.
   - `test_tool_loop_audit_completes_after_compaction` — full happy-path test: bloat fixture forces compaction; final assistant response validates against `audit_response.schema.json`. Assert no errors and audit completes.
   - `test_tool_loop_emits_compaction_triggered_event` — assert `CompactionTriggered` is on the bus exactly once for one bloat cycle.
@@ -212,15 +212,15 @@ No new files in this task. Validate the upstream artifacts exist and have the ex
   - `test_tool_loop_propagates_compaction_failed` — mock client compaction-call fails; assert `CompactionFailed` propagates.
   - `test_tool_loop_does_not_count_compaction_against_tool_budget` — set `max_calls_per_file=3`, `max_compactions_per_file=2`; trigger 2 compactions inside 3 tool calls; assert tool budget is exactly 3 used, compaction budget 2 used, no `ToolBudgetExhausted` early.
 
-- [ ] **Step 6.4.2: Wire** `ToolLoop` to call `compactor.maybe_compact(messages, client.context_window)` after each tool-result append, BEFORE the next chat call (per spec §5.5.1 Trigger). M5 Task 5.8.2 already exposes `compaction_cb: Callable[[list[Message]], Awaitable[list[Message]]]`; M6 supplies the bound method `compactor.maybe_compact` (closing over `client.context_window`).
+- [x] **Step 6.4.2: Wire** `ToolLoop` to call `compactor.maybe_compact(messages, client.context_window)` after each tool-result append, BEFORE the next chat call (per spec §5.5.1 Trigger). M5 Task 5.8.2 already exposes `compaction_cb: Callable[[list[Message]], Awaitable[list[Message]]]`; M6 supplies the bound method `compactor.maybe_compact` (closing over `client.context_window`).
 
-- [ ] **Step 6.4.3: Opt-out / `ContextOverflow` test** — set `[lmstudio.compaction].enabled=false`; force a chat call where the message list naturally exceeds `client.context_window`; assert `ToolLoop` raises `ContextOverflow` (not `CompactionFailed`). This is the path M8 maps to `<file>.ERROR.md` with `kind="context_overflow"`.
+- [x] **Step 6.4.3: Opt-out / `ContextOverflow` test** — set `[lmstudio.compaction].enabled=false`; force a chat call where the message list naturally exceeds `client.context_window`; assert `ToolLoop` raises `ContextOverflow` (not `CompactionFailed`). This is the path M8 maps to `<file>.ERROR.md` with `kind="context_overflow"`.
 
-- [ ] **Step 6.4.4: Run** all M5 + M6 tests: `pytest tests/unit/test_tool_loop.py tests/unit/test_compaction.py tests/unit/test_compaction_integration.py -v`.
+- [x] **Step 6.4.4: Run** all M5 + M6 tests: `pytest tests/unit/test_tool_loop.py tests/unit/test_compaction.py tests/unit/test_compaction_integration.py -v`.
 
-- [ ] **Step 6.4.5: `gitnexus_detect_changes` pre-commit** per §11 — verify only `senex/compaction.py`, `senex/tools/loop.py`, and the relevant test files changed.
+- [x] **Step 6.4.5: `gitnexus_detect_changes` pre-commit** per §11 — verify only `senex/compaction.py`, `senex/tools/loop.py`, and the relevant test files changed.
 
-- [ ] **Step 6.4.6: Commit** `feat(M6): tool loop ↔ compaction integration`.
+- [x] **Step 6.4.6: Commit** `feat(M6): tool loop ↔ compaction integration`.
 
 ## Acceptance criteria
 

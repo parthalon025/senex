@@ -618,3 +618,58 @@ def test_should_trigger_pure_function_signature() -> None:
     assert should_trigger(token_count=99, context_window=200, config=cfg) is False
     cfg_off = CompactionCfg(enabled=False)
     assert should_trigger(token_count=10**9, context_window=1, config=cfg_off) is False
+
+
+@pytest.mark.asyncio
+async def test_maybe_compact_emits_compaction_error_on_unknown_exception(
+    bus: EventBus, cfg: CompactionCfg, captured: list[BaseEvent]
+) -> None:
+    """Non-CompactionFailed exceptions inside ``run`` emit
+    CompactionError(error_kind='unknown') and re-raise."""
+    msgs = _history_with_compacted()
+
+    class _BoomCompactor(Compactor):
+        async def run(self, _messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
+            raise RuntimeError("synthetic non-CompactionFailed boom")
+
+    compactor = _BoomCompactor(
+        client=_make_client(_ok_chat_response(_ok_compaction_payload())),
+        prompt_path=_PROMPT_PATH,
+        schema_path=_SCHEMA_PATH,
+        config=cfg,
+        bus=bus,
+        run_id="test-run",
+        path=Path("src/foo.py"),
+        model_id="test-model",
+        redactor=SecretRedactor(),
+    )
+    with pytest.raises(RuntimeError):
+        await compactor.maybe_compact(msgs, context_window=1)
+    err = [e for e in captured if isinstance(e, CompactionErrorEvent)]
+    assert len(err) == 1
+    assert err[0].error_kind == "unknown"
+
+
+@pytest.mark.asyncio
+async def test_compactor_run_raises_compaction_failed_on_empty_messages(
+    bus: EventBus, cfg: CompactionCfg
+) -> None:
+    compactor, _ = _make_compactor(bus, cfg, _ok_chat_response(_ok_compaction_payload()))
+    with pytest.raises(CompactionFailed) as exc:
+        await compactor.run([])
+    assert exc.value.kind == "schema_invalid"
+
+
+def test_context_overflow_carries_path_token_count_and_window() -> None:
+    err = ContextOverflow(path=Path("foo.py"), token_count=100, context_window=10)
+    assert err.path == Path("foo.py")
+    assert err.token_count == 100
+    assert err.context_window == 10
+
+
+def test_compactor_path_property() -> None:
+    cfg = CompactionCfg()
+    bus = EventBus()
+    compactor, _ = _make_compactor(bus, cfg, _ok_chat_response(_ok_compaction_payload()), path=Path("a/b.py"))
+    assert compactor.path == Path("a/b.py")
+    assert compactor.compactions_so_far == 0
