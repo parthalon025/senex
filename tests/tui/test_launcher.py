@@ -276,3 +276,145 @@ async def test_launcher_submit_blocks_when_lms_unavailable(tmp_path: Path) -> No
             await screen._submit()
             err = screen.query_one("#error_label", Static)
             assert "LM Studio unavailable" in str(err.render())
+
+
+# ---------------------------------------------------------------------------
+# Scan disk for repos (M11 — reuses cli_wizard._discover_repos_on_disk)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_launcher_renders_scan_repos_button(tmp_path: Path) -> None:
+    """Smoke: the new "Scan disk for repos" button + repo_select widget render."""
+    app = _app(tmp_path)
+
+    async def models(self: LauncherScreen) -> list[str]:
+        return ["m"]
+
+    with patch.object(LauncherScreen, "_fetch_loaded_models", models):
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            await pilot.pause()
+            screen = pilot.app.screen
+            assert screen.query_one("#scan_btn", Button) is not None
+            assert screen.query_one("#repo_select", Select) is not None
+            assert screen.query_one("#scan_status", Static) is not None
+
+
+@pytest.mark.asyncio
+async def test_launcher_scan_button_appends_discovered_candidates(
+    tmp_path: Path,
+) -> None:
+    """Click Scan -> mocked discovery -> repo_select options grow + status updates."""
+    app = _app(tmp_path)
+    discovered = [
+        tmp_path / "alpha",
+        tmp_path / "beta",
+    ]
+    for d in discovered:
+        d.mkdir()
+
+    async def models(self: LauncherScreen) -> list[str]:
+        return ["m"]
+
+    with patch.object(LauncherScreen, "_fetch_loaded_models", models), patch(
+        "senex.tui.launcher._discover_repos_on_disk",
+        return_value=discovered,
+    ):
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            await pilot.pause()
+            screen = pilot.app.screen
+            assert isinstance(screen, LauncherScreen)
+            select = screen.query_one("#repo_select", Select)
+            before = {v for _, v in select._options}
+
+            # Direct handler call — Pilot.click on synthesized buttons can be
+            # flaky for newly added widgets; the behavior contract under test
+            # is the handler logic, not Textual event plumbing.
+            await screen.on_button_scan_repos_pressed()
+
+            after = {v for _, v in select._options}
+            new_paths = after - before
+            assert any(str(d) in v for d in discovered for v in new_paths)
+            status = screen.query_one("#scan_status", Static)
+            assert "Found" in str(status.render())
+            assert "2" in str(status.render())
+
+
+@pytest.mark.asyncio
+async def test_launcher_scan_button_dedupes_already_listed_paths(
+    tmp_path: Path,
+) -> None:
+    """Discovery duplicates of already-listed paths must NOT grow the option list."""
+    app = _app(tmp_path)
+    existing = tmp_path / "already-listed"
+    existing.mkdir()
+
+    async def models(self: LauncherScreen) -> list[str]:
+        return ["m"]
+
+    with patch.object(LauncherScreen, "_fetch_loaded_models", models):
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            await pilot.pause()
+            screen = pilot.app.screen
+            assert isinstance(screen, LauncherScreen)
+            # Pre-populate repo_select with the path the discovery will return.
+            select = screen.query_one("#repo_select", Select)
+            select.set_options([(str(existing), str(existing))])
+            before_count = len(list(select._options))
+
+            with patch(
+                "senex.tui.launcher._discover_repos_on_disk",
+                return_value=[existing],
+            ):
+                await screen.on_button_scan_repos_pressed()
+
+            after_count = len(list(select._options))
+            assert after_count == before_count
+            status = screen.query_one("#scan_status", Static)
+            assert "No new candidates" in str(status.render())
+
+
+@pytest.mark.asyncio
+async def test_launcher_scan_button_uses_ui_cfg_scan_root_and_depth(
+    tmp_path: Path,
+) -> None:
+    """When [ui] sets scan_root + scan_max_depth, the handler forwards both."""
+    cfg_path = tmp_path / "senex.config.toml"
+    cfg_path.write_text(
+        '[ui]\nscan_root = "{root}"\nscan_max_depth = 3\n'.format(
+            root=str(tmp_path).replace("\\", "/")
+        ),
+        encoding="utf-8",
+    )
+    app = SenexApp(
+        config_path=cfg_path,
+        repo_path_default=tmp_path,
+        bus=EventBus(),
+        command_bus=CommandBus(),
+    )
+
+    async def models(self: LauncherScreen) -> list[str]:
+        return ["m"]
+
+    captured: dict[str, object] = {}
+
+    def fake_discover(root: Path, max_depth: int = 6) -> list[Path]:
+        captured["root"] = root
+        captured["max_depth"] = max_depth
+        return []
+
+    with patch.object(LauncherScreen, "_fetch_loaded_models", models), patch(
+        "senex.tui.launcher._discover_repos_on_disk", side_effect=fake_discover
+    ):
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            await pilot.pause()
+            screen = pilot.app.screen
+            assert isinstance(screen, LauncherScreen)
+            await screen.on_button_scan_repos_pressed()
+
+    assert captured["root"] == Path(str(tmp_path).replace("\\", "/"))
+    assert captured["max_depth"] == 3
