@@ -181,6 +181,14 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Bypass full hash discipline on resume (advanced).",
     )
+    audit_p.add_argument(
+        "--no-wizard",
+        action="store_true",
+        help=(
+            "Skip the interactive launcher wizard. When set, a positional "
+            "<repo-path> is required."
+        ),
+    )
 
     # ---- view ----------------------------------------------------------
     view_p = subparsers.add_parser(

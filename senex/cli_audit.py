@@ -51,6 +51,11 @@ def cmd_audit(args: argparse.Namespace) -> int:
     Reads ``args.config`` (or ``./senex.config.toml`` fallback), loads the
     lens, builds the dependency graph, and either spawns ``SenexApp.run()``
     or calls ``asyncio.run(run_audit(...))`` directly.
+
+    When ``args.repo_path`` is ``None`` and ``--no-wizard`` is NOT set, the
+    interactive launcher wizard is invoked (M11). Its return value is a
+    ``RuntimeConfig`` which short-circuits ``_run_single`` and runs the
+    audit directly (TUI or headless per ``--no-tui``).
     """
     cfg_path = Path(args.config) if args.config else Path("senex.config.toml")
     try:
@@ -69,13 +74,99 @@ def cmd_audit(args: argparse.Namespace) -> int:
         return _run_nightly(args, config, cfg_path)
 
     if not args.repo_path:
-        sys.stderr.write(
-            "senex audit: <repo-path> is required (or use --nightly)\n"
-        )
-        return _EXIT_CONFIG
+        if getattr(args, "no_wizard", False):
+            sys.stderr.write(
+                "senex audit: either give a <repo-path> or omit --no-wizard "
+                "to launch the interactive launcher.\n"
+            )
+            return _EXIT_CONFIG
+        return _run_wizard(args, config, cfg_path)
 
     repo = Path(args.repo_path)
     return _run_single(args, config, cfg_path, repo)
+
+
+def _run_wizard(
+    args: argparse.Namespace,
+    config: SenexConfig,
+    config_path: Path,
+) -> int:
+    """Launch the interactive wizard, then dispatch TUI / headless.
+
+    Builds an LM Studio client (lazily — the wizard tolerates ``None`` if
+    the import or HTTP setup fails) and hands it to
+    ``interactive_audit_setup``. The returned ``RuntimeConfig`` is then
+    passed to either the TUI app or the headless flow per ``--no-tui``.
+    """
+    # Local import: keeps `senex.cli_audit` import-light when the wizard
+    # is not used (e.g., the test suite patches `cmd_audit` directly).
+    from senex.cli_wizard import (
+        WizardCancelled,
+        WizardError,
+        interactive_audit_setup,
+    )
+
+    client = _build_wizard_client(config)
+
+    try:
+        runtime = interactive_audit_setup(config, client)
+    except WizardCancelled:
+        sys.stderr.write("senex audit: wizard cancelled.\n")
+        return _EXIT_INTERRUPT
+    except WizardError as exc:
+        sys.stderr.write(f"senex audit: {exc}\n")
+        return _EXIT_EXTERNAL
+    except KeyboardInterrupt:
+        return _EXIT_INTERRUPT
+
+    repo = runtime.repo
+    output_root = (
+        runtime.output_root
+        if runtime.output_root is not None
+        else Path(runtime.config.output.root)
+    )
+
+    if args.no_tui:
+        return _run_headless(
+            args=args,
+            config=runtime.config,
+            lens=runtime.lens,
+            config_path=config_path,
+            repo=repo,
+            output_root=output_root,
+        )
+    return _run_tui(
+        args=args,
+        config=runtime.config,
+        lens=runtime.lens,
+        config_path=config_path,
+        repo=repo,
+        output_root=output_root,
+    )
+
+
+def _build_wizard_client(config: SenexConfig) -> Any:
+    """Construct a best-effort LM Studio client for the wizard.
+
+    The wizard tolerates a ``None`` client (skips model probing). This
+    helper isolates the import + construction so a missing optional dep
+    or a transient error never aborts the wizard with a stack trace —
+    the wizard surfaces the connect failure as ``WizardError`` instead.
+    """
+    try:
+        from senex.events import EventBus
+        from senex.lmstudio_client import LMStudioClient
+        from senex.secret_redactor import SecretRedactor
+    except ImportError:
+        return None
+    try:
+        return LMStudioClient(
+            config=config.lmstudio,
+            bus=EventBus(),
+            redactor=SecretRedactor(),
+        )
+    except Exception:  # noqa: BLE001 — defer the connect error to the wizard probe.
+        return None
 
 
 def _run_single(

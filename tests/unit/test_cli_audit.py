@@ -38,6 +38,7 @@ def _make_args(**kwargs: Any) -> argparse.Namespace:
         no_load=False,
         no_unload=False,
         unload_after=False,
+        no_wizard=False,
     )
     defaults.update(kwargs)
     return argparse.Namespace(**defaults)
@@ -353,7 +354,12 @@ def test_cmd_audit_resume_flag_propagates(write_config: Path, tmp_path: Path) ->
 def test_cmd_audit_missing_repo_path_without_nightly_returns_two(
     write_config: Path,
 ) -> None:
-    """``audit`` with no repo path AND no --nightly is exit 2."""
+    """``audit`` with no repo path AND --no-wizard AND no --nightly is exit 2.
+
+    With M11 the wizard is opt-out via ``--no-wizard``: omitting both the
+    path AND the wizard MUST surface a usage error rather than silently
+    launch the TUI.
+    """
     from senex.cli_audit import cmd_audit
 
     args = _make_args(
@@ -361,6 +367,114 @@ def test_cmd_audit_missing_repo_path_without_nightly_returns_two(
         nightly=False,
         config=str(write_config),
         no_tui=True,
+        no_wizard=True,
     )
     rc = cmd_audit(args)
     assert rc == 2
+
+
+# ---------------------------------------------------------------------------
+# M11: wizard launch behavior
+# ---------------------------------------------------------------------------
+
+
+def test_senex_audit_no_path_no_wizard_errors(write_config: Path) -> None:
+    """``senex audit --no-wizard`` (no path) exits 2 with a usage message."""
+    import io
+    from contextlib import redirect_stderr
+
+    from senex.cli_audit import cmd_audit
+
+    args = _make_args(
+        repo_path=None,
+        nightly=False,
+        config=str(write_config),
+        no_tui=True,
+        no_wizard=True,
+    )
+    buf = io.StringIO()
+    with redirect_stderr(buf):
+        rc = cmd_audit(args)
+    assert rc == 2
+    msg = buf.getvalue().lower()
+    assert "path" in msg or "wizard" in msg
+
+
+def test_senex_audit_no_path_invokes_wizard(
+    write_config: Path, tmp_path: Path, fake_config: SenexConfig
+) -> None:
+    """No path + no --no-wizard -> ``interactive_audit_setup`` is called.
+
+    The wizard's return value drives the audit; we mock it to keep the
+    test focused on integration (not end-to-end wizard semantics; those
+    are covered by ``test_cli_wizard.py``).
+    """
+    from senex.cli_audit import cmd_audit
+    from senex.lens import Lens
+    from senex.tui.runtime import RuntimeConfig
+
+    args = _make_args(
+        repo_path=None,
+        nightly=False,
+        config=str(write_config),
+        no_tui=True,
+        no_wizard=False,
+    )
+
+    repo_dir = tmp_path / "wizard-pick"
+    repo_dir.mkdir()
+
+    real_lens = Lens.load("correctness")
+    fake_runtime = RuntimeConfig(
+        repo=repo_dir,
+        config=fake_config,
+        lens=real_lens,
+        config_path=Path(write_config),
+        output_root=tmp_path / "out",
+    )
+
+    async def _ok(**kwargs: Any) -> int:
+        return 0
+
+    with (
+        patch(
+            "senex.cli_wizard.interactive_audit_setup",
+            return_value=fake_runtime,
+        ) as mock_wizard,
+        patch("senex.cli_audit.run_audit", side_effect=_ok),
+    ):
+        rc = cmd_audit(args)
+
+    mock_wizard.assert_called_once()
+    assert rc == 0
+
+
+def test_senex_audit_with_path_skips_wizard(
+    write_config: Path, tmp_path: Path
+) -> None:
+    """Positional path bypasses the wizard entirely (existing behavior preserved)."""
+    from senex.cli_audit import cmd_audit
+
+    repo_dir = tmp_path / "repo"
+    args = _make_args(
+        repo_path=str(repo_dir),
+        nightly=False,
+        config=str(write_config),
+        no_tui=True,
+        no_wizard=False,
+    )
+
+    async def _ok(**kwargs: Any) -> int:
+        return 0
+
+    with (
+        patch(
+            "senex.cli_wizard.interactive_audit_setup"
+        ) as mock_wizard,
+        patch("senex.cli_audit.run_audit", side_effect=_ok),
+        patch("senex.cli_audit.Lens.load", return_value=MagicMock()),
+    ):
+        rc = cmd_audit(args)
+
+    mock_wizard.assert_not_called()
+    assert rc == 0

@@ -93,6 +93,18 @@ def test_audit_subcommand_allow_mixed_resume_flag() -> None:
     assert ns.allow_mixed_resume is True
 
 
+def test_audit_subcommand_no_wizard_flag() -> None:
+    """M11: ``--no-wizard`` skips the interactive launcher when no path."""
+    ns = _parse(["audit", "--no-wizard"])
+    assert ns.no_wizard is True
+    assert ns.repo_path is None
+
+
+def test_audit_subcommand_no_wizard_default_false() -> None:
+    ns = _parse(["audit", "C:/some/repo"])
+    assert ns.no_wizard is False
+
+
 def test_view_subcommand_parses_with_dir() -> None:
     ns = _parse(["view", "C:/audit/dir"])
     assert ns.command == "view"
