@@ -320,7 +320,31 @@ async def run_audit(
             client = LMStudioClient(
                 config=config.lmstudio, bus=bus, redactor=redactor
             )
-            client._fingerprint_pinned = model_info.fingerprint
+            # Pin the client's fingerprint from its own HTTP view of /v1/models,
+            # not the lifecycle's `lms ps --json` view. The two surfaces report
+            # different quant/digest fields for the same loaded model, so the
+            # client must use the source it will actually compare against on
+            # every subsequent chat (per-call swap detection §3.7). The
+            # lifecycle's fingerprint stays in `model_info.fingerprint` for
+            # cross-session resume comparison via Checkpoint.is_compatible.
+            try:
+                _http_models = await client.list_loaded_models()
+                _target = next(
+                    (m for m in _http_models if m.id == config.lmstudio.model),
+                    None,
+                )
+                if _target is not None:
+                    client._fingerprint_pinned = client.compute_fingerprint(_target)
+                else:
+                    # Fall back to lifecycle's view if /v1/models doesn't list it.
+                    client._fingerprint_pinned = model_info.fingerprint
+            except Exception as exc:  # noqa: BLE001 — degrade gracefully
+                log.warning(
+                    "could not derive client-side fingerprint pin (%s); "
+                    "using lifecycle fingerprint",
+                    exc,
+                )
+                client._fingerprint_pinned = model_info.fingerprint
 
             # Per-file artifacts.
             renderer = Renderer(audit_dir, redactor)
