@@ -79,6 +79,18 @@
       "$ref": "#/$defs/CrosscutComplete"
     },
     {
+      "$ref": "#/$defs/AggregateStart"
+    },
+    {
+      "$ref": "#/$defs/AggregateComplete"
+    },
+    {
+      "$ref": "#/$defs/PreflightWarning"
+    },
+    {
+      "$ref": "#/$defs/DiscoveryStart"
+    },
+    {
       "$ref": "#/$defs/RunComplete"
     },
     {
@@ -1013,6 +1025,59 @@
           "type": "string"
         },
         "theme_count": {}
+      }
+    },
+    "AggregateStart": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["v", "type", "ts", "seq", "run_id"],
+      "properties": {
+        "v": {"const": 1},
+        "type": {"const": "AggregateStart"},
+        "ts": {"type": "string", "format": "date-time"},
+        "seq": {"type": "integer", "minimum": 0},
+        "run_id": {"type": "string"}
+      }
+    },
+    "AggregateComplete": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["v", "type", "ts", "seq", "run_id", "finding_count", "theme_count"],
+      "properties": {
+        "v": {"const": 1},
+        "type": {"const": "AggregateComplete"},
+        "ts": {"type": "string", "format": "date-time"},
+        "seq": {"type": "integer", "minimum": 0},
+        "run_id": {"type": "string"},
+        "finding_count": {},
+        "theme_count": {}
+      }
+    },
+    "PreflightWarning": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["v", "type", "ts", "seq", "run_id", "check", "message"],
+      "properties": {
+        "v": {"const": 1},
+        "type": {"const": "PreflightWarning"},
+        "ts": {"type": "string", "format": "date-time"},
+        "seq": {"type": "integer", "minimum": 0},
+        "run_id": {"type": "string"},
+        "check": {"type": "string"},
+        "message": {"type": "string"}
+      }
+    },
+    "DiscoveryStart": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["v", "type", "ts", "seq", "run_id", "repo"],
+      "properties": {
+        "v": {"const": 1},
+        "type": {"const": "DiscoveryStart"},
+        "ts": {"type": "string", "format": "date-time"},
+        "seq": {"type": "integer", "minimum": 0},
+        "run_id": {"type": "string"},
+        "repo": {"type": "string"}
       }
     },
     "RunComplete": {

@@ -278,15 +278,15 @@ class PreflightPhase:
         ...
 ```
 
-- [ ] **Step 8.2.1: Failing tests for each check function (14 total)** — each test mocks the dependency (filesystem, `LMStudioClient`, `Lifecycle`) and asserts: PASS path returns `CheckStatus.PASS`; FAIL path returns the **exact documented exit code** from spec §8.1. `check_addendum_safety` MUST have explicit tests for: (a) symlink rejection, (b) path traversal `../../etc/passwd` rejection via `is_relative_to`, (c) absolute path outside repo rejection.
+- [x] **Step 8.2.1: Failing tests for each check function (14 total)** — each test mocks the dependency (filesystem, `LMStudioClient`, `Lifecycle`) and asserts: PASS path returns `CheckStatus.PASS`; FAIL path returns the **exact documented exit code** from spec §8.1. `check_addendum_safety` MUST have explicit tests for: (a) symlink rejection, (b) path traversal `../../etc/passwd` rejection via `is_relative_to`, (c) absolute path outside repo rejection.
 
-- [ ] **Step 8.2.2: Implement each `check_*` function in isolation.** No cross-talk between checks. Pure functions where possible (sync checks); async only for network I/O.
+- [x] **Step 8.2.2: Implement each `check_*` function in isolation.** No cross-talk between checks. Pure functions where possible (sync checks); async only for network I/O.
 
-- [ ] **Step 8.2.3: Implement `PreflightPhase`** orchestrating the 14 checks per the snippet above. Test that first FAIL short-circuits (subsequent checks not run); WARN results are all collected and emitted as `PreflightWarning` events.
+- [x] **Step 8.2.3: Implement `PreflightPhase`** orchestrating the 14 checks per the snippet above. Test that first FAIL short-circuits (subsequent checks not run); WARN results are all collected and emitted as `PreflightWarning` events.
 
-- [ ] **Step 8.2.4: Test `PreflightFailure` exit code locking** — `tests/unit/test_exit_codes.py` parameterizes over each check name → expected exit code per spec §8.1. This is a regression guard.
+- [x] **Step 8.2.4: Test `PreflightFailure` exit code locking** — `tests/unit/test_exit_codes.py` parameterizes over each check name → expected exit code per spec §8.1. This is a regression guard.
 
-- [ ] **Step 8.2.5: Commit** `feat(M8): preflight phase with all spec §8.1 checks`.
+- [x] **Step 8.2.5: Commit** `feat(M8): preflight phase with all spec §8.1 checks`.
 
 ### Task 8.3: DiscoveryPhase
 

@@ -63,6 +63,19 @@ class RunStart(BaseEvent):
     started_at: datetime
 
 
+class PreflightWarning(BaseEvent):
+    """Non-fatal preflight check produced a WARN result (spec §8.1)."""
+    type: Literal["PreflightWarning"] = Field(default="PreflightWarning")
+    check: str
+    message: str
+
+
+class DiscoveryStart(BaseEvent):
+    """Walker phase begin marker (spec §8.4)."""
+    type: Literal["DiscoveryStart"] = Field(default="DiscoveryStart")
+    repo: str
+
+
 class DiscoveryComplete(BaseEvent):
     type: Literal["DiscoveryComplete"] = Field(default="DiscoveryComplete")
     file_count: int
@@ -236,6 +249,18 @@ class CrosscutComplete(BaseEvent):
     theme_count: int
 
 
+class AggregateStart(BaseEvent):
+    """Aggregate phase begin marker (spec §8.4)."""
+    type: Literal["AggregateStart"] = Field(default="AggregateStart")
+
+
+class AggregateComplete(BaseEvent):
+    """Aggregate phase end marker (spec §8.4)."""
+    type: Literal["AggregateComplete"] = Field(default="AggregateComplete")
+    finding_count: int
+    theme_count: int
+
+
 class RunComplete(BaseEvent):
     type: Literal["RunComplete"] = Field(default="RunComplete")
     duration_seconds: float
@@ -313,14 +338,17 @@ class RunLockReleased(BaseEvent):
 
 
 ALL_EVENT_TYPES: tuple[type[BaseEvent], ...] = (
-    RunStart, DiscoveryComplete, SymlinkSkipped, SuspiciousEmptyFinding,
+    RunStart, PreflightWarning, DiscoveryStart, DiscoveryComplete,
+    SymlinkSkipped, SuspiciousEmptyFinding,
     FileStart, FileContextBuilt, GraphContextUnavailable, FileLLMCall,
     ThinkingStarted, ThinkingTick, ThinkingComplete,
     OutputStarted, OutputTick, OutputComplete,
     FileComplete, FileError,
     ToolCall, ToolResult, ToolError, ToolBudgetExhausted,
     CompactionTriggered, CompactionComplete, CompactionError,
-    CrosscutStart, CrosscutComplete, RunComplete,
+    CrosscutStart, CrosscutComplete,
+    AggregateStart, AggregateComplete,
+    RunComplete,
     ModelLoadRequested, ModelLoadStarted, ModelLoadComplete, ModelLoadFailed,
     ModelUnloadStarted, ModelUnloadComplete, ModelUnloadSkipped, ModelUnloadFailed,
     ModelFingerprintChanged,
