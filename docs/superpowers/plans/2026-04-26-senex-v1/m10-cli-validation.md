@@ -156,7 +156,7 @@ None — M10 is the leaf milestone. After M10 ships, downstream is real users.
 - Edit: `senex/cli.py` (add `cmd_audit`)
 - Create: `tests/unit/test_cli_audit.py`
 
-- [ ] **Step 10.2.1: Failing tests** — exit-code matrix:
+- [x] **Step 10.2.1: Failing tests** — exit-code matrix:
   - happy path → exit 0
   - one file errored → exit 1
   - bad config → exit 2
@@ -166,13 +166,13 @@ None — M10 is the leaf milestone. After M10 ships, downstream is real users.
   - `--no-tui` selects `HeadlessSubscriber`; default selects `TuiSubscriber`
   All deps mocked (config, lens, bus, run_audit, lifecycle).
 
-- [ ] **Step 10.2.2: Implement `cmd_audit(args, config) -> int`** — composes: load config → resolve config (CLI flags + repo entry) → load lens → instantiate `EventBus` + `CommandBus` → instantiate subscribers (`DiskWriterSubscriber` + `MetricsCollectorSubscriber` + (`TuiSubscriber` if not `--no-tui` else `HeadlessSubscriber`)) → instantiate clients (`LMStudioClient`, `GraphContextProvider`, `ToolRegistry`, `ToolLoop`, `Compactor`, `Renderer`, `FindingsAggregator`, `Lifecycle`) → call `run_audit()` → return exit code. TUI mode: instantiate `SenexApp(...)`, call `app.run()`. Headless: `await run_audit(...)` directly via `asyncio.run()`.
+- [x] **Step 10.2.2: Implement `cmd_audit(args, config) -> int`** — composes: load config → resolve config (CLI flags + repo entry) → load lens → instantiate `EventBus` + `CommandBus` → instantiate subscribers (`DiskWriterSubscriber` + `MetricsCollectorSubscriber` + (`TuiSubscriber` if not `--no-tui` else `HeadlessSubscriber`)) → instantiate clients (`LMStudioClient`, `GraphContextProvider`, `ToolRegistry`, `ToolLoop`, `Compactor`, `Renderer`, `FindingsAggregator`, `Lifecycle`) → call `run_audit()` → return exit code. TUI mode: instantiate `SenexApp(...)`, call `app.run()`. Headless: `await run_audit(...)` directly via `asyncio.run()`.
 
-- [ ] **Step 10.2.3: `--resume` flag** wires to `run_audit(resume=True)`; auto-detects latest unfinished audit dir for the given repo path.
+- [x] **Step 10.2.3: `--resume` flag** wires to `run_audit(resume=True)`; auto-detects latest unfinished audit dir for the given repo path.
 
-- [ ] **Step 10.2.4: `--nightly` flag** iterates `config.repos`. Each repo wrapped in try/except; failures logged but loop continues. Final exit code is the worst (max numeric) outcome across all repos. Mutual exclusion with `--resume` enforced via `CLIArgError`.
+- [x] **Step 10.2.4: `--nightly` flag** iterates `config.repos`. Each repo wrapped in try/except; failures logged but loop continues. Final exit code is the worst (max numeric) outcome across all repos. Mutual exclusion with `--resume` enforced via `CLIArgError`.
 
-- [ ] **Step 10.2.5: Test pass + commit** `feat(M10): senex audit subcommand with full exit-code matrix`.
+- [x] **Step 10.2.5: Test pass + commit** `feat(M10): senex audit subcommand with full exit-code matrix`.
 
 ### Task 10.3: senex doctor
 
