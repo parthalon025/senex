@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "audit_response.schema.json",
+  "type": "object",
+  "required": ["schema_version", "overall_assessment", "findings", "recommendations"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": 1 },
+    "overall_assessment": { "type": "string", "minLength": 50, "maxLength": 1500 },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["category", "priority", "title", "issue", "why", "fix", "confidence", "location"],
+        "properties": {
+          "category": { "type": "string" },
+          "priority": { "enum": ["high", "medium", "low", "healthy"] },
+          "title": { "type": "string", "maxLength": 120 },
+          "issue": { "type": "string" },
+          "why": { "type": "string" },
+          "fix": { "type": "string" },
+          "confidence": { "enum": ["high", "medium", "low"] },
+          "location": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "line_start": { "type": "integer" },
+              "line_end": { "type": "integer" },
+              "symbol": { "type": "string" }
+            },
+            "oneOf": [
+              { "required": ["symbol"] },
+              { "required": ["line_start"] }
+            ]
+          }
+        }
+      }
+    },
+    "recommendations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["title", "rationale"],
+        "properties": {
+          "title":        { "type": "string" },
+          "rationale":    { "type": "string" },
+          "code_snippet": { "type": "string" },
+          "language":     { "type": "string" }
+        }
+      }
+    },
+    "best_practices_table": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["feature", "original", "recommended"],
+        "properties": {
+          "feature": { "type": "string" },
+          "original": { "type": "string" },
+          "recommended": { "type": "string" }
+        }
+      }
+    }
+  }
+}

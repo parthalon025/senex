@@ -1,0 +1,1433 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "events.schema.json",
+  "title": "senex events.jsonl line schema",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/RunStart"
+    },
+    {
+      "$ref": "#/$defs/DiscoveryComplete"
+    },
+    {
+      "$ref": "#/$defs/SymlinkSkipped"
+    },
+    {
+      "$ref": "#/$defs/SuspiciousEmptyFinding"
+    },
+    {
+      "$ref": "#/$defs/FileStart"
+    },
+    {
+      "$ref": "#/$defs/FileContextBuilt"
+    },
+    {
+      "$ref": "#/$defs/GraphContextUnavailable"
+    },
+    {
+      "$ref": "#/$defs/FileLLMCall"
+    },
+    {
+      "$ref": "#/$defs/ThinkingStarted"
+    },
+    {
+      "$ref": "#/$defs/ThinkingTick"
+    },
+    {
+      "$ref": "#/$defs/ThinkingComplete"
+    },
+    {
+      "$ref": "#/$defs/OutputStarted"
+    },
+    {
+      "$ref": "#/$defs/OutputTick"
+    },
+    {
+      "$ref": "#/$defs/OutputComplete"
+    },
+    {
+      "$ref": "#/$defs/FileComplete"
+    },
+    {
+      "$ref": "#/$defs/FileError"
+    },
+    {
+      "$ref": "#/$defs/ToolCall"
+    },
+    {
+      "$ref": "#/$defs/ToolResult"
+    },
+    {
+      "$ref": "#/$defs/ToolError"
+    },
+    {
+      "$ref": "#/$defs/ToolBudgetExhausted"
+    },
+    {
+      "$ref": "#/$defs/CompactionTriggered"
+    },
+    {
+      "$ref": "#/$defs/CompactionComplete"
+    },
+    {
+      "$ref": "#/$defs/CompactionError"
+    },
+    {
+      "$ref": "#/$defs/CrosscutStart"
+    },
+    {
+      "$ref": "#/$defs/CrosscutComplete"
+    },
+    {
+      "$ref": "#/$defs/RunComplete"
+    },
+    {
+      "$ref": "#/$defs/ModelLoadRequested"
+    },
+    {
+      "$ref": "#/$defs/ModelLoadStarted"
+    },
+    {
+      "$ref": "#/$defs/ModelLoadComplete"
+    },
+    {
+      "$ref": "#/$defs/ModelLoadFailed"
+    },
+    {
+      "$ref": "#/$defs/ModelUnloadStarted"
+    },
+    {
+      "$ref": "#/$defs/ModelUnloadComplete"
+    },
+    {
+      "$ref": "#/$defs/ModelUnloadSkipped"
+    },
+    {
+      "$ref": "#/$defs/ModelUnloadFailed"
+    },
+    {
+      "$ref": "#/$defs/ModelFingerprintChanged"
+    },
+    {
+      "$ref": "#/$defs/RunLockAcquired"
+    },
+    {
+      "$ref": "#/$defs/RunLockReleased"
+    }
+  ],
+  "$defs": {
+    "RunStart": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "repo",
+        "audit_dir",
+        "model",
+        "lens",
+        "lens_version",
+        "config_hash",
+        "prompt_hash",
+        "model_fingerprint",
+        "started_at"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "RunStart"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "repo": {},
+        "audit_dir": {},
+        "model": {},
+        "lens": {},
+        "lens_version": {},
+        "config_hash": {},
+        "prompt_hash": {},
+        "model_fingerprint": {},
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "DiscoveryComplete": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "file_count",
+        "skipped"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "DiscoveryComplete"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "file_count": {},
+        "skipped": {}
+      }
+    },
+    "SymlinkSkipped": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "path",
+        "target",
+        "reason"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "SymlinkSkipped"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "path": {},
+        "target": {},
+        "reason": {}
+      }
+    },
+    "SuspiciousEmptyFinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "path",
+        "loc",
+        "reason"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "SuspiciousEmptyFinding"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "path": {},
+        "loc": {},
+        "reason": {}
+      }
+    },
+    "FileStart": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "path",
+        "idx",
+        "total"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "FileStart"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "path": {},
+        "idx": {},
+        "total": {}
+      }
+    },
+    "FileContextBuilt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "path",
+        "graph_context_tokens"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "FileContextBuilt"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "path": {},
+        "graph_context_tokens": {}
+      }
+    },
+    "GraphContextUnavailable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "path",
+        "reason"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "GraphContextUnavailable"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "path": {},
+        "reason": {}
+      }
+    },
+    "FileLLMCall": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "path",
+        "prompt_tokens"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "FileLLMCall"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "path": {},
+        "prompt_tokens": {}
+      }
+    },
+    "ThinkingStarted": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "path"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "ThinkingStarted"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "path": {}
+      }
+    },
+    "ThinkingTick": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "path",
+        "tokens_so_far",
+        "delta_since_last_tick"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "ThinkingTick"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "path": {},
+        "tokens_so_far": {},
+        "delta_since_last_tick": {}
+      }
+    },
+    "ThinkingComplete": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "path",
+        "total_thinking_tokens",
+        "latency_ms"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "ThinkingComplete"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "path": {},
+        "total_thinking_tokens": {},
+        "latency_ms": {}
+      }
+    },
+    "OutputStarted": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "path"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "OutputStarted"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "path": {}
+      }
+    },
+    "OutputTick": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "path",
+        "tokens_so_far",
+        "delta_since_last_tick"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "OutputTick"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "path": {},
+        "tokens_so_far": {},
+        "delta_since_last_tick": {}
+      }
+    },
+    "OutputComplete": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "path",
+        "total_output_tokens",
+        "latency_ms"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "OutputComplete"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "path": {},
+        "total_output_tokens": {},
+        "latency_ms": {}
+      }
+    },
+    "FileComplete": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "path",
+        "finding_counts",
+        "last_finding_summary"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "FileComplete"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "path": {},
+        "finding_counts": {},
+        "last_finding_summary": {}
+      }
+    },
+    "FileError": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "path",
+        "phase",
+        "error_kind",
+        "error_message"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "FileError"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "path": {},
+        "phase": {},
+        "error_kind": {},
+        "error_message": {}
+      }
+    },
+    "ToolCall": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "path",
+        "tool_name",
+        "tool_input",
+        "call_id"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "ToolCall"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "path": {},
+        "tool_name": {},
+        "tool_input": {},
+        "call_id": {}
+      }
+    },
+    "ToolResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "path",
+        "tool_name",
+        "call_id",
+        "result_tokens",
+        "latency_ms",
+        "truncated"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "ToolResult"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "path": {},
+        "tool_name": {},
+        "call_id": {},
+        "result_tokens": {},
+        "latency_ms": {},
+        "truncated": {}
+      }
+    },
+    "ToolError": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "path",
+        "tool_name",
+        "call_id",
+        "kind",
+        "error_message"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "ToolError"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "path": {},
+        "tool_name": {},
+        "call_id": {},
+        "kind": {},
+        "error_message": {}
+      }
+    },
+    "ToolBudgetExhausted": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "path",
+        "calls_made"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "ToolBudgetExhausted"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "path": {},
+        "calls_made": {}
+      }
+    },
+    "CompactionTriggered": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "path",
+        "message_tokens_before",
+        "threshold"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "CompactionTriggered"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "path": {},
+        "message_tokens_before": {},
+        "threshold": {}
+      }
+    },
+    "CompactionComplete": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "path",
+        "message_tokens_after",
+        "kept_findings"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "CompactionComplete"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "path": {},
+        "message_tokens_after": {},
+        "kept_findings": {}
+      }
+    },
+    "CompactionError": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "path",
+        "error_kind"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "CompactionError"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "path": {},
+        "error_kind": {}
+      }
+    },
+    "CrosscutStart": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "CrosscutStart"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        }
+      }
+    },
+    "CrosscutComplete": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "theme_count"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "CrosscutComplete"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "theme_count": {}
+      }
+    },
+    "RunComplete": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "duration_seconds",
+        "totals",
+        "exit_status"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "RunComplete"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "duration_seconds": {},
+        "totals": {},
+        "exit_status": {}
+      }
+    },
+    "ModelLoadRequested": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "model_id",
+        "target_fingerprint"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "ModelLoadRequested"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "model_id": {},
+        "target_fingerprint": {}
+      }
+    },
+    "ModelLoadStarted": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "model_id"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "ModelLoadStarted"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "model_id": {}
+      }
+    },
+    "ModelLoadComplete": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "model_id",
+        "duration_seconds",
+        "fingerprint"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "ModelLoadComplete"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "model_id": {},
+        "duration_seconds": {},
+        "fingerprint": {}
+      }
+    },
+    "ModelLoadFailed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "model_id",
+        "error_kind",
+        "error_message"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "ModelLoadFailed"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "model_id": {},
+        "error_kind": {},
+        "error_message": {}
+      }
+    },
+    "ModelUnloadStarted": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "model_id"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "ModelUnloadStarted"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "model_id": {}
+      }
+    },
+    "ModelUnloadComplete": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "model_id",
+        "duration_seconds"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "ModelUnloadComplete"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "model_id": {},
+        "duration_seconds": {}
+      }
+    },
+    "ModelUnloadSkipped": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "model_id",
+        "reason"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "ModelUnloadSkipped"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "model_id": {},
+        "reason": {}
+      }
+    },
+    "ModelUnloadFailed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "model_id",
+        "error_kind",
+        "error_message"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "ModelUnloadFailed"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "model_id": {},
+        "error_kind": {},
+        "error_message": {}
+      }
+    },
+    "ModelFingerprintChanged": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "path",
+        "expected_fingerprint",
+        "observed_fingerprint"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "ModelFingerprintChanged"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "path": {},
+        "expected_fingerprint": {},
+        "observed_fingerprint": {}
+      }
+    },
+    "RunLockAcquired": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "model_fingerprint",
+        "holder_count"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "RunLockAcquired"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "model_fingerprint": {},
+        "holder_count": {}
+      }
+    },
+    "RunLockReleased": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "model_fingerprint",
+        "remaining_holders"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "RunLockReleased"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "model_fingerprint": {},
+        "remaining_holders": {}
+      }
+    }
+  }
+}

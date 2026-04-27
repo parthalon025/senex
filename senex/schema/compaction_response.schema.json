@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "compaction_response.schema.json",
+  "type": "object",
+  "required": ["evidence_summary", "key_findings_so_far", "unanswered_questions"],
+  "additionalProperties": false,
+  "properties": {
+    "evidence_summary":     { "type": "string", "maxLength": 16384 },
+    "key_findings_so_far":  { "type": "array", "items": { "type": "string" } },
+    "unanswered_questions": { "type": "array", "items": { "type": "string" } }
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "findings_index.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run", "totals", "themes", "findings"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repo", "run_id", "audit_dir", "model", "model_fingerprint",
+        "lens", "lens_version", "started_at", "duration_seconds",
+        "config_hash", "prompt_hash"
+      ],
+      "properties": {
+        "repo": {"type": "string"},
+        "run_id": {"type": "string"},
+        "audit_dir": {"type": "string"},
+        "model": {"type": "string"},
+        "model_fingerprint": {"type": "string"},
+        "lens": {"type": "string"},
+        "lens_version": {"type": "string"},
+        "started_at": {"type": "string", "format": "date-time"},
+        "duration_seconds": {"type": "number"},
+        "config_hash": {"type": "string"},
+        "prompt_hash": {"type": "string"}
+      }
+    },
+    "totals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["high", "medium", "low", "healthy", "files"],
+      "properties": {
+        "high":    {"type": "integer"},
+        "medium":  {"type": "integer"},
+        "low":     {"type": "integer"},
+        "healthy": {"type": "integer"},
+        "files":   {"type": "integer"}
+      }
+    },
+    "themes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id", "title", "description", "affected_files",
+          "priority", "confidence", "recommended_action"
+        ],
+        "properties": {
+          "id":                  {"type": "string", "pattern": "^t-[a-f0-9]{12}$"},
+          "title":               {"type": "string", "maxLength": 120},
+          "description":         {"type": "string"},
+          "affected_files":      {"type": "array", "items": {"type": "string"}},
+          "priority":            {"enum": ["high", "medium", "low"]},
+          "confidence":          {"enum": ["high", "medium", "low"]},
+          "recommended_action":  {"type": "string"}
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id", "file", "category", "priority", "title",
+          "issue", "why", "fix", "confidence", "location",
+          "report_path", "suppressed",
+          "prompt_hash", "config_hash", "model_fingerprint", "lens_version"
+        ],
+        "properties": {
+          "id":                {"type": "string", "pattern": "^f-[a-f0-9]{12}$"},
+          "file":              {"type": "string"},
+          "category":          {"type": "string"},
+          "priority":          {"enum": ["high", "medium", "low", "healthy"]},
+          "title":             {"type": "string", "maxLength": 120},
+          "issue":             {"type": "string"},
+          "why":               {"type": "string"},
+          "fix":               {"type": "string"},
+          "confidence":        {"enum": ["high", "medium", "low"]},
+          "location": {
+            "type": "object",
+            "properties": {
+              "line_start": {"type": "integer"},
+              "line_end":   {"type": "integer"},
+              "symbol":     {"type": "string"}
+            },
+            "oneOf": [
+              {"required": ["symbol"]},
+              {"required": ["line_start"]}
+            ]
+          },
+          "report_path":       {"type": "string"},
+          "suppressed":        {"type": "boolean"},
+          "prompt_hash":       {"type": "string"},
+          "config_hash":       {"type": "string"},
+          "model_fingerprint": {"type": "string"},
+          "lens_version":      {"type": "string"}
+        }
+      }
+    }
+  }
+}
