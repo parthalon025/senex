@@ -462,11 +462,11 @@ async def do_work(self, state, lens, config, bus, command_bus):
 - Create: `senex/phases/crosscut.py`
 - Create: `tests/unit/test_phases_crosscut.py`
 
-- [ ] **Step 8.5.1: Failing test** — given `findings.partial.jsonl` fixture, `CrosscutPhase` writes `themes.json`, emits `CrosscutStart`/`CrosscutComplete`. Failure path: `CrossCutter.run` raises → phase returns `None`, emits `CrosscutComplete(success=False, gap_reason=...)`, does NOT raise.
+- [x] **Step 8.5.1: Failing test** — given `findings.partial.jsonl` fixture, `CrosscutPhase` writes `themes.json`, emits `CrosscutStart`/`CrosscutComplete`. Failure path: `CrossCutter.run` raises → phase returns `None`, emits `CrosscutComplete(success=False, gap_reason=...)`, does NOT raise.
 
-- [ ] **Step 8.5.2: Implement `CrosscutPhase`** — loads partial NDJSON via `PartialReader`, calls `CrossCutter.run()`, writes themes JSON to `audit_dir/themes.json`, emits events. Failure-tolerant per §8.2.
+- [x] **Step 8.5.2: Implement `CrosscutPhase`** — loads partial NDJSON via `PartialReader`, calls `CrossCutter.run()`, writes themes JSON to `audit_dir/themes.json`, emits events. Failure-tolerant per §8.2.
 
-- [ ] **Step 8.5.3: Commit** `feat(M8): crosscut phase`.
+- [x] **Step 8.5.3: Commit** `feat(M8): crosscut phase`.
 
 ### Task 8.6: AggregatePhase
 
