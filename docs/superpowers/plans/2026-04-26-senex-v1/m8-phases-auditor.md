@@ -434,11 +434,11 @@ async def do_work(self, state, lens, config, bus, command_bus):
 - **Per-file boundary in `FileAuditPhase`** — line marked "Command bus poll point #1" above, immediately after the resume-skip check and before `FileStart` emission. This is the canonical interrupt point.
 - **Between phases in `run_audit`** — see Task 8.7. Acceptable but lower-resolution.
 
-- [ ] **Step 8.4.1: Failing test** end-to-end happy path: given `tests/fixtures/repos/tiny_python/` (5 files) + recorded LMS responses, `FileAuditPhase` produces 5 reports, 5 partial finding entries, 5 checkpoint updates, and emits exactly 5 `FileStart` + 5 `FileComplete` events.
+- [x] **Step 8.4.1: Failing test** end-to-end happy path: given `tests/fixtures/repos/tiny_python/` (5 files) + recorded LMS responses, `FileAuditPhase` produces 5 reports, 5 partial finding entries, 5 checkpoint updates, and emits exactly 5 `FileStart` + 5 `FileComplete` events.
 
-- [ ] **Step 8.4.2: Implement** the per-file loop per the pseudocode above.
+- [x] **Step 8.4.2: Implement** the per-file loop per the pseudocode above.
 
-- [ ] **Step 8.4.3: Test EVERY recovery branch** (one test per branch — these are §8.2 contract tests):
+- [x] **Step 8.4.3: Test EVERY recovery branch** (one test per branch — these are §8.2 contract tests):
   - `read_error` (file with bad UTF-8 → `<file>.SKIPPED.md` with reason, run continues)
   - `token_budget_exceeded` (artificially low ctx_window → `<file>.SKIPPED.md` with reason="too_large")
   - `CompactionLoopExceeded` (recorded fixture → `<file>.ERROR.md`, run continues)
@@ -450,11 +450,11 @@ async def do_work(self, state, lens, config, bus, command_bus):
   - Renderer crash for one file (`<file>.ERROR.md` kind="render_error", run continues — §ARCH-13)
   - `RenderFatal` (disk full simulated) → propagates
 
-- [ ] **Step 8.4.4: Test command bus integration** — post `Pause` between two files; assert auditor blocks on `pause_until_resume`. Post `Resume`; assert next file processes. Post `Skip` targeting the next file; assert that file is skipped (SKIPPED.md written) and the file after that is processed normally. Post `Quit`; assert `KeyboardInterrupt` propagates.
+- [x] **Step 8.4.4: Test command bus integration** — post `Pause` between two files; assert auditor blocks on `pause_until_resume`. Post `Resume`; assert next file processes. Post `Skip` targeting the next file; assert that file is skipped (SKIPPED.md written) and the file after that is processed normally. Post `Quit`; assert `KeyboardInterrupt` propagates.
 
-- [ ] **Step 8.4.5: Test thinking trace** (`config.thinking.save_traces=True` → `<file>.thinking.md` written; `False` → not written).
+- [x] **Step 8.4.5: Test thinking trace** (`config.thinking.save_traces=True` → `<file>.thinking.md` written; `False` → not written).
 
-- [ ] **Step 8.4.6: Commit** `feat(M8): per-file audit phase with full §8.2 recovery matrix`.
+- [x] **Step 8.4.6: Commit** `feat(M8): per-file audit phase with full §8.2 recovery matrix`.
 
 ### Task 8.5: CrosscutPhase
 

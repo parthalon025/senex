@@ -17,11 +17,13 @@ from .base import (
     ResumeIncompatible,
 )
 from .discovery import DiscoveryPhase
+from .file_audit import FileAuditPhase
 from .preflight import PreflightInputs, PreflightPhase
 
 __all__ = [
     "AggregateFailed",
     "DiscoveryPhase",
+    "FileAuditPhase",
     "Phase",
     "PhaseAborted",
     "PreflightFailure",
