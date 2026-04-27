@@ -489,14 +489,14 @@ The fallback decision tree:
    On HTTP 4xx → raise SchemaNegotiationFailed("both modes refused").
 ```
 
-- [ ] **Step 3.3.1: Failing tests.**
+- [x] **Step 3.3.1: Failing tests.**
   - `test_schema_fallback_on_400_schema_error`: respx returns 400 with body `{"error":{"message":"response_format json_schema not supported"}}` on first request, 200 with valid `json_object` payload on second; assert client falls back, validates, and caches `self._schema_mode == "json_object"`.
   - `test_schema_fallback_caches_decision_per_session`: drive two `chat()` calls; assert only the **first** issues two requests; the second uses cached `json_object` and issues exactly one.
   - `test_schema_fallback_400_unrelated_does_not_fallback`: respx returns 400 with body `{"error":{"message":"context length exceeded"}}`; assert `httpx.HTTPStatusError` propagates (caller / Task 3.5 retry decides).
   - `test_post_hoc_validation_failure_raises_LMSResponseSchemaInvalid`: respx returns 200 in `json_object` mode with `{"schema_version": "wrong_type"}`; assert `LMSResponseSchemaInvalid` raised.
   - `test_invalid_json_after_think_strip_raises_LMSResponseInvalidJSON`: respx returns 200 with `content = "<think>...</think>{not valid"`; assert `LMSResponseInvalidJSON`.
 
-- [ ] **Step 3.3.2: Implement `_chat_with_schema_fallback()`** following the decision tree above. Key snippet:
+- [x] **Step 3.3.2: Implement `_chat_with_schema_fallback()`** following the decision tree above. Key snippet:
 
   ```python
   _SCHEMA_ERROR_RE: Final = re.compile(r"schema|response_format|json_schema", re.IGNORECASE)
@@ -527,7 +527,7 @@ The fallback decision tree:
   - Try `json.loads(content)` → on JSONDecodeError raise `LMSResponseInvalidJSON`.
   - Validate via `_AUDIT_RESPONSE_ADAPTER.validate_python(parsed)` → on ValidationError raise `LMSResponseSchemaInvalid`.
 
-- [ ] **Step 3.3.3: One-shot retry on schema-invalid response.** Per §8.2, on the first `LMSResponseSchemaInvalid` or `LMSResponseInvalidJSON` from `_post_validate()`, retry **once** with a stricter system prompt prefix:
+- [x] **Step 3.3.3: One-shot retry on schema-invalid response.** Per §8.2, on the first `LMSResponseSchemaInvalid` or `LMSResponseInvalidJSON` from `_post_validate()`, retry **once** with a stricter system prompt prefix:
   ```python
   STRICT_RETRY_PREAMBLE: Final = (
       "Your previous response did not validate against the required schema. "
@@ -539,21 +539,21 @@ The fallback decision tree:
 
   Test: `test_schema_invalid_retried_once_with_stricter_prompt` — first call returns `{"schema_version": "wrong"}`, second call returns valid; assert `chat()` ultimately succeeds AND emits exactly one `chat/completions` request after the strict-retry preamble appears in the body.
 
-- [ ] **Step 3.3.4: Verification command:**
+- [x] **Step 3.3.4: Verification command:**
   ```bash
   pytest tests/unit/test_lmstudio_client.py -v -k "schema_fallback or post_hoc or invalid_json or strict_retry"
   ```
   Expected: `6 passed`.
 
-- [ ] **Step 3.3.5: Pitfalls.**
+- [x] **Step 3.3.5: Pitfalls.**
   - Caching the schema decision **before** validation succeeds → a transient 400 falsely demotes the session to `json_object` permanently. Cache only after successful validation.
   - Forgetting `re.IGNORECASE` on `_SCHEMA_ERROR_RE` → upstream "Response_Format" capitalizations slip through.
   - Re-parsing JSON in the strict-retry path with stale stripped content → always re-strip and re-parse from the new response; never reuse the failed parse.
   - Treating `LMSResponseInvalidJSON` as identical to `LMSResponseSchemaInvalid` in the retry path → spec §8.2 lists them as the same recovery, but the distinct exception types matter for telemetry.
 
-- [ ] **Step 3.3.6: Definition of done.** All 6 fallback tests green; per-session caching observable; strict-retry preamble byte-matches the literal in the test fixture.
+- [x] **Step 3.3.6: Definition of done.** All 6 fallback tests green; per-session caching observable; strict-retry preamble byte-matches the literal in the test fixture.
 
-- [ ] **Step 3.3.7: Commit** `feat(M3): json_schema → json_object fallback path with one-shot strict retry`.
+- [x] **Step 3.3.7: Commit** `feat(M3): json_schema → json_object fallback path with one-shot strict retry`.
 
 ---
 

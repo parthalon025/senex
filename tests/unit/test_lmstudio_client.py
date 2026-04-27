@@ -424,3 +424,229 @@ def httpx_regex_compile(pattern: str) -> Any:
     import re
 
     return re.compile(pattern)
+
+
+# --- Task 3.3: schema fallback decision tree ---------------------------------
+
+from senex.lmstudio_errors import (  # noqa: E402
+    LMSResponseInvalidJSON,
+    LMSResponseSchemaInvalid,
+    SchemaNegotiationFailed,
+)
+
+
+def _valid_audit_json() -> str:
+    return (
+        '{"schema_version":1,"overall_assessment":"'
+        + ("ok " * 60)
+        + '","findings":[],"recommendations":[]}'
+    )
+
+
+def _success_payload(content: str) -> dict[str, Any]:
+    return {
+        "id": "x",
+        "model": "m",
+        "choices": [
+            {
+                "index": 0,
+                "finish_reason": "stop",
+                "message": {"role": "assistant", "content": content},
+            }
+        ],
+        "usage": {"prompt_tokens": 1, "completion_tokens": 1},
+    }
+
+
+@pytest.mark.asyncio
+async def test_schema_fallback_on_400_schema_error(
+    respx_mock: Any,
+    client: LMStudioClient,
+    audit_schema: dict[str, Any],
+) -> None:
+    """First request gets 400 schema error; client falls back to json_object."""
+    route = respx_mock.post("http://localhost:1234/v1/chat/completions")
+    route.side_effect = [
+        httpx.Response(
+            400,
+            json={
+                "error": {"message": "response_format json_schema not supported"}
+            },
+        ),
+        httpx.Response(200, json=_success_payload(_valid_audit_json())),
+    ]
+
+    resp = await client.chat(
+        task="file_audit",
+        messages=[ChatMessage(role="user", content="hi")],
+        schema=audit_schema,
+        tools=None,
+    )
+
+    assert resp.content_dict is not None
+    assert resp.content_dict["schema_version"] == 1
+    # Cached decision is observable on the instance.
+    assert client._schema_mode == "json_object"  # type: ignore[attr-defined]
+    # Exactly two requests issued (json_schema attempt + json_object retry).
+    assert route.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_schema_fallback_caches_decision_per_session(
+    respx_mock: Any,
+    client: LMStudioClient,
+    audit_schema: dict[str, Any],
+) -> None:
+    """After first fallback, subsequent calls skip the json_schema probe."""
+    route = respx_mock.post("http://localhost:1234/v1/chat/completions")
+    route.side_effect = [
+        httpx.Response(
+            400, json={"error": {"message": "response_format unsupported"}}
+        ),
+        httpx.Response(200, json=_success_payload(_valid_audit_json())),
+        httpx.Response(200, json=_success_payload(_valid_audit_json())),
+    ]
+
+    # Turn 1 — provokes fallback (2 requests).
+    await client.chat(
+        task="file_audit",
+        messages=[ChatMessage(role="user", content="hi")],
+        schema=audit_schema,
+        tools=None,
+    )
+    after_first = route.call_count
+    # Turn 2 — cached json_object; exactly 1 request.
+    await client.chat(
+        task="file_audit",
+        messages=[ChatMessage(role="user", content="hi")],
+        schema=audit_schema,
+        tools=None,
+    )
+    assert after_first == 2
+    assert route.call_count == 3
+
+
+@pytest.mark.asyncio
+async def test_schema_fallback_400_unrelated_does_not_fallback(
+    respx_mock: Any,
+    client: LMStudioClient,
+    audit_schema: dict[str, Any],
+) -> None:
+    """A 400 unrelated to schema (e.g. context length) propagates as HTTPStatusError."""
+    respx_mock.post("http://localhost:1234/v1/chat/completions").mock(
+        return_value=httpx.Response(
+            400, json={"error": {"message": "context length exceeded"}}
+        )
+    )
+    with pytest.raises(httpx.HTTPStatusError):
+        await client.chat(
+            task="file_audit",
+            messages=[ChatMessage(role="user", content="hi")],
+            schema=audit_schema,
+            tools=None,
+        )
+    # Mode was NOT cached.
+    assert client._schema_mode is None  # type: ignore[attr-defined]
+
+
+@pytest.mark.asyncio
+async def test_post_hoc_validation_failure_raises_LMSResponseSchemaInvalid(
+    respx_mock: Any,
+    client: LMStudioClient,
+    audit_schema: dict[str, Any],
+) -> None:
+    """In json_object mode a malformed schema_version triggers LMSResponseSchemaInvalid."""
+    # Pre-set fallback so we hit the json_object path directly; the strict retry
+    # will fire once, returning the same bad response → final raise.
+    client._schema_mode = "json_object"  # type: ignore[attr-defined]
+    bad = '{"schema_version":"wrong_type","overall_assessment":"x","findings":[],"recommendations":[]}'
+    respx_mock.post("http://localhost:1234/v1/chat/completions").mock(
+        return_value=httpx.Response(200, json=_success_payload(bad))
+    )
+    with pytest.raises(LMSResponseSchemaInvalid):
+        await client.chat(
+            task="file_audit",
+            messages=[ChatMessage(role="user", content="hi")],
+            schema=audit_schema,
+            tools=None,
+        )
+
+
+@pytest.mark.asyncio
+async def test_invalid_json_after_think_strip_raises_LMSResponseInvalidJSON(
+    respx_mock: Any,
+    client: LMStudioClient,
+    audit_schema: dict[str, Any],
+) -> None:
+    """Content that isn't valid JSON after think-strip raises LMSResponseInvalidJSON."""
+    client._schema_mode = "json_object"  # type: ignore[attr-defined]
+    payload = _success_payload("<think>noise</think>{not valid json")
+    respx_mock.post("http://localhost:1234/v1/chat/completions").mock(
+        return_value=httpx.Response(200, json=payload)
+    )
+    with pytest.raises(LMSResponseInvalidJSON):
+        await client.chat(
+            task="file_audit",
+            messages=[ChatMessage(role="user", content="hi")],
+            schema=audit_schema,
+            tools=None,
+        )
+
+
+@pytest.mark.asyncio
+async def test_schema_invalid_retried_once_with_stricter_prompt(
+    respx_mock: Any,
+    client: LMStudioClient,
+    audit_schema: dict[str, Any],
+) -> None:
+    """First response fails schema validation; second (with strict preamble) succeeds."""
+    from senex.lmstudio_client import STRICT_RETRY_PREAMBLE
+
+    client._schema_mode = "json_object"  # type: ignore[attr-defined]
+    bad = '{"schema_version":"wrong","overall_assessment":"x","findings":[],"recommendations":[]}'
+    captured_bodies: list[dict[str, Any]] = []
+
+    def _record(request: httpx.Request) -> httpx.Response:
+        captured_bodies.append(json.loads(request.content.decode("utf-8")))
+        # First attempt returns invalid; second returns valid.
+        if len(captured_bodies) == 1:
+            return httpx.Response(200, json=_success_payload(bad))
+        return httpx.Response(200, json=_success_payload(_valid_audit_json()))
+
+    respx_mock.post("http://localhost:1234/v1/chat/completions").mock(side_effect=_record)
+
+    resp = await client.chat(
+        task="file_audit",
+        messages=[ChatMessage(role="user", content="hi")],
+        schema=audit_schema,
+        tools=None,
+    )
+    assert resp.content_dict is not None
+    assert resp.content_dict["schema_version"] == 1
+    # Two HTTP calls; second's system message embeds the strict preamble.
+    assert len(captured_bodies) == 2
+    second_messages = captured_bodies[1]["messages"]
+    sys_msgs = [m for m in second_messages if m.get("role") == "system"]
+    assert sys_msgs, "strict retry should inject a system message"
+    assert any(STRICT_RETRY_PREAMBLE in (m.get("content") or "") for m in sys_msgs)
+
+
+@pytest.mark.asyncio
+async def test_schema_negotiation_failed_when_both_modes_refused(
+    respx_mock: Any,
+    client: LMStudioClient,
+    audit_schema: dict[str, Any],
+) -> None:
+    """Both json_schema and json_object 4xx → SchemaNegotiationFailed."""
+    route = respx_mock.post("http://localhost:1234/v1/chat/completions")
+    route.side_effect = [
+        httpx.Response(400, json={"error": {"message": "response_format invalid"}}),
+        httpx.Response(400, json={"error": {"message": "json_object also rejected"}}),
+    ]
+    with pytest.raises(SchemaNegotiationFailed):
+        await client.chat(
+            task="file_audit",
+            messages=[ChatMessage(role="user", content="hi")],
+            schema=audit_schema,
+            tools=None,
+        )

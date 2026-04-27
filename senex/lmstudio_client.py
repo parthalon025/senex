@@ -585,7 +585,12 @@ class LMStudioClient:
         # JSON instead of an SSE stream (some test mocks return JSON directly).
         non_streaming_chunk: dict[str, Any] | None = None
         async with self._http.stream("POST", "/chat/completions", json=body_streamed) as r:
-            r.raise_for_status()
+            # Read the body BEFORE raise_for_status so the caller can inspect
+            # ``.text`` (httpx.ResponseNotRead otherwise — schema fallback needs
+            # to grep the 4xx body for "schema|response_format|json_schema").
+            if r.status_code >= 400:
+                await r.aread()
+                r.raise_for_status()
             ctype = r.headers.get("content-type", "")
             headers = dict(r.headers)
             if "event-stream" in ctype or "text/event-stream" in ctype:
