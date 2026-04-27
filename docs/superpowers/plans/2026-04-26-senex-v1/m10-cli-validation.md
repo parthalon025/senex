@@ -226,15 +226,15 @@ None — M10 is the leaf milestone. After M10 ships, downstream is real users.
 - Edit: `senex/cli.py` (add `cmd_config_show`)
 - Create: `tests/unit/test_cli_config_show.py`
 
-- [ ] **Step 10.5.1: Failing tests**:
+- [x] **Step 10.5.1: Failing tests**:
   - TOML round-trip: `senex config show /path/to/repo` outputs valid TOML that, when re-loaded via `load_config`, produces the same `SenexConfig`
   - `--json` outputs JSON with same structure
   - `--all` dumps a list of (repo_path, resolved_config) pairs
   - secret fields (`api_key`, `*_token`, `*_secret`) are redacted in output (per §SEC-6)
 
-- [ ] **Step 10.5.2: Implement `cmd_config_show(args, config) -> int`** — resolves config (defaults → file → per-repo entry) for given repo path. Outputs as TOML by default (re-serialize via `tomli_w` or by formatting `config.model_dump()` through a TOML serializer). With `--json`, output JSON via `model_dump_json()`. Apply `secret_redactor` to all string values before serialization.
+- [x] **Step 10.5.2: Implement `cmd_config_show(args, config) -> int`** — resolves config (defaults → file → per-repo entry) for given repo path. Outputs as TOML by default (re-serialize via `tomli_w` or by formatting `config.model_dump()` through a TOML serializer). With `--json`, output JSON via `model_dump_json()`. Apply `secret_redactor` to all string values before serialization.
 
-- [ ] **Step 10.5.3: Test pass + commit** `feat(M10): senex config show with TOML round-trip + secret redaction`.
+- [x] **Step 10.5.3: Test pass + commit** `feat(M10): senex config show with TOML round-trip + secret redaction`.
 
 ### Task 10.6: scripts/run_senex.bat + setup.ps1
 
