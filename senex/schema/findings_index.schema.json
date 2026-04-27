@@ -88,7 +88,7 @@
               "line_end":   {"type": "integer"},
               "symbol":     {"type": "string"}
             },
-            "oneOf": [
+            "anyOf": [
               {"required": ["symbol"]},
               {"required": ["line_start"]}
             ]

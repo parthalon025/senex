@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "overall_assessment": "The module implements a small SQLite-backed retrieval factory with reasonable shape but a few sharp edges around connection lifecycle and retry control. Core path is correct.",
+  "findings": [
+    {
+      "category": "Robustness & Error Handling",
+      "priority": "high",
+      "title": "Connection leak on rollback",
+      "issue": "rollback_transaction does not close the cursor before returning the connection to the pool.",
+      "why": "Open cursors keep the underlying file descriptor pinned; under load the pool exhausts and audits stall.",
+      "fix": "Close the cursor in a finally block before returning the connection.",
+      "confidence": "high",
+      "location": {"line_start": 142, "line_end": 156, "symbol": "rollback_transaction"}
+    },
+    {
+      "category": "Concurrency",
+      "priority": "medium",
+      "title": "Race between writer and snapshot reader",
+      "issue": "Writer commits a row that snapshot reader can observe mid-batch.",
+      "why": "Snapshot must be a consistent prefix; partial visibility breaks downstream invariants.",
+      "fix": "Wrap the batch in a transaction and let the reader use the same isolation snapshot.",
+      "confidence": "medium",
+      "location": {"symbol": "_apply_batch"}
+    },
+    {
+      "category": "Style | Naming",
+      "priority": "low",
+      "title": "Unbounded retry loop on stale | index",
+      "issue": "While loop has no max_iterations cap.",
+      "why": "Pensiv discipline requires every external loop to declare a bound.",
+      "fix": "Add max_iterations=10 and raise on overflow.",
+      "confidence": "low",
+      "location": {"line_start": 312, "line_end": 320, "symbol": "retry_until_fresh"}
+    },
+    {
+      "category": "Documentation",
+      "priority": "healthy",
+      "title": "Module docstring anchors back to spec",
+      "issue": "The module docstring references the relevant spec section, matching project convention.",
+      "why": "This makes it easy for new readers to find the contract this module implements.",
+      "fix": "No action needed.",
+      "confidence": "high",
+      "location": {"line_start": 1}
+    }
+  ],
+  "recommendations": [
+    {
+      "title": "Use a context manager for cursors",
+      "rationale": "Eliminates the leak class entirely; cursors close deterministically on exit.",
+      "code_snippet": "with conn.cursor() as cur:\n    cur.execute(sql)\n    rows = cur.fetchall()",
+      "language": "python"
+    },
+    {
+      "title": "Document the snapshot isolation level",
+      "rationale": "Readers need to know which isolation level the writer expects so partial-visibility regressions are caught in code review."
+    }
+  ],
+  "best_practices_table": [
+    {
+      "feature": "Cursor lifecycle",
+      "original": "manual close in finally",
+      "recommended": "context manager (with conn.cursor() as cur)"
+    },
+    {
+      "feature": "Retry loop",
+      "original": "while True: ... if cond: break",
+      "recommended": "for _ in range(max_iterations): ... else: raise"
+    },
+    {
+      "feature": "Boolean flag | toggle",
+      "original": "x | y as bitmask",
+      "recommended": "explicit enum"
+    }
+  ]
+}
