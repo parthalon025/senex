@@ -561,14 +561,14 @@ The fallback decision tree:
 
 **Spec/conv refs:** §5.5.1 ("the loop computes total message tokens using the active model's tokenizer"), §8.1 ("Pre-LMS token count > 90% of context window — Skip"), §14 conventions ("cache expensive computations once").
 
-- [ ] **Step 3.4.1: Failing tests.**
+- [x] **Step 3.4.1: Failing tests.**
   - `test_count_tokens_returns_positive_for_nonempty_messages`: 3 messages totaling ~30 chars → expect > 0.
   - `test_count_tokens_grows_monotonically_with_content_length`: 100-char message > 10-char message.
   - `test_count_tokens_caches_encoder_per_model`: call twice; assert `tiktoken.get_encoding` called once (patch + assert call count).
   - `test_count_tokens_unknown_model_falls_back_to_chars_div_4`: pass `model_id="completely-fake-model"`; assert result ≈ `total_chars // 4` (within ±1 for rounding).
   - `test_chat_raises_token_budget_exceeded_above_90_percent`: configure `context_window=1000`, build messages totaling ~950 tokens; assert `chat()` raises `TokenBudgetExceeded` BEFORE any HTTP call (assert respx received zero requests).
 
-- [ ] **Step 3.4.2: Implement `count_tokens`.**
+- [x] **Step 3.4.2: Implement `count_tokens`.**
 
   ```python
   def count_tokens(self, messages: list[ChatMessage], model_id: str) -> int:
@@ -604,7 +604,7 @@ The fallback decision tree:
       return total
   ```
 
-- [ ] **Step 3.4.3: Implement preflight check in `chat()`** (top of method, before any HTTP):
+- [x] **Step 3.4.3: Implement preflight check in `chat()`** (top of method, before any HTTP):
 
   ```python
   context_window = self._config.context_window  # set per-model in M4
@@ -616,21 +616,21 @@ The fallback decision tree:
       )
   ```
 
-- [ ] **Step 3.4.4: Verification command:**
+- [x] **Step 3.4.4: Verification command:**
   ```bash
   pytest tests/unit/test_lmstudio_client.py -v -k "count_tokens or token_budget"
   ```
   Expected: `5 passed`.
 
-- [ ] **Step 3.4.5: Pitfalls.**
+- [x] **Step 3.4.5: Pitfalls.**
   - Caching `None` encoder is intentional: if `cl100k_base` is unavailable, the retry would always fail. Caching `None` triggers fallback consistently.
   - Forgetting per-message overhead → undercounts; OpenAI's chat-completion format adds ~4 tokens of structural overhead per message.
   - Counting `tool_calls.id` (a UUID) → wastes the budget. Only `function.name` + `function.arguments` carry semantic content; the IDs are bookkeeping.
   - Hardcoding `0.9` instead of `self._config.token_budget_pct` → the config field exists in `LmStudioCfg` and the test asserts it; do not lose configurability.
 
-- [ ] **Step 3.4.6: Definition of done.** All 5 token-counting tests green; encoder cached observably; `TokenBudgetExceeded` fires before any HTTP.
+- [x] **Step 3.4.6: Definition of done.** All 5 token-counting tests green; encoder cached observably; `TokenBudgetExceeded` fires before any HTTP.
 
-- [ ] **Step 3.4.7: Commit** `feat(M3): pre-LMS token counting + budget enforcement`.
+- [x] **Step 3.4.7: Commit** `feat(M3): pre-LMS token counting + budget enforcement`.
 
 ---
 

@@ -631,6 +631,107 @@ async def test_schema_invalid_retried_once_with_stricter_prompt(
     assert any(STRICT_RETRY_PREAMBLE in (m.get("content") or "") for m in sys_msgs)
 
 
+# --- Task 3.4: pre-LMS token counting + budget enforcement ------------------
+
+from senex.lmstudio_errors import TokenBudgetExceeded  # noqa: E402
+
+
+def test_count_tokens_returns_positive_for_nonempty_messages(
+    client: LMStudioClient,
+) -> None:
+    msgs = [
+        ChatMessage(role="system", content="be concise"),
+        ChatMessage(role="user", content="hello world"),
+        ChatMessage(role="assistant", content="hi"),
+    ]
+    assert client.count_tokens(msgs, "google/gemma-4-26b-a4b") > 0
+
+
+def test_count_tokens_grows_monotonically_with_content_length(
+    client: LMStudioClient,
+) -> None:
+    short = [ChatMessage(role="user", content="x" * 10)]
+    long = [ChatMessage(role="user", content="x" * 100)]
+    assert client.count_tokens(long, "m") > client.count_tokens(short, "m")
+
+
+def test_count_tokens_caches_encoder_per_model(
+    client: LMStudioClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Two calls with the same model_id → tiktoken.get_encoding called once."""
+    import tiktoken
+
+    calls = {"n": 0}
+    real = tiktoken.get_encoding
+
+    def _spy(name: str) -> Any:
+        calls["n"] += 1
+        return real(name)
+
+    monkeypatch.setattr(tiktoken, "get_encoding", _spy)
+    # Reset the encoder cache so the spy actually gets the first call.
+    client._encoder_cache.clear()  # type: ignore[attr-defined]
+    msgs = [ChatMessage(role="user", content="hello")]
+    client.count_tokens(msgs, "model-a")
+    client.count_tokens(msgs, "model-a")
+    assert calls["n"] == 1
+
+
+def test_count_tokens_unknown_model_falls_back_to_chars_div_4(
+    client: LMStudioClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """When tiktoken cannot supply an encoder, count_tokens uses len/4 + per-msg overhead."""
+    import tiktoken
+
+    def _boom(_name: str) -> Any:
+        raise RuntimeError("encoding unavailable")
+
+    monkeypatch.setattr(tiktoken, "get_encoding", _boom)
+    client._encoder_cache.clear()  # type: ignore[attr-defined]
+    text = "x" * 100
+    msgs = [ChatMessage(role="user", content=text)]
+    # Expected: len(text) // 4 + 4 per-message overhead = 25 + 4 = 29.
+    expected_low = len(text) // 4 + 4 - 1
+    expected_high = len(text) // 4 + 4 + 1
+    actual = client.count_tokens(msgs, "completely-fake-model")
+    assert expected_low <= actual <= expected_high
+    # And None is cached (per plan pitfall: do not retry tiktoken once it fails).
+    assert client._encoder_cache["completely-fake-model"] is None  # type: ignore[attr-defined]
+
+
+@pytest.mark.asyncio
+async def test_chat_raises_token_budget_exceeded_above_90_percent(
+    respx_mock: Any,
+    test_cfg: LmStudioCfg,
+    bus: EventBus,
+    redactor: SecretRedactor,
+    audit_schema: dict[str, Any],
+) -> None:
+    """Pre-flight token budget fires BEFORE any HTTP request."""
+    # context_window=1000 → budget=900. Build messages well above that.
+    tight_cfg = test_cfg.model_copy(update={"context_window": 1000})
+    tight_client = LMStudioClient(config=tight_cfg, bus=bus, redactor=redactor)
+
+    # ~6000 chars of payload → ≥1500 tiktoken tokens → above 900 budget.
+    huge = "lorem ipsum " * 500
+    msgs = [ChatMessage(role="user", content=huge)]
+
+    # Mock the endpoint just to detect any leak: the test asserts respx received zero hits.
+    route = respx_mock.post("http://localhost:1234/v1/chat/completions").respond(
+        json=_success_payload(_valid_audit_json())
+    )
+
+    with pytest.raises(TokenBudgetExceeded):
+        await tight_client.chat(
+            task="file_audit",
+            messages=msgs,
+            schema=audit_schema,
+            tools=None,
+        )
+    assert route.call_count == 0
+    await tight_client.aclose()
+
+
 @pytest.mark.asyncio
 async def test_schema_negotiation_failed_when_both_modes_refused(
     respx_mock: Any,
