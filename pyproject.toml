@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "senex"
+version = "0.1.0"
+description = "Local-LLM code audit tool"
+requires-python = ">=3.11"
+dependencies = [
+  "openai>=1.50,<2.0",
+  "pydantic>=2.5,<3",
+  "textual>=0.50",
+  "tiktoken",
+  "portalocker",
+  "detect-secrets",
+  "regex",
+  "httpx",
+  "jsonschema>=4.20",
+  "tomli-w",
+  "ulid-py",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "pytest-asyncio>=0.21", "pytest-cov", "hypothesis", "mypy", "ruff", "respx"]
+
+[project.scripts]
+senex = "senex.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["senex*"]
+
+[tool.setuptools.package-data]
+senex = ["schema/*.json", "lens/**/*.toml", "lens/**/*.md", "prompts/*.md"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.mypy]
+strict = true
+python_version = "3.11"

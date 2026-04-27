@@ -1,34 +1,10 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.egg-info/
-.eggs/
-build/
-dist/
 .venv/
-venv/
+__pycache__/
+*.pyc
+*.egg-info/
 .pytest_cache/
+.coverage
 .mypy_cache/
 .ruff_cache/
-.coverage
-htmlcov/
-
-# IDE
-.vscode/
-.idea/
-*.swp
-
-# OS
-.DS_Store
-Thumbs.db
-
-# senex runtime
-audit.log
-events.jsonl
-*.thinking.md
-
-# Local secrets / config
-.env
-senex.config.local.toml
-.gitnexus
+build/
+dist/

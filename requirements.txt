@@ -1,0 +1,11 @@
+openai>=1.50,<2.0
+pydantic>=2.5,<3
+textual>=0.50
+tiktoken
+portalocker
+detect-secrets
+regex
+httpx
+jsonschema>=4.20
+tomli-w
+ulid-py
