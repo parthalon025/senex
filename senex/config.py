@@ -113,6 +113,7 @@ class CompactionCfg(_StrictModel):
 class LifecycleCfg(_StrictModel):
     auto_load: bool = True
     auto_unload: bool = True
+    allow_mixed: bool = False  # resume: tolerate fingerprint mismatch (spec §5.5.2.7)
     load_timeout_seconds: int = Field(default=120, gt=0)
     runlock_dir: str = ""
 

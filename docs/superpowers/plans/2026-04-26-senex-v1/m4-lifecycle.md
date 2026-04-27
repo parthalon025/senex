@@ -1,6 +1,6 @@
 # Milestone 4: Lifecycle + Runlock Integration
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development. Each task uses checkbox (`- [ ]`) syntax for tracking. Sequential within this milestone; check Prerequisites before starting.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development. Each task uses checkbox (`- [x]`) syntax for tracking. Sequential within this milestone; check Prerequisites before starting.
 
 ## Context
 
@@ -259,9 +259,9 @@ async def cli_lifecycle_clear_locks(*, force: bool) -> int: ...
 - Modify: `senex/runlock.py`
 - Create: `tests/unit/test_runlock_concurrency.py`
 
-- [ ] **Step 4.0.1: Failing test `test_concurrent_acquire_release_no_lost_holder`** — spawn two `threading.Thread`s; each calls `RunLock.acquire(fp, run_id_i, os.getpid(), True)` then `RunLock.release(fp, run_id_i)` 100 times; assert final holder count is 0 and lockfile is deleted. Use a shared `tmp_path` fixture.
+- [x] **Step 4.0.1: Failing test `test_concurrent_acquire_release_no_lost_holder`** — spawn two `threading.Thread`s; each calls `RunLock.acquire(fp, run_id_i, os.getpid(), True)` then `RunLock.release(fp, run_id_i)` 100 times; assert final holder count is 0 and lockfile is deleted. Use a shared `tmp_path` fixture.
 
-- [ ] **Step 4.0.2: Failing test `test_corrupt_json_recovers`**:
+- [x] **Step 4.0.2: Failing test `test_corrupt_json_recovers`**:
   ```python
   def test_corrupt_json_recovers(tmp_path):
       lock_path = tmp_path / "abc.lock"
@@ -274,17 +274,17 @@ async def cli_lifecycle_clear_locks(*, force: bool) -> int: ...
       assert lock_path.exists()  # recreated cleanly
   ```
 
-- [ ] **Step 4.0.3: Failing test `test_pid_liveness_posix_branch`** — `monkeypatch.setattr("sys.platform", "linux")`; mock `os.kill` to raise `ProcessLookupError(3)` for pid 99999; assert `RunLock._is_pid_alive(99999) is False`; mock `os.kill` to return None for `os.getpid()`; assert `True`. Mock `PermissionError` → assert `True` (alive but not ours).
+- [x] **Step 4.0.3: Failing test `test_pid_liveness_posix_branch`** — `monkeypatch.setattr("sys.platform", "linux")`; mock `os.kill` to raise `ProcessLookupError(3)` for pid 99999; assert `RunLock._is_pid_alive(99999) is False`; mock `os.kill` to return None for `os.getpid()`; assert `True`. Mock `PermissionError` → assert `True` (alive but not ours).
 
-- [ ] **Step 4.0.4: Failing test `test_pid_liveness_windows_branch`** — `monkeypatch.setattr("sys.platform", "win32")`; mock `ctypes.windll.kernel32.OpenProcess` returning `0`; assert `_is_pid_alive(99999) is False`; mock returning `1234`; assert `True` AND assert `CloseHandle` was called with `1234`.
+- [x] **Step 4.0.4: Failing test `test_pid_liveness_windows_branch`** — `monkeypatch.setattr("sys.platform", "win32")`; mock `ctypes.windll.kernel32.OpenProcess` returning `0`; assert `_is_pid_alive(99999) is False`; mock returning `1234`; assert `True` AND assert `CloseHandle` was called with `1234`.
 
-- [ ] **Step 4.0.5: Implement `_is_pid_alive(pid: int) -> bool`** with `match sys.platform: case "win32": ...` branch; use `ctypes.WinDLL("kernel32")` (cached at module import). Document why each platform branch behaves as it does.
+- [x] **Step 4.0.5: Implement `_is_pid_alive(pid: int) -> bool`** with `match sys.platform: case "win32": ...` branch; use `ctypes.WinDLL("kernel32")` (cached at module import). Document why each platform branch behaves as it does.
 
-- [ ] **Step 4.0.6: Implement `RunLock.acquire/release`** with the full atomicity envelope: hold a `portalocker.Lock` advisory lock on a sibling `.guard` file across read → prune dead PIDs → modify holders → tmp-write → fsync → `os.replace(tmp, lock_path)`. Implement `_atomic_write_json(path, data)` helper. On `JSONDecodeError`, rename to `<path>.corrupt-<unix_ts>` and treat as fresh.
+- [x] **Step 4.0.6: Implement `RunLock.acquire/release`** with the full atomicity envelope: hold a `portalocker.Lock` advisory lock on a sibling `.guard` file across read → prune dead PIDs → modify holders → tmp-write → fsync → `os.replace(tmp, lock_path)`. Implement `_atomic_write_json(path, data)` helper. On `JSONDecodeError`, rename to `<path>.corrupt-<unix_ts>` and treat as fresh.
 
-- [ ] **Step 4.0.7: Implement `list_holders()` and `clear()`** — `list_holders` reads under the advisory lock; `clear(force=False)` prunes only dead PIDs and returns removed count; `clear(force=True)` empties all holders (with a `warnings.warn` on each live PID removed).
+- [x] **Step 4.0.7: Implement `list_holders()` and `clear()`** — `list_holders` reads under the advisory lock; `clear(force=False)` prunes only dead PIDs and returns removed count; `clear(force=True)` empties all holders (with a `warnings.warn` on each live PID removed).
 
-- [ ] **Step 4.0.8: Verify** with the literal command and expected output:
+- [x] **Step 4.0.8: Verify** with the literal command and expected output:
   ```
   $ pytest tests/unit/test_runlock_concurrency.py -v
   tests/unit/test_runlock_concurrency.py::test_concurrent_acquire_release_no_lost_holder PASSED
@@ -294,7 +294,7 @@ async def cli_lifecycle_clear_locks(*, force: bool) -> int: ...
   ============== 4 passed in <X>s ==============
   ```
 
-- [ ] **Step 4.0.9: Pre-commit scope check** — `gitnexus_detect_changes({scope:"staged"})`; expect changes only under `senex/runlock.py` and `tests/unit/test_runlock_concurrency.py`. Then commit `feat(M4): runlock production hardening (atomicity, corruption recovery, cross-platform PID liveness)`.
+- [x] **Step 4.0.9: Pre-commit scope check** — `gitnexus_detect_changes({scope:"staged"})`; expect changes only under `senex/runlock.py` and `tests/unit/test_runlock_concurrency.py`. Then commit `feat(M4): runlock production hardening (atomicity, corruption recovery, cross-platform PID liveness)`.
 
 ### Task 4.1: Lifecycle backend selection
 
@@ -302,7 +302,7 @@ async def cli_lifecycle_clear_locks(*, force: bool) -> int: ...
 - Create: `senex/lmstudio_lifecycle.py`
 - Create: `tests/unit/test_lifecycle.py`
 
-- [ ] **Step 4.1.1: Failing test `test_select_prefers_sdk`**:
+- [x] **Step 4.1.1: Failing test `test_select_prefers_sdk`**:
   ```python
   async def test_select_prefers_sdk(monkeypatch):
       mock_sdk = MagicMock()
@@ -312,7 +312,7 @@ async def cli_lifecycle_clear_locks(*, force: bool) -> int: ...
       assert isinstance(backend, LMStudioSDKBackend)
   ```
 
-- [ ] **Step 4.1.2: Failing test `test_select_falls_back_to_cli`**:
+- [x] **Step 4.1.2: Failing test `test_select_falls_back_to_cli`**:
   ```python
   async def test_select_falls_back_to_cli(monkeypatch):
       monkeypatch.setitem(sys.modules, "lmstudio", None)  # forces ImportError on next import
@@ -321,7 +321,7 @@ async def cli_lifecycle_clear_locks(*, force: bool) -> int: ...
       assert isinstance(backend, LMSCLIBackend)
   ```
 
-- [ ] **Step 4.1.3: Failing test `test_select_raises_when_neither_available`**:
+- [x] **Step 4.1.3: Failing test `test_select_raises_when_neither_available`**:
   ```python
   async def test_select_raises_when_neither_available(monkeypatch):
       monkeypatch.setitem(sys.modules, "lmstudio", None)
@@ -330,21 +330,21 @@ async def cli_lifecycle_clear_locks(*, force: bool) -> int: ...
           await LifecycleBackendFactory.select()
   ```
 
-- [ ] **Step 4.1.4: Failing test `test_select_falls_back_when_sdk_unreachable`** — SDK importable but `list_loaded_models()` raises `ConnectionError`; CLI on PATH; `select()` returns `LMSCLIBackend` (not SDK).
+- [x] **Step 4.1.4: Failing test `test_select_falls_back_when_sdk_unreachable`** — SDK importable but `list_loaded_models()` raises `ConnectionError`; CLI on PATH; `select()` returns `LMSCLIBackend` (not SDK).
 
-- [ ] **Step 4.1.5: Implement** `LifecycleBackend` Protocol, `ModelInfo` pydantic model, `LMStudioSDKBackend`, `LMSCLIBackend`, `LifecycleBackendFactory.select()`. SDK backend uses `lmstudio.list_loaded_models()`, `lmstudio.llm(model_id)`, `model.unload()`. CLI backend uses `asyncio.create_subprocess_exec("lms", verb, ...)` (NEVER `subprocess.run` — must be async per spec §3 architecture).
+- [x] **Step 4.1.5: Implement** `LifecycleBackend` Protocol, `ModelInfo` pydantic model, `LMStudioSDKBackend`, `LMSCLIBackend`, `LifecycleBackendFactory.select()`. SDK backend uses `lmstudio.list_loaded_models()`, `lmstudio.llm(model_id)`, `model.unload()`. CLI backend uses `asyncio.create_subprocess_exec("lms", verb, ...)` (NEVER `subprocess.run` — must be async per spec §3 architecture).
 
-- [ ] **Step 4.1.6: Implement `_compute_fingerprint(model_id, quant, checkpoint_digest) -> str`** in the module: `sha256(json.dumps([model_id, quant, checkpoint_digest], separators=(",",":")).encode()).hexdigest()` — both backends call this so the test in Task 4.1.7 holds.
+- [x] **Step 4.1.6: Implement `_compute_fingerprint(model_id, quant, checkpoint_digest) -> str`** in the module: `sha256(json.dumps([model_id, quant, checkpoint_digest], separators=(",",":")).encode()).hexdigest()` — both backends call this so the test in Task 4.1.7 holds.
 
-- [ ] **Step 4.1.7: Failing test `test_both_backends_produce_same_fingerprint`** (spec §9 row 34) — given identical mocked `(model_id, quant, checkpoint_digest)` triples from each backend, assert `info_sdk.fingerprint == info_cli.fingerprint`.
+- [x] **Step 4.1.7: Failing test `test_both_backends_produce_same_fingerprint`** (spec §9 row 34) — given identical mocked `(model_id, quant, checkpoint_digest)` triples from each backend, assert `info_sdk.fingerprint == info_cli.fingerprint`.
 
-- [ ] **Step 4.1.8: Verify** with literal command and expected output:
+- [x] **Step 4.1.8: Verify** with literal command and expected output:
   ```
   $ pytest tests/unit/test_lifecycle.py -k "select or both_backends" -v
   ============== 5 passed in <X>s ==============
   ```
 
-- [ ] **Step 4.1.9: Commit** `feat(M4): lifecycle backend selection (SDK + CLI) with shared fingerprint`.
+- [x] **Step 4.1.9: Commit** `feat(M4): lifecycle backend selection (SDK + CLI) with shared fingerprint`.
 
 ### Task 4.2: Lifecycle high-level API (acquire/release)
 
@@ -352,7 +352,7 @@ async def cli_lifecycle_clear_locks(*, force: bool) -> int: ...
 - Modify: `senex/lmstudio_lifecycle.py`
 - Modify: `tests/unit/test_lifecycle.py`
 
-- [ ] **Step 4.2.1: Failing test `test_acquire_loads_when_auto_load_true`**:
+- [x] **Step 4.2.1: Failing test `test_acquire_loads_when_auto_load_true`**:
   ```python
   async def test_acquire_loads_when_auto_load_true(mock_backend, mock_bus, tmp_path):
       mock_backend.is_loaded = AsyncMock(return_value=False)
@@ -368,33 +368,33 @@ async def cli_lifecycle_clear_locks(*, force: bool) -> int: ...
           "ModelLoadRequested", "ModelLoadStarted", "ModelLoadComplete", "RunLockAcquired"]
   ```
 
-- [ ] **Step 4.2.2: Failing test `test_acquire_raises_model_not_loaded_when_auto_load_false`** — model not loaded, `auto_load=False`; assert `ModelNotLoaded` raised AND `RunLock.acquire` was NEVER called (mock + `assert_not_called()`).
+- [x] **Step 4.2.2: Failing test `test_acquire_raises_model_not_loaded_when_auto_load_false`** — model not loaded, `auto_load=False`; assert `ModelNotLoaded` raised AND `RunLock.acquire` was NEVER called (mock + `assert_not_called()`).
 
-- [ ] **Step 4.2.3: Failing test `test_acquire_attaches_when_already_loaded`** — `is_loaded=True`; assert `loaded_by_us is False`, `backend.load` not called, `RunLockAcquired` event emitted with `loaded_by_us=false` field.
+- [x] **Step 4.2.3: Failing test `test_acquire_attaches_when_already_loaded`** — `is_loaded=True`; assert `loaded_by_us is False`, `backend.load` not called, `RunLockAcquired` event emitted with `loaded_by_us=false` field.
 
-- [ ] **Step 4.2.4: Failing test `test_release_unloads_when_count_zero_and_we_loaded_and_auto_unload`** — `runlock.release` returns 0; `loaded_by_us=True`; `auto_unload=True`; assert `backend.unload` awaited; events `RunLockReleased -> ModelUnloadStarted -> ModelUnloadComplete`.
+- [x] **Step 4.2.4: Failing test `test_release_unloads_when_count_zero_and_we_loaded_and_auto_unload`** — `runlock.release` returns 0; `loaded_by_us=True`; `auto_unload=True`; assert `backend.unload` awaited; events `RunLockReleased -> ModelUnloadStarted -> ModelUnloadComplete`.
 
-- [ ] **Step 4.2.5: Failing test `test_release_skips_unload_when_concurrent_holders`** (spec §9 row 30) — `runlock.release` returns 1; assert `backend.unload` NOT called; assert `ModelUnloadSkipped` emitted with `reason="concurrent_holders"` exactly.
+- [x] **Step 4.2.5: Failing test `test_release_skips_unload_when_concurrent_holders`** (spec §9 row 30) — `runlock.release` returns 1; assert `backend.unload` NOT called; assert `ModelUnloadSkipped` emitted with `reason="concurrent_holders"` exactly.
 
-- [ ] **Step 4.2.6: Failing test `test_release_skips_unload_when_not_loaded_by_us`** (spec §9 row 31) — `runlock.release` returns 0; `loaded_by_us=False`; `auto_unload=True`; assert `backend.unload` NOT called; assert `ModelUnloadSkipped(reason="not_loaded_by_us")`.
+- [x] **Step 4.2.6: Failing test `test_release_skips_unload_when_not_loaded_by_us`** (spec §9 row 31) — `runlock.release` returns 0; `loaded_by_us=False`; `auto_unload=True`; assert `backend.unload` NOT called; assert `ModelUnloadSkipped(reason="not_loaded_by_us")`.
 
-- [ ] **Step 4.2.7: Failing test `test_release_skips_unload_when_auto_unload_disabled`** — `runlock.release` returns 0; `loaded_by_us=True`; `auto_unload=False`; assert `ModelUnloadSkipped(reason="auto_unload_disabled")`.
+- [x] **Step 4.2.7: Failing test `test_release_skips_unload_when_auto_unload_disabled`** — `runlock.release` returns 0; `loaded_by_us=True`; `auto_unload=False`; assert `ModelUnloadSkipped(reason="auto_unload_disabled")`.
 
-- [ ] **Step 4.2.8: Failing test `test_load_timeout_raises_and_does_not_acquire_runlock`** (spec §5.5.2.4 row 1) — `backend.load` raises `asyncio.TimeoutError`; assert `ModelLoadTimeout` raised AND `RunLock.acquire` NEVER called AND `ModelLoadFailed` event emitted with `error_kind="timeout"`.
+- [x] **Step 4.2.8: Failing test `test_load_timeout_raises_and_does_not_acquire_runlock`** (spec §5.5.2.4 row 1) — `backend.load` raises `asyncio.TimeoutError`; assert `ModelLoadTimeout` raised AND `RunLock.acquire` NEVER called AND `ModelLoadFailed` event emitted with `error_kind="timeout"`.
 
-- [ ] **Step 4.2.9: Failing test `test_load_failure_raises_and_does_not_acquire_runlock`** (spec §5.5.2.4 row 2) — `backend.load` raises `RuntimeError("GPU OOM")`; assert `ModelLoadFailed` raised AND `RunLock.acquire` NEVER called AND `ModelLoadFailed` event emitted with `error_kind="load_failed"`.
+- [x] **Step 4.2.9: Failing test `test_load_failure_raises_and_does_not_acquire_runlock`** (spec §5.5.2.4 row 2) — `backend.load` raises `RuntimeError("GPU OOM")`; assert `ModelLoadFailed` raised AND `RunLock.acquire` NEVER called AND `ModelLoadFailed` event emitted with `error_kind="load_failed"`.
 
-- [ ] **Step 4.2.10: Failing test `test_unload_failure_logs_warn_does_not_raise`** (spec §5.5.2.4 row 3) — `backend.unload` raises; assert `Lifecycle.release` returns normally, `ModelUnloadFailed` event emitted, `audit.log` warn line written. Run completion is not failed by unload failure.
+- [x] **Step 4.2.10: Failing test `test_unload_failure_logs_warn_does_not_raise`** (spec §5.5.2.4 row 3) — `backend.unload` raises; assert `Lifecycle.release` returns normally, `ModelUnloadFailed` event emitted, `audit.log` warn line written. Run completion is not failed by unload failure.
 
-- [ ] **Step 4.2.11: Implement `Lifecycle.acquire`** matching §5.5.2.1 verbatim. Implement `Lifecycle.release` matching §5.5.2.1 verbatim. Use `asyncio.wait_for(backend.load(...), timeout=config.load_timeout_seconds)`; catch `asyncio.TimeoutError` → emit `ModelLoadFailed(error_kind="timeout")` → raise `ModelLoadTimeout`.
+- [x] **Step 4.2.11: Implement `Lifecycle.acquire`** matching §5.5.2.1 verbatim. Implement `Lifecycle.release` matching §5.5.2.1 verbatim. Use `asyncio.wait_for(backend.load(...), timeout=config.load_timeout_seconds)`; catch `asyncio.TimeoutError` → emit `ModelLoadFailed(error_kind="timeout")` → raise `ModelLoadTimeout`.
 
-- [ ] **Step 4.2.12: Verify** with literal command:
+- [x] **Step 4.2.12: Verify** with literal command:
   ```
   $ pytest tests/unit/test_lifecycle.py -k "acquire or release" -v
   ============== 10 passed in <X>s ==============
   ```
 
-- [ ] **Step 4.2.13: Commit** `feat(M4): Lifecycle.acquire/release with §5.5.2.4 failure-mode coverage`.
+- [x] **Step 4.2.13: Commit** `feat(M4): Lifecycle.acquire/release with §5.5.2.4 failure-mode coverage`.
 
 ### Task 4.3: Resume integration (§5.5.2.7)
 
@@ -402,19 +402,19 @@ async def cli_lifecycle_clear_locks(*, force: bool) -> int: ...
 - Modify: `senex/lmstudio_lifecycle.py`
 - Modify: `tests/unit/test_lifecycle.py`
 
-- [ ] **Step 4.3.1: Failing test `test_resume_attached_fingerprint_match`** (§5.5.2.7 table row 1) — model still loaded, fingerprint matches checkpoint; assert returned `ModelInfo`, runlock acquired with `loaded_by_us=False`. On release with `auto_unload=True`, assert `ModelUnloadSkipped(reason="resumed_run_does_not_own_load")`.
+- [x] **Step 4.3.1: Failing test `test_resume_attached_fingerprint_match`** (§5.5.2.7 table row 1) — model still loaded, fingerprint matches checkpoint; assert returned `ModelInfo`, runlock acquired with `loaded_by_us=False`. On release with `auto_unload=True`, assert `ModelUnloadSkipped(reason="resumed_run_does_not_own_load")`.
 
-- [ ] **Step 4.3.2: Failing test `test_resume_external_unload_then_reload_still_not_owned`** (§5.5.2.7 table row 2) — `is_loaded=False`; resume re-probes, calls `load()`; runlock acquires `loaded_by_us=False` UNCONDITIONALLY (NOT True even though we just loaded). On release: `ModelUnloadSkipped(reason="resumed_run_does_not_own_load")`. This is the load-bearing invariant — resume cannot transfer ownership.
+- [x] **Step 4.3.2: Failing test `test_resume_external_unload_then_reload_still_not_owned`** (§5.5.2.7 table row 2) — `is_loaded=False`; resume re-probes, calls `load()`; runlock acquires `loaded_by_us=False` UNCONDITIONALLY (NOT True even though we just loaded). On release: `ModelUnloadSkipped(reason="resumed_run_does_not_own_load")`. This is the load-bearing invariant — resume cannot transfer ownership.
 
-- [ ] **Step 4.3.3: Failing test `test_resume_fingerprint_mismatch_refuses`** (§5.5.2.7 table row 3) — `is_loaded=True` but probed fingerprint != checkpoint fingerprint; `allow_mixed=False`; assert `FingerprintMismatch` raised AND `RunLock.acquire` NEVER called.
+- [x] **Step 4.3.3: Failing test `test_resume_fingerprint_mismatch_refuses`** (§5.5.2.7 table row 3) — `is_loaded=True` but probed fingerprint != checkpoint fingerprint; `allow_mixed=False`; assert `FingerprintMismatch` raised AND `RunLock.acquire` NEVER called.
 
-- [ ] **Step 4.3.4: Failing test `test_resume_fingerprint_mismatch_allow_mixed_proceeds`** — same setup but `allow_mixed=True`; assert acquire succeeds, `loaded_by_us=False`, `ModelFingerprintChanged` event emitted with `expected_fingerprint=<checkpoint>` and `observed_fingerprint=<probed>`.
+- [x] **Step 4.3.4: Failing test `test_resume_fingerprint_mismatch_allow_mixed_proceeds`** — same setup but `allow_mixed=True`; assert acquire succeeds, `loaded_by_us=False`, `ModelFingerprintChanged` event emitted with `expected_fingerprint=<checkpoint>` and `observed_fingerprint=<probed>`.
 
-- [ ] **Step 4.3.5: Failing test `test_resume_two_concurrent_dead_runs_pruned`** (§5.5.2.7 table row 4) — pre-populate runlock file with two dead-PID holders + one matching fingerprint. Call `acquire_for_resume`. Assert dead PIDs pruned; the resumed run's holder is the only live one.
+- [x] **Step 4.3.5: Failing test `test_resume_two_concurrent_dead_runs_pruned`** (§5.5.2.7 table row 4) — pre-populate runlock file with two dead-PID holders + one matching fingerprint. Call `acquire_for_resume`. Assert dead PIDs pruned; the resumed run's holder is the only live one.
 
-- [ ] **Step 4.3.6: Failing test `test_resume_cannot_set_loaded_by_us_true`** — call internal helper attempting to construct `acquire_for_resume` result with `loaded_by_us=True`; assert `ResumedRunCannotOwnLoad` raised. (Defense-in-depth assertion; the public API never offers a knob to flip this, but the internal helper guards anyway.)
+- [x] **Step 4.3.6: Failing test `test_resume_cannot_set_loaded_by_us_true`** — call internal helper attempting to construct `acquire_for_resume` result with `loaded_by_us=True`; assert `ResumedRunCannotOwnLoad` raised. (Defense-in-depth assertion; the public API never offers a knob to flip this, but the internal helper guards anyway.)
 
-- [ ] **Step 4.3.7: Implement `acquire_for_resume`** (algorithm):
+- [x] **Step 4.3.7: Implement `acquire_for_resume`** (algorithm):
   ```
   validate_model_id(model_id)
   if backend.is_loaded(model_id):
@@ -430,15 +430,15 @@ async def cli_lifecycle_clear_locks(*, force: bool) -> int: ...
   return info
   ```
 
-- [ ] **Step 4.3.8: Implement resume-specific release path** — `release` already takes `loaded_by_us`; resumed runs pass `loaded_by_us=False` AND `resumed=True`. The reason string is `"resumed_run_does_not_own_load"` whenever `resumed=True`.
+- [x] **Step 4.3.8: Implement resume-specific release path** — `release` already takes `loaded_by_us`; resumed runs pass `loaded_by_us=False` AND `resumed=True`. The reason string is `"resumed_run_does_not_own_load"` whenever `resumed=True`.
 
-- [ ] **Step 4.3.9: Verify** with literal command:
+- [x] **Step 4.3.9: Verify** with literal command:
   ```
   $ pytest tests/unit/test_lifecycle.py -k "resume" -v
   ============== 6 passed in <X>s ==============
   ```
 
-- [ ] **Step 4.3.10: Commit** `feat(M4): resume lifecycle handshake (§5.5.2.7 4-row table)`.
+- [x] **Step 4.3.10: Commit** `feat(M4): resume lifecycle handshake (§5.5.2.7 4-row table)`.
 
 ### Task 4.4: Lifecycle CLI subcommands
 
@@ -447,7 +447,7 @@ async def cli_lifecycle_clear_locks(*, force: bool) -> int: ...
 - Modify: `senex/cli.py` (subparser stub if M10 hasn't built `cli.py` yet)
 - Create: `tests/unit/test_lifecycle_cli.py`
 
-- [ ] **Step 4.4.1: Failing test `test_lifecycle_status_json_schema`**:
+- [x] **Step 4.4.1: Failing test `test_lifecycle_status_json_schema`**:
   ```python
   async def test_lifecycle_status_json_schema(monkeypatch, tmp_path, capsys):
       # Pre-populate one runlock file with one holder; mock backend with one loaded model.
@@ -463,19 +463,19 @@ async def cli_lifecycle_clear_locks(*, force: bool) -> int: ...
       }
   ```
 
-- [ ] **Step 4.4.2: Failing test `test_lifecycle_status_human_table`** — `as_json=False`; assert stdout contains "MODEL_ID", "QUANT", "FINGERPRINT" headers and the loaded model rows.
+- [x] **Step 4.4.2: Failing test `test_lifecycle_status_human_table`** — `as_json=False`; assert stdout contains "MODEL_ID", "QUANT", "FINGERPRINT" headers and the loaded model rows.
 
-- [ ] **Step 4.4.3: Failing test `test_clear_locks_default_prunes_dead_only`** — runlock with one dead-PID holder + one live; `cli_lifecycle_clear_locks(force=False)`; assert dead pruned, live preserved, exit 0, stderr contains "pruned 1 dead-PID entr".
+- [x] **Step 4.4.3: Failing test `test_clear_locks_default_prunes_dead_only`** — runlock with one dead-PID holder + one live; `cli_lifecycle_clear_locks(force=False)`; assert dead pruned, live preserved, exit 0, stderr contains "pruned 1 dead-PID entr".
 
-- [ ] **Step 4.4.4: Failing test `test_clear_locks_force_removes_live_with_warning`** — same setup; `force=True`; assert all holders removed, stderr contains "WARNING" for the live PID, exit 0.
+- [x] **Step 4.4.4: Failing test `test_clear_locks_force_removes_live_with_warning`** — same setup; `force=True`; assert all holders removed, stderr contains "WARNING" for the live PID, exit 0.
 
-- [ ] **Step 4.4.5: Failing test `test_clear_locks_refuses_live_without_force`** — runlock with only live holders; `force=False`; assert NO holders removed, stderr contains "refusing to remove live holders; use --force", exit non-zero.
+- [x] **Step 4.4.5: Failing test `test_clear_locks_refuses_live_without_force`** — runlock with only live holders; `force=False`; assert NO holders removed, stderr contains "refusing to remove live holders; use --force", exit non-zero.
 
-- [ ] **Step 4.4.6: Implement `cli_lifecycle_status(as_json)`** — calls `backend.list_loaded()`, scans `runlock_dir` for all `*.lock` files, calls `RunLock.list_holders(fp)` for each, augments each holder with `pid_alive` from `RunLock._is_pid_alive`, prints either JSON or human table.
+- [x] **Step 4.4.6: Implement `cli_lifecycle_status(as_json)`** — calls `backend.list_loaded()`, scans `runlock_dir` for all `*.lock` files, calls `RunLock.list_holders(fp)` for each, augments each holder with `pid_alive` from `RunLock._is_pid_alive`, prints either JSON or human table.
 
-- [ ] **Step 4.4.7: Implement `cli_lifecycle_clear_locks(force)`** — for each lock file, call `RunLock.clear(fp, force=force)`; collect counts; print summary; refuse and exit 2 when `force=False` AND any live holders found.
+- [x] **Step 4.4.7: Implement `cli_lifecycle_clear_locks(force)`** — for each lock file, call `RunLock.clear(fp, force=force)`; collect counts; print summary; refuse and exit 2 when `force=False` AND any live holders found.
 
-- [ ] **Step 4.4.8: Implement argparse subparser registration** in `senex/cli.py` (stub if M10 hasn't built `cli.py` yet — register the parser factory function so M10 wires it):
+- [x] **Step 4.4.8: Implement argparse subparser registration** in `senex/cli.py` (stub if M10 hasn't built `cli.py` yet — register the parser factory function so M10 wires it):
   ```python
   def register_lifecycle_subparser(subparsers):
       lp = subparsers.add_parser("lifecycle", help="Inspect/manage LM Studio model lifecycle state")
@@ -486,13 +486,13 @@ async def cli_lifecycle_clear_locks(*, force: bool) -> int: ...
       clear.add_argument("--force", action="store_true")
   ```
 
-- [ ] **Step 4.4.9: Verify** with literal command:
+- [x] **Step 4.4.9: Verify** with literal command:
   ```
   $ pytest tests/unit/test_lifecycle_cli.py -v
   ============== 5 passed in <X>s ==============
   ```
 
-- [ ] **Step 4.4.10: Commit** `feat(M4): senex lifecycle status / clear-locks CLI handlers`.
+- [x] **Step 4.4.10: Commit** `feat(M4): senex lifecycle status / clear-locks CLI handlers`.
 
 ### Task 4.5: Doctor lifecycle check integration
 
@@ -500,21 +500,21 @@ async def cli_lifecycle_clear_locks(*, force: bool) -> int: ...
 - Modify: `senex/lmstudio_lifecycle.py`
 - Modify: `tests/unit/test_lifecycle.py`
 
-- [ ] **Step 4.5.1: Failing test `test_doctor_fail_when_auto_load_and_no_backend`** — `LifecycleBackendFactory.select()` raises; `auto_load=True`; assert `doctor_check_lifecycle_backend(config)` returns `DoctorCheck(name="lmstudio_lifecycle_backend", status="fail", message=...)`.
+- [x] **Step 4.5.1: Failing test `test_doctor_fail_when_auto_load_and_no_backend`** — `LifecycleBackendFactory.select()` raises; `auto_load=True`; assert `doctor_check_lifecycle_backend(config)` returns `DoctorCheck(name="lmstudio_lifecycle_backend", status="fail", message=...)`.
 
-- [ ] **Step 4.5.2: Failing test `test_doctor_warn_when_no_backend_but_auto_load_false`** — same backend absence; `auto_load=False`; assert `status="warn"` (NOT fail; an attached run with manually-loaded model still works).
+- [x] **Step 4.5.2: Failing test `test_doctor_warn_when_no_backend_but_auto_load_false`** — same backend absence; `auto_load=False`; assert `status="warn"` (NOT fail; an attached run with manually-loaded model still works).
 
-- [ ] **Step 4.5.3: Failing test `test_doctor_pass_when_backend_available`** — SDK reachable; assert `status="pass"`, message names which backend was selected.
+- [x] **Step 4.5.3: Failing test `test_doctor_pass_when_backend_available`** — SDK reachable; assert `status="pass"`, message names which backend was selected.
 
-- [ ] **Step 4.5.4: Implement `doctor_check_lifecycle_backend(config) -> DoctorCheck`** with the three branches above. Import `DoctorCheck` from `senex/phases/preflight.py` (M10) — if the import is unavailable at M4 time, define `DoctorCheck` as a `pydantic.BaseModel` here with `model_config = ConfigDict(extra="forbid")` and let M10 re-export. Add a TODO comment pointing to M10 Task 10.X.
+- [x] **Step 4.5.4: Implement `doctor_check_lifecycle_backend(config) -> DoctorCheck`** with the three branches above. Import `DoctorCheck` from `senex/phases/preflight.py` (M10) — if the import is unavailable at M4 time, define `DoctorCheck` as a `pydantic.BaseModel` here with `model_config = ConfigDict(extra="forbid")` and let M10 re-export. Add a TODO comment pointing to M10 Task 10.X.
 
-- [ ] **Step 4.5.5: Verify** with literal command:
+- [x] **Step 4.5.5: Verify** with literal command:
   ```
   $ pytest tests/unit/test_lifecycle.py -k "doctor" -v
   ============== 3 passed in <X>s ==============
   ```
 
-- [ ] **Step 4.5.6: Commit** `feat(M4): senex doctor lifecycle backend check`.
+- [x] **Step 4.5.6: Commit** `feat(M4): senex doctor lifecycle backend check`.
 
 ### Task 4.6: Threat-surface validation (model_id regex on every subprocess + SDK path)
 
@@ -522,7 +522,7 @@ async def cli_lifecycle_clear_locks(*, force: bool) -> int: ...
 - Modify: `senex/lmstudio_lifecycle.py`
 - Modify: `tests/unit/test_lifecycle.py`
 
-- [ ] **Step 4.6.1: Failing test `test_validate_model_id_rejects_shell_metachars`**:
+- [x] **Step 4.6.1: Failing test `test_validate_model_id_rejects_shell_metachars`**:
   ```python
   @pytest.mark.parametrize("bad_id", [
       "$(rm -rf /)",
@@ -542,7 +542,7 @@ async def cli_lifecycle_clear_locks(*, force: bool) -> int: ...
           validate_model_id(bad_id)
   ```
 
-- [ ] **Step 4.6.2: Failing test `test_validate_model_id_accepts_legitimate`**:
+- [x] **Step 4.6.2: Failing test `test_validate_model_id_accepts_legitimate`**:
   ```python
   @pytest.mark.parametrize("good_id", [
       "google/gemma-4-26b-a4b",
@@ -555,7 +555,7 @@ async def cli_lifecycle_clear_locks(*, force: bool) -> int: ...
       assert validate_model_id(good_id) == good_id
   ```
 
-- [ ] **Step 4.6.3: Failing test `test_cli_backend_load_validates_before_subprocess`**:
+- [x] **Step 4.6.3: Failing test `test_cli_backend_load_validates_before_subprocess`**:
   ```python
   async def test_cli_backend_load_validates_before_subprocess(monkeypatch):
       mock_proc = AsyncMock()
@@ -566,11 +566,11 @@ async def cli_lifecycle_clear_locks(*, force: bool) -> int: ...
       mock_proc.assert_not_called()  # subprocess NEVER invoked
   ```
 
-- [ ] **Step 4.6.4: Failing test `test_cli_backend_unload_validates_before_subprocess`** — same shape for `unload`.
+- [x] **Step 4.6.4: Failing test `test_cli_backend_unload_validates_before_subprocess`** — same shape for `unload`.
 
-- [ ] **Step 4.6.5: Failing test `test_sdk_backend_load_validates_before_call`** — mock `lmstudio.llm`; assert `InvalidModelId` raised; assert `lmstudio.llm` never called.
+- [x] **Step 4.6.5: Failing test `test_sdk_backend_load_validates_before_call`** — mock `lmstudio.llm`; assert `InvalidModelId` raised; assert `lmstudio.llm` never called.
 
-- [ ] **Step 4.6.6: Failing test `test_subprocess_uses_list_form_and_shell_false`**:
+- [x] **Step 4.6.6: Failing test `test_subprocess_uses_list_form_and_shell_false`**:
   ```python
   async def test_subprocess_uses_list_form_and_shell_false(monkeypatch):
       calls = []
@@ -590,7 +590,7 @@ async def cli_lifecycle_clear_locks(*, force: bool) -> int: ...
       assert all(isinstance(a, str) and ";" not in a and "&" not in a for a in args)
   ```
 
-- [ ] **Step 4.6.7: Implement `validate_model_id(model_id: str) -> str`**:
+- [x] **Step 4.6.7: Implement `validate_model_id(model_id: str) -> str`**:
   ```python
   _MODEL_ID_RE = re.compile(r"^[A-Za-z0-9_./-]+$")
   _MODEL_ID_MAX_LEN = 256
@@ -605,15 +605,15 @@ async def cli_lifecycle_clear_locks(*, force: bool) -> int: ...
       return model_id
   ```
 
-- [ ] **Step 4.6.8: Wire `validate_model_id` into all backend methods** — `LMStudioSDKBackend.load/unload/is_loaded` AND `LMSCLIBackend.load/unload/is_loaded` AND `Lifecycle.acquire/release/acquire_for_resume`. Validation MUST happen before any external call. Defense in depth (4 layers: Lifecycle entrypoint, backend method, just-before-subprocess argv build, just-before-SDK call).
+- [x] **Step 4.6.8: Wire `validate_model_id` into all backend methods** — `LMStudioSDKBackend.load/unload/is_loaded` AND `LMSCLIBackend.load/unload/is_loaded` AND `Lifecycle.acquire/release/acquire_for_resume`. Validation MUST happen before any external call. Defense in depth (4 layers: Lifecycle entrypoint, backend method, just-before-subprocess argv build, just-before-SDK call).
 
-- [ ] **Step 4.6.9: Verify** with literal command:
+- [x] **Step 4.6.9: Verify** with literal command:
   ```
   $ pytest tests/unit/test_lifecycle.py -k "validate or subprocess" -v
   ============== 17 passed in <X>s ==============   (11 reject + 5 accept + 1 list-form)
   ```
 
-- [ ] **Step 4.6.10: Commit** `feat(M4): model_id regex validation across all subprocess + SDK paths (defense in depth)`.
+- [x] **Step 4.6.10: Commit** `feat(M4): model_id regex validation across all subprocess + SDK paths (defense in depth)`.
 
 ## Edge cases enumerated (all MUST have a test by milestone end)
 
