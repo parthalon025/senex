@@ -238,9 +238,49 @@ class LMSCLIBackend:
         return stdout, stderr, proc.returncode if proc.returncode is not None else 1
 
     @staticmethod
-    def _info_from_cli(record: dict[str, Any], fallback_id: str) -> ModelInfo:
-        model_id = str(record.get("model_id") or record.get("id") or fallback_id)
-        quant = str(record.get("quant") or record.get("quantization") or "unknown")
+    def _record_model_id(record: dict[str, Any]) -> str | None:
+        """Extract the canonical model id from a ``lms ps --json`` record.
+
+        LM Studio's CLI JSON shape uses ``modelKey`` / ``indexedModelIdentifier`` /
+        ``identifier`` / ``path``. We also fall back to legacy/SDK-style
+        ``model_id`` and ``id`` for forward compatibility. First non-empty wins.
+        """
+        for field in (
+            "modelKey",
+            "indexedModelIdentifier",
+            "identifier",
+            "path",
+            "model_id",
+            "id",
+        ):
+            value = record.get(field)
+            if isinstance(value, str) and value:
+                return value
+        return None
+
+    @staticmethod
+    def _record_quant(record: dict[str, Any]) -> str:
+        """Extract a quant string from a ``lms ps --json`` record.
+
+        LM Studio nests the quant info as ``quantization: {name, bits}``;
+        legacy/SDK-style records may use ``quant`` (string) directly.
+        """
+        legacy = record.get("quant")
+        if isinstance(legacy, str) and legacy:
+            return legacy
+        nested = record.get("quantization")
+        if isinstance(nested, dict):
+            name = nested.get("name")
+            if isinstance(name, str) and name:
+                return name
+        if isinstance(nested, str) and nested:
+            return nested
+        return "unknown"
+
+    @classmethod
+    def _info_from_cli(cls, record: dict[str, Any], fallback_id: str) -> ModelInfo:
+        model_id = cls._record_model_id(record) or fallback_id
+        quant = cls._record_quant(record)
         digest = str(record.get("checkpoint_digest") or record.get("digest") or "unknown")
         fp = _compute_fingerprint(model_id, quant, digest)
         return ModelInfo(
@@ -263,8 +303,7 @@ class LMSCLIBackend:
         for r in records:
             if not isinstance(r, dict):
                 continue
-            mid = r.get("model_id") or r.get("id")
-            if mid == model_id:
+            if self._record_model_id(r) == model_id:
                 return True
         return False
 
@@ -288,9 +327,7 @@ class LMSCLIBackend:
         except json.JSONDecodeError:
             records = []
         for r in records if isinstance(records, list) else []:
-            if isinstance(r, dict) and (
-                r.get("model_id") == model_id or r.get("id") == model_id
-            ):
+            if isinstance(r, dict) and self._record_model_id(r) == model_id:
                 return self._info_from_cli(r, fallback_id=model_id)
         return self._info_from_cli({"model_id": model_id}, fallback_id=model_id)
 
@@ -313,7 +350,7 @@ class LMSCLIBackend:
         for r in records if isinstance(records, list) else []:
             if not isinstance(r, dict):
                 continue
-            mid = str(r.get("model_id") or r.get("id") or "")
+            mid = self._record_model_id(r) or ""
             out.append(self._info_from_cli(r, fallback_id=mid))
         return out
 
