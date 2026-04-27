@@ -15,6 +15,9 @@ from senex.events import (
     FileComplete,
     FileError,
     FileStart,
+    ModelLoadCompleteAfterWait,
+    ModelLoadStillWaiting,
+    ModelLoadWaiting,
     OutputTick,
     RunComplete,
     RunStart,
@@ -94,6 +97,28 @@ class HeadlessSubscriber:
             )
         if isinstance(event, FileError):
             return f"ERROR {event.path}: {event.error_kind} — {event.error_message}"
+        if isinstance(event, ModelLoadWaiting):
+            # Multi-line block: the user needs to know auto_load failed AND
+            # what to do. Returning a single string keeps the subscriber's
+            # one-write-per-event contract intact.
+            return (
+                f"[lifecycle] auto_load failed: {event.reason}\n"
+                f"[lifecycle] Waiting up to {event.timeout_seconds}s for "
+                f"model `{event.model_id}` to be loaded manually.\n"
+                f"[lifecycle] Open LM Studio and load the model, or run: "
+                f"lms load {event.model_id}\n"
+                f"[lifecycle] Press Ctrl+C to abort."
+            )
+        if isinstance(event, ModelLoadStillWaiting):
+            return (
+                f"[lifecycle] Still waiting ({event.elapsed_seconds}s elapsed, "
+                f"{event.remaining_seconds}s remaining)..."
+            )
+        if isinstance(event, ModelLoadCompleteAfterWait):
+            return (
+                f"[lifecycle] Model loaded successfully after "
+                f"{event.wait_seconds}s wait."
+            )
         if isinstance(event, RunComplete):
             return self._format_run_complete(event)
         return None

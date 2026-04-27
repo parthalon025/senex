@@ -1,9 +1,13 @@
 """senex.tui.widgets.error_banner — sticky error banner (M9 Task 9.6d).
 
 Driven by ``FileError``, ``ToolError``, ``ToolBudgetExhausted``,
-``CompactionError``, ``ModelLoadFailed``, ``ModelUnloadFailed``. Sticky:
-remains visible until dismissed (key ``e`` on the host); resurfaces on
-the next error.
+``CompactionError``, ``ModelLoadFailed``, ``ModelUnloadFailed``.
+
+Also surfaces M11 manual-load progress (``ModelLoadWaiting``,
+``ModelLoadStillWaiting``, ``ModelLoadCompleteAfterWait``) so the user
+knows when auto_load failed but a manual GUI load can still rescue
+the run. Sticky: remains visible until dismissed (key ``e`` on the
+host); resurfaces on the next error or wait notification.
 """
 from __future__ import annotations
 
@@ -17,7 +21,10 @@ from senex.events import (
     BaseEvent,
     CompactionError,
     FileError,
+    ModelLoadCompleteAfterWait,
     ModelLoadFailed,
+    ModelLoadStillWaiting,
+    ModelLoadWaiting,
     ModelUnloadFailed,
     ToolBudgetExhausted,
     ToolError,
@@ -77,6 +84,26 @@ class ErrorBannerWidget(Widget):
             )
         if isinstance(event, ModelUnloadFailed):
             return f"ModelUnloadFailed {event.model_id}: {event.error_kind}"
+        if isinstance(event, ModelLoadWaiting):
+            # Surfaces the manual-load instructions prominently. The banner
+            # stays sticky so the user sees them even while heartbeats arrive.
+            return (
+                f"auto_load failed: {event.reason} — "
+                f"open LM Studio and load `{event.model_id}` "
+                f"(or `lms load {event.model_id}`); "
+                f"waiting up to {event.timeout_seconds}s"
+            )
+        if isinstance(event, ModelLoadStillWaiting):
+            return (
+                f"still waiting for manual load of `{event.model_id}` "
+                f"({event.elapsed_seconds}s / "
+                f"{event.elapsed_seconds + event.remaining_seconds}s)"
+            )
+        if isinstance(event, ModelLoadCompleteAfterWait):
+            return (
+                f"model `{event.model_id}` loaded after "
+                f"{event.wait_seconds}s wait — proceeding"
+            )
         return None
 
     def show_external_error(self, message: str) -> None:
