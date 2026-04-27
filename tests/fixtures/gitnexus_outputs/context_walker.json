@@ -1,0 +1,149 @@
+{
+  "status": "found",
+  "symbol": {
+    "uid": "Class:senex/walker.py:Walker",
+    "name": "Walker",
+    "kind": "Class",
+    "filePath": "senex/walker.py",
+    "startLine": 72,
+    "endLine": 216
+  },
+  "incoming": {
+    "calls": [
+      {
+        "uid": "Function:tests/unit/test_walker.py:test_walker_gitignore_skips_ignored_files",
+        "name": "test_walker_gitignore_skips_ignored_files",
+        "filePath": "tests/unit/test_walker.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_walker.py:test_walker_extension_filter_default_list",
+        "name": "test_walker_extension_filter_default_list",
+        "filePath": "tests/unit/test_walker.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_walker.py:test_walker_default_excludes",
+        "name": "test_walker_default_excludes",
+        "filePath": "tests/unit/test_walker.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_walker.py:test_walker_excludes_tests_dir_when_include_tests_false",
+        "name": "test_walker_excludes_tests_dir_when_include_tests_false",
+        "filePath": "tests/unit/test_walker.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_walker.py:test_walker_includes_tests_dir_when_include_tests_true",
+        "name": "test_walker_includes_tests_dir_when_include_tests_true",
+        "filePath": "tests/unit/test_walker.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_walker.py:test_walker_skips_files_exceeding_max_bytes",
+        "name": "test_walker_skips_files_exceeding_max_bytes",
+        "filePath": "tests/unit/test_walker.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_walker.py:test_walker_keeps_files_at_max_bytes_threshold",
+        "name": "test_walker_keeps_files_at_max_bytes_threshold",
+        "filePath": "tests/unit/test_walker.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_walker.py:test_walker_rejects_symlink_escape_to_outside_repo",
+        "name": "test_walker_rejects_symlink_escape_to_outside_repo",
+        "filePath": "tests/unit/test_walker.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_walker.py:test_walker_allows_symlink_to_file_inside_repo",
+        "name": "test_walker_allows_symlink_to_file_inside_repo",
+        "filePath": "tests/unit/test_walker.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_walker.py:test_walker_invokes_os_walk_with_followlinks_false",
+        "name": "test_walker_invokes_os_walk_with_followlinks_false",
+        "filePath": "tests/unit/test_walker.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_walker.py:test_walker_resolve_happens_before_is_relative_to",
+        "name": "test_walker_resolve_happens_before_is_relative_to",
+        "filePath": "tests/unit/test_walker.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_walker.py:test_walker_case_collision_assigns_hash_suffix_to_second",
+        "name": "test_walker_case_collision_assigns_hash_suffix_to_second",
+        "filePath": "tests/unit/test_walker.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_walker.py:test_walker_deterministic_order",
+        "name": "test_walker_deterministic_order",
+        "filePath": "tests/unit/test_walker.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_walker.py:test_walker_gitignore_globs_and_negation",
+        "name": "test_walker_gitignore_globs_and_negation",
+        "filePath": "tests/unit/test_walker.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_walker.py:test_walker_raises_when_repo_missing",
+        "name": "test_walker_raises_when_repo_missing",
+        "filePath": "tests/unit/test_walker.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_walker.py:test_walker_raises_when_no_dot_git",
+        "name": "test_walker_raises_when_no_dot_git",
+        "filePath": "tests/unit/test_walker.py"
+      }
+    ],
+    "imports": [
+      {
+        "uid": "File:tests/unit/test_walker.py",
+        "name": "test_walker.py",
+        "filePath": "tests/unit/test_walker.py"
+      }
+    ]
+  },
+  "outgoing": {
+    "has_method": [
+      {
+        "uid": "Function:senex/walker.py:Walker.__init__",
+        "name": "__init__",
+        "filePath": "senex/walker.py"
+      },
+      {
+        "uid": "Function:senex/walker.py:Walker.discover",
+        "name": "discover",
+        "filePath": "senex/walker.py"
+      }
+    ],
+    "has_property": [
+      {
+        "uid": "Property:senex/walker.py:Walker.excludes",
+        "name": "excludes",
+        "filePath": "senex/walker.py"
+      },
+      {
+        "uid": "Property:senex/walker.py:Walker.kept",
+        "name": "kept",
+        "filePath": "senex/walker.py"
+      },
+      {
+        "uid": "Property:senex/walker.py:Walker.skipped",
+        "name": "skipped",
+        "filePath": "senex/walker.py"
+      },
+      {
+        "uid": "Property:senex/walker.py:Walker.report_paths",
+        "name": "report_paths",
+        "filePath": "senex/walker.py"
+      },
+      {
+        "uid": "Property:senex/walker.py:Walker.seen_lower",
+        "name": "seen_lower",
+        "filePath": "senex/walker.py"
+      },
+      {
+        "uid": "Property:senex/walker.py:Walker.kept_dirs",
+        "name": "kept_dirs",
+        "filePath": "senex/walker.py"
+      }
+    ]
+  },
+  "processes": []
+}

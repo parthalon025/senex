@@ -1,0 +1,194 @@
+{
+  "status": "found",
+  "symbol": {
+    "uid": "Class:senex/events.py:EventBus",
+    "name": "EventBus",
+    "kind": "Class",
+    "filePath": "senex/events.py",
+    "startLine": 341,
+    "endLine": 430
+  },
+  "incoming": {
+    "calls": [
+      {
+        "uid": "Function:tests/unit/test_walker.py:test_walker_gitignore_skips_ignored_files",
+        "name": "test_walker_gitignore_skips_ignored_files",
+        "filePath": "tests/unit/test_walker.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_walker.py:test_walker_extension_filter_default_list",
+        "name": "test_walker_extension_filter_default_list",
+        "filePath": "tests/unit/test_walker.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_walker.py:test_walker_default_excludes",
+        "name": "test_walker_default_excludes",
+        "filePath": "tests/unit/test_walker.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_walker.py:test_walker_excludes_tests_dir_when_include_tests_false",
+        "name": "test_walker_excludes_tests_dir_when_include_tests_false",
+        "filePath": "tests/unit/test_walker.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_walker.py:test_walker_includes_tests_dir_when_include_tests_true",
+        "name": "test_walker_includes_tests_dir_when_include_tests_true",
+        "filePath": "tests/unit/test_walker.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_walker.py:test_walker_skips_files_exceeding_max_bytes",
+        "name": "test_walker_skips_files_exceeding_max_bytes",
+        "filePath": "tests/unit/test_walker.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_walker.py:test_walker_keeps_files_at_max_bytes_threshold",
+        "name": "test_walker_keeps_files_at_max_bytes_threshold",
+        "filePath": "tests/unit/test_walker.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_walker.py:test_walker_rejects_symlink_escape_to_outside_repo",
+        "name": "test_walker_rejects_symlink_escape_to_outside_repo",
+        "filePath": "tests/unit/test_walker.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_walker.py:test_walker_allows_symlink_to_file_inside_repo",
+        "name": "test_walker_allows_symlink_to_file_inside_repo",
+        "filePath": "tests/unit/test_walker.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_walker.py:test_walker_invokes_os_walk_with_followlinks_false",
+        "name": "test_walker_invokes_os_walk_with_followlinks_false",
+        "filePath": "tests/unit/test_walker.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_walker.py:test_walker_resolve_happens_before_is_relative_to",
+        "name": "test_walker_resolve_happens_before_is_relative_to",
+        "filePath": "tests/unit/test_walker.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_walker.py:test_walker_case_collision_assigns_hash_suffix_to_second",
+        "name": "test_walker_case_collision_assigns_hash_suffix_to_second",
+        "filePath": "tests/unit/test_walker.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_walker.py:test_walker_deterministic_order",
+        "name": "test_walker_deterministic_order",
+        "filePath": "tests/unit/test_walker.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_walker.py:test_walker_gitignore_globs_and_negation",
+        "name": "test_walker_gitignore_globs_and_negation",
+        "filePath": "tests/unit/test_walker.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_walker.py:test_walker_raises_when_repo_missing",
+        "name": "test_walker_raises_when_repo_missing",
+        "filePath": "tests/unit/test_walker.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_walker.py:test_walker_raises_when_no_dot_git",
+        "name": "test_walker_raises_when_no_dot_git",
+        "filePath": "tests/unit/test_walker.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_events.py:test_eventbus_subscribe_returns_bounded_queue",
+        "name": "test_eventbus_subscribe_returns_bounded_queue",
+        "filePath": "tests/unit/test_events.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_events.py:test_eventbus_publish_assigns_monotonic_seq",
+        "name": "test_eventbus_publish_assigns_monotonic_seq",
+        "filePath": "tests/unit/test_events.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_events.py:test_eventbus_diskwriter_blocks_publisher_when_full",
+        "name": "test_eventbus_diskwriter_blocks_publisher_when_full",
+        "filePath": "tests/unit/test_events.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_events.py:test_eventbus_tui_drops_thinkingtick_when_full",
+        "name": "test_eventbus_tui_drops_thinkingtick_when_full",
+        "filePath": "tests/unit/test_events.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_events.py:test_eventbus_tui_never_drops_runstart_filecomplete_etc",
+        "name": "test_eventbus_tui_never_drops_runstart_filecomplete_etc",
+        "filePath": "tests/unit/test_events.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_events.py:test_eventbus_metrics_drops_oldest_tick_when_full",
+        "name": "test_eventbus_metrics_drops_oldest_tick_when_full",
+        "filePath": "tests/unit/test_events.py"
+      },
+      {
+        "uid": "Function:tests/unit/test_events.py:test_eventbus_subscribe_local_only_fires_on_matching_types",
+        "name": "test_eventbus_subscribe_local_only_fires_on_matching_types",
+        "filePath": "tests/unit/test_events.py"
+      }
+    ],
+    "imports": [
+      {
+        "uid": "File:senex/walker.py",
+        "name": "walker.py",
+        "filePath": "senex/walker.py"
+      },
+      {
+        "uid": "File:tests/unit/test_walker.py",
+        "name": "test_walker.py",
+        "filePath": "tests/unit/test_walker.py"
+      },
+      {
+        "uid": "File:tests/unit/test_schemas.py",
+        "name": "test_schemas.py",
+        "filePath": "tests/unit/test_schemas.py"
+      },
+      {
+        "uid": "File:tests/unit/test_events.py",
+        "name": "test_events.py",
+        "filePath": "tests/unit/test_events.py"
+      }
+    ]
+  },
+  "outgoing": {
+    "has_property": [
+      {
+        "uid": "Property:senex/events.py:EventBus.q",
+        "name": "q",
+        "filePath": "senex/events.py"
+      }
+    ],
+    "has_method": [
+      {
+        "uid": "Function:senex/events.py:EventBus.__init__",
+        "name": "__init__",
+        "filePath": "senex/events.py"
+      },
+      {
+        "uid": "Function:senex/events.py:EventBus.subscribe",
+        "name": "subscribe",
+        "filePath": "senex/events.py"
+      },
+      {
+        "uid": "Function:senex/events.py:EventBus.subscribe_local",
+        "name": "subscribe_local",
+        "filePath": "senex/events.py"
+      },
+      {
+        "uid": "Function:senex/events.py:EventBus._cancel_local",
+        "name": "_cancel_local",
+        "filePath": "senex/events.py"
+      },
+      {
+        "uid": "Function:senex/events.py:EventBus.publish",
+        "name": "publish",
+        "filePath": "senex/events.py"
+      },
+      {
+        "uid": "Function:senex/events.py:EventBus._dispatch",
+        "name": "_dispatch",
+        "filePath": "senex/events.py"
+      }
+    ]
+  },
+  "processes": []
+}

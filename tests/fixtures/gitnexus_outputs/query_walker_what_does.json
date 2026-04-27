@@ -1,0 +1,164 @@
+{
+  "processes": [
+    {
+      "id": "proc_7_load_config",
+      "summary": "Load_config → _levenshtein",
+      "priority": 0.109,
+      "symbol_count": 2,
+      "process_type": "intra_community",
+      "step_count": 3
+    }
+  ],
+  "process_symbols": [
+    {
+      "id": "Function:senex/config.py:_levenshtein",
+      "name": "_levenshtein",
+      "filePath": "senex/config.py",
+      "startLine": 156,
+      "endLine": 171,
+      "module": "Unit",
+      "process_id": "proc_7_load_config",
+      "step_index": 3
+    },
+    {
+      "id": "Function:senex/config.py:_closest",
+      "name": "_closest",
+      "filePath": "senex/config.py",
+      "startLine": 174,
+      "endLine": 175,
+      "module": "Unit",
+      "process_id": "proc_7_load_config",
+      "step_index": 2
+    }
+  ],
+  "definitions": [
+    {
+      "id": "File:tests/unit/test_walker.py",
+      "name": "test_walker.py",
+      "filePath": "tests/unit/test_walker.py"
+    },
+    {
+      "id": "Function:tests/unit/test_walker.py:_windows_supports_symlinks",
+      "name": "_windows_supports_symlinks",
+      "filePath": "tests/unit/test_walker.py",
+      "startLine": 24,
+      "endLine": 37
+    },
+    {
+      "id": "Function:tests/unit/test_walker.py:test_walker_gitignore_skips_ignored_files",
+      "name": "test_walker_gitignore_skips_ignored_files",
+      "filePath": "tests/unit/test_walker.py",
+      "startLine": 40,
+      "endLine": 58,
+      "module": "Unit"
+    },
+    {
+      "id": "File:senex/walker.py",
+      "name": "walker.py",
+      "filePath": "senex/walker.py"
+    },
+    {
+      "id": "Function:senex/walker.py:Walker.__init__",
+      "name": "__init__",
+      "filePath": "senex/walker.py",
+      "startLine": 81,
+      "endLine": 85
+    },
+    {
+      "id": "Function:senex/walker.py:Walker.discover",
+      "name": "discover",
+      "filePath": "senex/walker.py",
+      "startLine": 87,
+      "endLine": 216,
+      "module": "Unit"
+    },
+    {
+      "id": "File:tests/unit/test_config.py",
+      "name": "test_config.py",
+      "filePath": "tests/unit/test_config.py"
+    },
+    {
+      "id": "Function:tests/unit/test_config.py:test_load_config_example_returns_senexconfig",
+      "name": "test_load_config_example_returns_senexconfig",
+      "filePath": "tests/unit/test_config.py",
+      "startLine": 17,
+      "endLine": 21,
+      "module": "Unit"
+    },
+    {
+      "id": "Function:tests/unit/test_config.py:test_load_config_unknown_key_raises_with_hint",
+      "name": "test_load_config_unknown_key_raises_with_hint",
+      "filePath": "tests/unit/test_config.py",
+      "startLine": 24,
+      "endLine": 31,
+      "module": "Unit"
+    },
+    {
+      "id": "File:senex/config.py",
+      "name": "config.py",
+      "filePath": "senex/config.py"
+    },
+    {
+      "id": "Section:docs/superpowers/plans/2026-04-26-senex-v1/m2-walker-graph.md:L1:Milestone 2: Walker + Graph Awareness",
+      "name": "Milestone 2: Walker + Graph Awareness",
+      "filePath": "docs/superpowers/plans/2026-04-26-senex-v1/m2-walker-graph.md",
+      "startLine": 1,
+      "endLine": 88
+    },
+    {
+      "id": "Section:docs/superpowers/plans/2026-04-26-senex-v1/m2-walker-graph.md:L7:Context",
+      "name": "Context",
+      "filePath": "docs/superpowers/plans/2026-04-26-senex-v1/m2-walker-graph.md",
+      "startLine": 7,
+      "endLine": 17
+    },
+    {
+      "id": "File:docs/superpowers/plans/2026-04-26-senex-v1/m2-walker-graph.md",
+      "name": "m2-walker-graph.md",
+      "filePath": "docs/superpowers/plans/2026-04-26-senex-v1/m2-walker-graph.md"
+    },
+    {
+      "id": "Section:docs/superpowers/plans/2026-04-26-senex-v1/00-overview.md:L1:senex v1 Implementation Plan — Overview",
+      "name": "senex v1 Implementation Plan — Overview",
+      "filePath": "docs/superpowers/plans/2026-04-26-senex-v1/00-overview.md",
+      "startLine": 1,
+      "endLine": 230
+    },
+    {
+      "id": "Section:docs/superpowers/plans/2026-04-26-senex-v1/00-overview.md:L15:Reading order",
+      "name": "Reading order",
+      "filePath": "docs/superpowers/plans/2026-04-26-senex-v1/00-overview.md",
+      "startLine": 15,
+      "endLine": 20
+    },
+    {
+      "id": "File:docs/superpowers/plans/2026-04-26-senex-v1/00-overview.md",
+      "name": "00-overview.md",
+      "filePath": "docs/superpowers/plans/2026-04-26-senex-v1/00-overview.md"
+    },
+    {
+      "id": "Section:docs/superpowers/plans/2026-04-26-senex-v1/m8-phases-auditor.md:L1:Milestone 8: Phases + Auditor",
+      "name": "Milestone 8: Phases + Auditor",
+      "filePath": "docs/superpowers/plans/2026-04-26-senex-v1/m8-phases-auditor.md",
+      "startLine": 1,
+      "endLine": 207
+    },
+    {
+      "id": "Section:docs/superpowers/plans/2026-04-26-senex-v1/m8-phases-auditor.md:L5:Context",
+      "name": "Context",
+      "filePath": "docs/superpowers/plans/2026-04-26-senex-v1/m8-phases-auditor.md",
+      "startLine": 5,
+      "endLine": 12
+    },
+    {
+      "id": "File:docs/superpowers/plans/2026-04-26-senex-v1/m8-phases-auditor.md",
+      "name": "m8-phases-auditor.md",
+      "filePath": "docs/superpowers/plans/2026-04-26-senex-v1/m8-phases-auditor.md"
+    },
+    {
+      "id": "File:senex.config.toml.example",
+      "name": "senex.config.toml.example",
+      "filePath": "senex.config.toml.example"
+    }
+  ]
+}

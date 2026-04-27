@@ -752,13 +752,13 @@ class PromptTemplateUnsubstituted(PromptError):
 
 #### Step 2.2.1: Capture real `npx gitnexus` outputs into fixtures
 
-- [ ] **Pre-check: ensure GitNexus indexed `senex`.**
+- [x] **Pre-check: ensure GitNexus indexed `senex`.**
   ```bash
   npx gitnexus context senex 2>&1 | head -10
   # Expected: a JSON-ish blob naming `stats.symbols >= 1`. If 'index missing', run `npx gitnexus analyze` first.
   ```
 
-- [ ] **Capture `context --json` for one file:**
+- [x] **Capture `context --json` for one file:**
   ```bash
   mkdir -p tests/fixtures/gitnexus_outputs
   npx gitnexus context --repo senex --file senex/walker.py --json > tests/fixtures/gitnexus_outputs/context_walker.json
@@ -766,12 +766,12 @@ class PromptTemplateUnsubstituted(PromptError):
   ```
   (If `senex/walker.py` does not yet exist in the index because Task 2.1 has not been re-indexed, capture against `senex/__init__.py` and `senex/config.py` instead.)
 
-- [ ] **Capture `query --json` (3 results):**
+- [x] **Capture `query --json` (3 results):**
   ```bash
   npx gitnexus query --repo senex --goal "What does the walker do?" --limit 3 --json > tests/fixtures/gitnexus_outputs/query_walker_what_does.json
   ```
 
-- [ ] **Capture an "unavailable" sentinel (negative case):** simulate a gitnexus-not-indexed repo by passing a name that does not exist:
+- [x] **Capture an "unavailable" sentinel (negative case):** simulate a gitnexus-not-indexed repo by passing a name that does not exist:
   ```bash
   npx gitnexus context --repo NONEXISTENT_REPO --file foo.py --json > tests/fixtures/gitnexus_outputs/context_missing_repo.json 2>&1 || true
   ```
@@ -779,7 +779,7 @@ class PromptTemplateUnsubstituted(PromptError):
 
 #### Step 2.2.2: Failing tests
 
-- [ ] **Imports + module skeleton in `tests/unit/test_graph_awareness.py`:**
+- [x] **Imports + module skeleton in `tests/unit/test_graph_awareness.py`:**
   ```python
   from __future__ import annotations
   import asyncio
@@ -799,7 +799,7 @@ class PromptTemplateUnsubstituted(PromptError):
   FIXTURES = Path(__file__).parent.parent / "fixtures" / "gitnexus_outputs"
   ```
 
-- [ ] **Test: process invocation uses list-form args, `shell=False`, pinned `npx` absolute path.**
+- [x] **Test: process invocation uses list-form args, `shell=False`, pinned `npx` absolute path.**
   ```python
   @pytest.mark.asyncio
   async def test_gitnexus_subprocess_uses_listform_args_no_shell() -> None:
@@ -825,7 +825,7 @@ class PromptTemplateUnsubstituted(PromptError):
           assert "--json" in args
   ```
 
-- [ ] **Test: relpath regex rejects bad input BEFORE the subprocess layer.**
+- [x] **Test: relpath regex rejects bad input BEFORE the subprocess layer.**
   ```python
   @pytest.mark.asyncio
   @pytest.mark.parametrize("bad_relpath", [
@@ -846,7 +846,7 @@ class PromptTemplateUnsubstituted(PromptError):
           assert ctx.raw_text_block == "[graph context unavailable]"
   ```
 
-- [ ] **Test: relpath regex accepts valid relpaths.**
+- [x] **Test: relpath regex accepts valid relpaths.**
   ```python
   @pytest.mark.asyncio
   @pytest.mark.parametrize("good_relpath", [
@@ -866,7 +866,7 @@ class PromptTemplateUnsubstituted(PromptError):
           assert exec_mock.called
   ```
 
-- [ ] **Test: subprocess failure -> returns sentinel; emits `GraphContextUnavailable`.**
+- [x] **Test: subprocess failure -> returns sentinel; emits `GraphContextUnavailable`.**
   ```python
   @pytest.mark.asyncio
   async def test_subprocess_failure_returns_sentinel_and_emits_event() -> None:
@@ -886,7 +886,7 @@ class PromptTemplateUnsubstituted(PromptError):
       assert "index missing" in (events[0].reason or "")
   ```
 
-- [ ] **Test: subprocess timeout -> returns sentinel; emits `GraphContextUnavailable`.**
+- [x] **Test: subprocess timeout -> returns sentinel; emits `GraphContextUnavailable`.**
   ```python
   @pytest.mark.asyncio
   async def test_subprocess_timeout_returns_sentinel() -> None:
@@ -902,7 +902,7 @@ class PromptTemplateUnsubstituted(PromptError):
       assert proc.kill.called   # timeout path kills the process
   ```
 
-- [ ] **Test: unparseable JSON -> returns sentinel.**
+- [x] **Test: unparseable JSON -> returns sentinel.**
   ```python
   @pytest.mark.asyncio
   async def test_subprocess_returns_garbage_returns_sentinel() -> None:
@@ -915,7 +915,7 @@ class PromptTemplateUnsubstituted(PromptError):
       assert ctx.available is False
   ```
 
-- [ ] **Test: successful fixture -> `GraphContext` parsed (cluster, public_symbols, etc).**
+- [x] **Test: successful fixture -> `GraphContext` parsed (cluster, public_symbols, etc).**
   ```python
   @pytest.mark.asyncio
   async def test_fetch_parses_fixture_into_graph_context() -> None:
@@ -932,7 +932,7 @@ class PromptTemplateUnsubstituted(PromptError):
       assert len(ctx.raw_text_block) > 0
   ```
 
-- [ ] **Test: `prefetch_all` populates cache; subsequent `fetch` reads from cache (no new subprocess invocation).**
+- [x] **Test: `prefetch_all` populates cache; subsequent `fetch` reads from cache (no new subprocess invocation).**
   ```python
   @pytest.mark.asyncio
   async def test_prefetch_all_populates_cache_and_avoids_resubprocess() -> None:
@@ -950,7 +950,7 @@ class PromptTemplateUnsubstituted(PromptError):
           assert exec_mock.call_count == calls_after_prefetch
   ```
 
-- [ ] **Test: preflight resolves `npx` absolute path and caches it.**
+- [x] **Test: preflight resolves `npx` absolute path and caches it.**
   ```python
   @pytest.mark.asyncio
   async def test_preflight_resolves_npx_absolute_path() -> None:
@@ -965,7 +965,7 @@ class PromptTemplateUnsubstituted(PromptError):
               await GitNexusCLIProvider.preflight(repo_name="senex", bus=EventBus())
   ```
 
-- [ ] **Run failing tests:**
+- [x] **Run failing tests:**
   ```bash
   pytest tests/unit/test_graph_awareness.py -v 2>&1 | head -40
   # Expected: ImportError on senex.graph_awareness
@@ -973,7 +973,7 @@ class PromptTemplateUnsubstituted(PromptError):
 
 #### Step 2.2.3: Implement `GraphContextProvider` + `GitNexusCLIProvider`
 
-- [ ] **Create `senex/graph_awareness.py`.** Module docstring:
+- [x] **Create `senex/graph_awareness.py`.** Module docstring:
   ```python
   """Graph awareness builder -- pre-flight per-file context via `npx gitnexus`.
 
@@ -990,7 +990,7 @@ class PromptTemplateUnsubstituted(PromptError):
   """
   ```
 
-- [ ] **Imports + types:**
+- [x] **Imports + types:**
   ```python
   from __future__ import annotations
   import asyncio
@@ -1003,7 +1003,7 @@ class PromptTemplateUnsubstituted(PromptError):
   from .events import EventBus, GraphContextUnavailable
   ```
 
-- [ ] **Exception hierarchy:**
+- [x] **Exception hierarchy:**
   ```python
   class GraphAwarenessError(Exception): ...
   class GitNexusUnavailable(GraphAwarenessError): ...
@@ -1011,7 +1011,7 @@ class PromptTemplateUnsubstituted(PromptError):
   class GitNexusSubprocessFailed(GraphAwarenessError): ...
   ```
 
-- [ ] **`GraphContext` dataclass:**
+- [x] **`GraphContext` dataclass:**
   ```python
   @dataclass(frozen=True)
   class GraphContext:
@@ -1024,7 +1024,7 @@ class PromptTemplateUnsubstituted(PromptError):
       raw_text_block: str
   ```
 
-- [ ] **Sentinel:**
+- [x] **Sentinel:**
   ```python
   _UNAVAILABLE_SENTINEL = "[graph context unavailable]"
 
@@ -1036,13 +1036,13 @@ class PromptTemplateUnsubstituted(PromptError):
       )
   ```
 
-- [ ] **Protocol:**
+- [x] **Protocol:**
   ```python
   class GraphContextProvider(Protocol):
       async def fetch(self, file_relpath: str) -> GraphContext: ...
   ```
 
-- [ ] **`GitNexusCLIProvider` core. Signature:**
+- [x] **`GitNexusCLIProvider` core. Signature:**
   ```python
   class GitNexusCLIProvider:
       RELPATH_RE: re.Pattern[str] = re.compile(r"^[A-Za-z0-9_./\\-]+$")
@@ -1069,7 +1069,7 @@ class PromptTemplateUnsubstituted(PromptError):
           return cls(repo_name=repo_name, npx_path=npx, bus=bus)
   ```
 
-- [ ] **`fetch()` core logic:**
+- [x] **`fetch()` core logic:**
   ```python
       async def fetch(self, file_relpath: str) -> GraphContext:
           if file_relpath in self._cache:
@@ -1097,7 +1097,7 @@ class PromptTemplateUnsubstituted(PromptError):
           return ctx
   ```
 
-- [ ] **`_run()` -- the subprocess wrapper. THIS is the security boundary:**
+- [x] **`_run()` -- the subprocess wrapper. THIS is the security boundary:**
   ```python
       async def _run(self, args: list[str]) -> dict:
           # NEVER shell=True; NEVER string-concatenated args.
@@ -1122,7 +1122,7 @@ class PromptTemplateUnsubstituted(PromptError):
               raise GitNexusSubprocessFailed(f"unparseable JSON: {exc}") from exc
   ```
 
-- [ ] **`_parse()` -- convert raw JSON to `GraphContext`:**
+- [x] **`_parse()` -- convert raw JSON to `GraphContext`:**
   ```python
       def _parse(self, ctx_json: dict, query_json: dict) -> GraphContext:
           cluster = ctx_json.get("cluster")
@@ -1157,7 +1157,7 @@ class PromptTemplateUnsubstituted(PromptError):
           return "\n".join(lines) if lines else "[graph context: file not in index]"
   ```
 
-- [ ] **`prefetch_all()`:**
+- [x] **`prefetch_all()`:**
   ```python
       async def prefetch_all(self, file_relpaths: list[str]) -> dict[str, GraphContext]:
           # Bounded gather; per-file failures already become unavailable sentinels in fetch().
@@ -1166,7 +1166,7 @@ class PromptTemplateUnsubstituted(PromptError):
           return {rp: ctx for rp, ctx in zip(file_relpaths, results)}
   ```
 
-- [ ] **Edge cases enumerated:**
+- [x] **Edge cases enumerated:**
   - Empty stdout (zero bytes) on success -> `JSONDecodeError` -> `GitNexusSubprocessFailed` -> sentinel.
   - Stdout valid JSON but empty object `{}` -> `_parse` returns a `GraphContext(available=True, raw_text_block="[graph context: file not in index]")` because `cluster` is None and there's nothing to render. The fact that it's `available=True` means the subprocess succeeded; the absence is structural, not a failure.
   - Unicode in stderr -> decode with `errors="replace"` so a malformed byte does not crash the error path.
@@ -1174,7 +1174,7 @@ class PromptTemplateUnsubstituted(PromptError):
 
 #### Step 2.2.4: Run tests; verify green
 
-- [ ] ```bash
+- [x] ```bash
   pytest tests/unit/test_graph_awareness.py -v
   ```
   Expected literal final line:
@@ -1183,7 +1183,7 @@ class PromptTemplateUnsubstituted(PromptError):
   ```
   (Test count = 11 if all parametrized cases counted as one PASS each is wrong; pytest counts each parametrize case. Acceptable summary: `>= 12 passed`, `0 failed`.)
 
-- [ ] **Lint + type:**
+- [x] **Lint + type:**
   ```bash
   ruff check senex/graph_awareness.py tests/unit/test_graph_awareness.py
   mypy senex/graph_awareness.py
@@ -1192,7 +1192,7 @@ class PromptTemplateUnsubstituted(PromptError):
 
 #### Step 2.2.5: Commit
 
-- [ ] ```bash
+- [x] ```bash
   git add senex/graph_awareness.py tests/unit/test_graph_awareness.py tests/fixtures/gitnexus_outputs
   git commit -m "feat(M2): GraphContextProvider with gitnexus CLI backend + batch fetch
 
@@ -1201,12 +1201,12 @@ class PromptTemplateUnsubstituted(PromptError):
 
 #### Definition of done (Task 2.2)
 
-- [ ] All tests in `tests/unit/test_graph_awareness.py` pass.
-- [ ] `ruff check` and `mypy` clean on `senex/graph_awareness.py`.
-- [ ] Captured `npx gitnexus` outputs exist in `tests/fixtures/gitnexus_outputs/` (at least 3 files).
-- [ ] No call site of `asyncio.create_subprocess_exec` in `graph_awareness.py` uses anything other than list-form args + explicit `PIPE` stdout/stderr.
-- [ ] `RELPATH_RE` is the only regex used to validate path-like subprocess inputs.
-- [ ] `prefetch_all` reuses the cache for subsequent `fetch()` calls (verified by `test_prefetch_all_populates_cache_and_avoids_resubprocess`).
+- [x] All tests in `tests/unit/test_graph_awareness.py` pass.
+- [x] `ruff check` and `mypy` clean on `senex/graph_awareness.py`.
+- [x] Captured `npx gitnexus` outputs exist in `tests/fixtures/gitnexus_outputs/` (at least 3 files).
+- [x] No call site of `asyncio.create_subprocess_exec` in `graph_awareness.py` uses anything other than list-form args + explicit `PIPE` stdout/stderr.
+- [x] `RELPATH_RE` is the only regex used to validate path-like subprocess inputs.
+- [x] `prefetch_all` reuses the cache for subsequent `fetch()` calls (verified by `test_prefetch_all_populates_cache_and_avoids_resubprocess`).
 
 #### Pitfalls (Task 2.2)
 
