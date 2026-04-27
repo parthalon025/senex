@@ -174,13 +174,13 @@ class Phase(Protocol):
 - Create: `senex/phases/__init__.py`
 - Create: `senex/phases/base.py`
 
-- [ ] **Step 8.1.1: Failing test** in `tests/unit/test_phase_protocol.py` — `assert isinstance(stub_phase, Phase)` using `runtime_checkable`. Exists test for each named exception class (importable, has documented attributes).
+- [x] **Step 8.1.1: Failing test** in `tests/unit/test_phase_protocol.py` — `assert isinstance(stub_phase, Phase)` using `runtime_checkable`. Exists test for each named exception class (importable, has documented attributes).
 
-- [ ] **Step 8.1.2: Implement `Phase` protocol** with `@runtime_checkable` decorator. Implement named exceptions: `PreflightFailure(exit_code, message, check_name)`, `PhaseAborted`, `ResumeIncompatible`, `RenderFatal`, `AggregateFailed`. Re-export from `senex/phases/__init__.py`.
+- [x] **Step 8.1.2: Implement `Phase` protocol** with `@runtime_checkable` decorator. Implement named exceptions: `PreflightFailure(exit_code, message, check_name)`, `PhaseAborted`, `ResumeIncompatible`, `RenderFatal`, `AggregateFailed`. Re-export from `senex/phases/__init__.py`.
 
-- [ ] **Step 8.1.3: Verify import boundary** — add an explicit assertion in `tests/unit/test_import_boundaries.py` that `senex.phases.*` and `senex.auditor` modules' `__file__` ASTs contain no `from senex.tui` or `import senex.tui`. (M1 has the helper; just add the new module names.)
+- [x] **Step 8.1.3: Verify import boundary** — add an explicit assertion in `tests/unit/test_import_boundaries.py` that `senex.phases.*` and `senex.auditor` modules' `__file__` ASTs contain no `from senex.tui` or `import senex.tui`. (M1 has the helper; just add the new module names.)
 
-- [ ] **Step 8.1.4: Commit** `feat(M8): Phase protocol + named exceptions`.
+- [x] **Step 8.1.4: Commit** `feat(M8): Phase protocol + named exceptions`.
 
 ### Task 8.2: PreflightPhase + 14 individual check functions
 
