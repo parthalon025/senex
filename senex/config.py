@@ -115,6 +115,16 @@ class LifecycleCfg(_StrictModel):
     auto_unload: bool = True
     allow_mixed: bool = False  # resume: tolerate fingerprint mismatch (spec §5.5.2.7)
     load_timeout_seconds: int = Field(default=120, gt=0)
+    # Manual-load wait loop (M11). When ``auto_load`` is enabled and the
+    # backend's ``load()`` call fails (e.g. LM Studio's resource guardrail
+    # rejects the autoload), or when ``auto_load=False`` and the model is
+    # not yet loaded, ``Lifecycle.acquire`` falls back to polling
+    # ``backend.is_loaded`` until the user manually loads the model
+    # (LM Studio GUI or ``lms load <model_id>``) or this timeout expires.
+    # Set to 0 to disable the wait loop and preserve v1.0.0-rc1 behavior
+    # (immediate failure on auto_load error).
+    load_wait_timeout_seconds: int = Field(default=600, ge=0)
+    load_wait_poll_interval_seconds: float = Field(default=5.0, gt=0)
     runlock_dir: str = ""
 
 

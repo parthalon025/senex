@@ -106,6 +106,15 @@
       "$ref": "#/$defs/ModelLoadFailed"
     },
     {
+      "$ref": "#/$defs/ModelLoadWaiting"
+    },
+    {
+      "$ref": "#/$defs/ModelLoadStillWaiting"
+    },
+    {
+      "$ref": "#/$defs/ModelLoadCompleteAfterWait"
+    },
+    {
       "$ref": "#/$defs/ModelUnloadStarted"
     },
     {
@@ -1252,6 +1261,78 @@
         "model_id": {},
         "error_kind": {},
         "error_message": {}
+      }
+    },
+    "ModelLoadWaiting": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "model_id",
+        "timeout_seconds",
+        "reason"
+      ],
+      "properties": {
+        "v": {"const": 1},
+        "type": {"const": "ModelLoadWaiting"},
+        "ts": {"type": "string", "format": "date-time"},
+        "seq": {"type": "integer", "minimum": 0},
+        "run_id": {"type": "string"},
+        "model_id": {"type": "string"},
+        "timeout_seconds": {"type": "integer", "minimum": 0},
+        "reason": {"type": "string"}
+      }
+    },
+    "ModelLoadStillWaiting": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "model_id",
+        "elapsed_seconds",
+        "remaining_seconds"
+      ],
+      "properties": {
+        "v": {"const": 1},
+        "type": {"const": "ModelLoadStillWaiting"},
+        "ts": {"type": "string", "format": "date-time"},
+        "seq": {"type": "integer", "minimum": 0},
+        "run_id": {"type": "string"},
+        "model_id": {"type": "string"},
+        "elapsed_seconds": {"type": "integer", "minimum": 0},
+        "remaining_seconds": {"type": "integer", "minimum": 0}
+      }
+    },
+    "ModelLoadCompleteAfterWait": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "model_id",
+        "fingerprint",
+        "wait_seconds"
+      ],
+      "properties": {
+        "v": {"const": 1},
+        "type": {"const": "ModelLoadCompleteAfterWait"},
+        "ts": {"type": "string", "format": "date-time"},
+        "seq": {"type": "integer", "minimum": 0},
+        "run_id": {"type": "string"},
+        "model_id": {"type": "string"},
+        "fingerprint": {"type": "string"},
+        "wait_seconds": {"type": "integer", "minimum": 0}
       }
     },
     "ModelUnloadStarted": {

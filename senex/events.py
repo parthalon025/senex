@@ -293,6 +293,50 @@ class ModelLoadFailed(BaseEvent):
     error_message: str
 
 
+class ModelLoadWaiting(BaseEvent):
+    """Auto-load failed (or auto_load=False); polling for manual load (M11).
+
+    Emitted at the START of the wait loop. ``timeout_seconds`` is the maximum
+    poll budget; ``reason`` describes why we're waiting (resource guardrail,
+    model not in catalog, auto_load disabled, etc). Non-coalesce-safe.
+    """
+
+    type: Literal["ModelLoadWaiting"] = Field(default="ModelLoadWaiting")
+    model_id: str
+    timeout_seconds: int
+    reason: str
+
+
+class ModelLoadStillWaiting(BaseEvent):
+    """Heartbeat emitted ~every 60s while ``ModelLoadWaiting`` polling continues.
+
+    Lets the TUI / headless subscriber render progress without flooding the
+    bus with sub-second polls. Non-coalesce-safe (every heartbeat must reach
+    the user; the cadence is already throttled by the lifecycle wait loop).
+    """
+
+    type: Literal["ModelLoadStillWaiting"] = Field(default="ModelLoadStillWaiting")
+    model_id: str
+    elapsed_seconds: int
+    remaining_seconds: int
+
+
+class ModelLoadCompleteAfterWait(BaseEvent):
+    """Manual load succeeded (the user loaded the model in LM Studio).
+
+    Distinct from ``ModelLoadComplete`` because ``loaded_by_us=False`` here:
+    the audit attached to a model the user loaded externally, so the release
+    path MUST NOT auto-unload it.
+    """
+
+    type: Literal["ModelLoadCompleteAfterWait"] = Field(
+        default="ModelLoadCompleteAfterWait"
+    )
+    model_id: str
+    fingerprint: str
+    wait_seconds: int
+
+
 class ModelUnloadStarted(BaseEvent):
     type: Literal["ModelUnloadStarted"] = Field(default="ModelUnloadStarted")
     model_id: str
@@ -350,6 +394,7 @@ ALL_EVENT_TYPES: tuple[type[BaseEvent], ...] = (
     AggregateStart, AggregateComplete,
     RunComplete,
     ModelLoadRequested, ModelLoadStarted, ModelLoadComplete, ModelLoadFailed,
+    ModelLoadWaiting, ModelLoadStillWaiting, ModelLoadCompleteAfterWait,
     ModelUnloadStarted, ModelUnloadComplete, ModelUnloadSkipped, ModelUnloadFailed,
     ModelFingerprintChanged,
     RunLockAcquired, RunLockReleased,

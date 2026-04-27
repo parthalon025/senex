@@ -76,10 +76,12 @@ preserve_recent_turns    = 2
 max_compactions_per_file = 3
 
 [lmstudio.lifecycle]
-auto_load            = true
-auto_unload          = true
-load_timeout_seconds = 120
-runlock_dir          = ""
+auto_load                       = true
+auto_unload                     = true
+load_timeout_seconds            = 120     # auto_load subprocess timeout
+load_wait_timeout_seconds       = 600     # max wait for manual load on auto_load failure (0 = disable)
+load_wait_poll_interval_seconds = 5.0     # is_loaded poll cadence during wait
+runlock_dir                     = ""
 
 # [ui] — Launcher / TUI surface settings (M11).
 # Drives the "Scan disk for repos" button on the Launcher screen.
