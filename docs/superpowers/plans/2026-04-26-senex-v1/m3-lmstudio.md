@@ -220,9 +220,9 @@ class LoadedModelInfo(BaseModel):
 
 **Spec/conv refs:** §5.4 (schema), §5.5 (chat API), §10 conventions (pydantic), §3 conventions (async).
 
-- [ ] **Step 3.1.1: Hand-craft the fixture.** `tests/fixtures/lms_responses/simple_audit.json` is a complete OpenAI-style response with one assistant message whose `content` is a valid `audit_response.schema.json` payload (one finding, one recommendation). Hand-built; not from a live LMS yet.
+- [x] **Step 3.1.1: Hand-craft the fixture.** `tests/fixtures/lms_responses/simple_audit.json` is a complete OpenAI-style response with one assistant message whose `content` is a valid `audit_response.schema.json` payload (one finding, one recommendation). Hand-built; not from a live LMS yet.
 
-- [ ] **Step 3.1.2: Failing test** `test_chat_returns_validated_response`:
+- [x] **Step 3.1.2: Failing test** `test_chat_returns_validated_response`:
   ```python
   @pytest.mark.asyncio
   async def test_chat_returns_validated_response(respx_mock, fixture_dir):
@@ -242,7 +242,7 @@ class LoadedModelInfo(BaseModel):
   ```
   Run; expect `ImportError` / `ModuleNotFoundError` since the module does not exist.
 
-- [ ] **Step 3.1.3: Implement `LMStudioClient`** (non-streaming first):
+- [x] **Step 3.1.3: Implement `LMStudioClient`** (non-streaming first):
 
   ```python
   class LMStudioClient:
@@ -293,22 +293,22 @@ class LoadedModelInfo(BaseModel):
 
   Validation strategy in 3.1: send `response_format={"type":"json_schema","json_schema":{"name":"audit_response","schema":schema,"strict":True}}`; parse `response.choices[0].message.content` as JSON; validate via `pydantic.TypeAdapter(AuditResponseModel).validate_python(parsed)`.
 
-- [ ] **Step 3.1.4: Run** `pytest tests/unit/test_lmstudio_client.py::test_chat_returns_validated_response -v` → green.
+- [x] **Step 3.1.4: Run** `pytest tests/unit/test_lmstudio_client.py::test_chat_returns_validated_response -v` → green.
 
-- [ ] **Step 3.1.5: Verification command:**
+- [x] **Step 3.1.5: Verification command:**
   ```bash
   pytest tests/unit/test_lmstudio_client.py -v -k chat_returns_validated
   ```
   Expected literal output: `1 passed` in the trailing summary line.
 
-- [ ] **Step 3.1.6: Pitfalls.**
+- [x] **Step 3.1.6: Pitfalls.**
   - Forgetting `extra="forbid"` on `ChatResponse` → silent acceptance of malformed responses.
   - Putting `httpx.AsyncClient(...)` inside `chat()` → resource leak; one per call.
   - Validating against the raw JSON Schema dict instead of a pre-built `TypeAdapter` → 10x slower; cache the adapter as a class-level constant.
 
-- [ ] **Step 3.1.7: Definition of done.** Test green; `mypy --strict senex/lmstudio_client.py` clean; `ruff check senex/lmstudio_client.py senex/lmstudio_errors.py` clean.
+- [x] **Step 3.1.7: Definition of done.** Test green; `mypy --strict senex/lmstudio_client.py` clean; `ruff check senex/lmstudio_client.py senex/lmstudio_errors.py` clean.
 
-- [ ] **Step 3.1.8: Commit** `feat(M3): LMStudioClient basic chat with schema validation`.
+- [x] **Step 3.1.8: Commit** `feat(M3): LMStudioClient basic chat with schema validation`.
 
 ---
 

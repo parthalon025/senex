@@ -1,0 +1,22 @@
+{
+  "id": "chatcmpl-fixture-simple-audit",
+  "object": "chat.completion",
+  "created": 1735689600,
+  "model": "google/gemma-4-26b-a4b",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+        "role": "assistant",
+        "content": "{\"schema_version\":1,\"overall_assessment\":\"The audited file is small and demonstrates a single canonical pattern; no high-priority concerns were identified during this synthetic fixture audit run.\",\"findings\":[{\"category\":\"code_smell\",\"priority\":\"low\",\"title\":\"Magic number could be a constant\",\"issue\":\"The literal 42 appears without an explanatory name.\",\"why\":\"Named constants improve readability and make the meaning explicit.\",\"fix\":\"Extract `42` into a module-level constant such as `ANSWER = 42`.\",\"confidence\":\"medium\",\"location\":{\"line_start\":1,\"line_end\":1,\"symbol\":\"ANSWER\"}}],\"recommendations\":[{\"title\":\"Add a docstring summarizing module purpose\",\"rationale\":\"Module docstrings aid downstream readers and tooling.\",\"language\":\"python\"}]}",
+        "reasoning_content": "Reading the file. Single integer literal. Suggesting one low-priority finding."
+      }
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 250,
+    "completion_tokens": 180,
+    "total_tokens": 430
+  }
+}
