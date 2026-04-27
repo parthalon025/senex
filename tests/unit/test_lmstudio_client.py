@@ -1357,3 +1357,219 @@ async def test_probe_capabilities_cached(
     assert caps1 == caps2
     assert first_count == 1
     assert route.call_count == 1  # second call did not re-issue
+
+
+# --- Task 3.10: ANSI strip + secret redaction integration -------------------
+
+
+def _payload_with_content(
+    content: str,
+    *,
+    reasoning_content: str | None = None,
+    tool_calls: list[dict[str, Any]] | None = None,
+    finish_reason: str = "stop",
+) -> dict[str, Any]:
+    msg: dict[str, Any] = {"role": "assistant", "content": content}
+    if reasoning_content is not None:
+        msg["reasoning_content"] = reasoning_content
+    if tool_calls is not None:
+        msg["tool_calls"] = tool_calls
+    return {
+        "id": "x",
+        "model": "m",
+        "choices": [{"index": 0, "finish_reason": finish_reason, "message": msg}],
+        "usage": {"prompt_tokens": 1, "completion_tokens": 1},
+    }
+
+
+@pytest.mark.asyncio
+async def test_ansi_stripped_from_content(
+    respx_mock: Any, client: LMStudioClient
+) -> None:
+    """\\x1b[31m...\\x1b[0m CSI sequences must be stripped from content."""
+    raw = "\x1b[31mERROR\x1b[0m: failed"
+    respx_mock.post("http://localhost:1234/v1/chat/completions").respond(
+        json=_payload_with_content(raw)
+    )
+    resp = await client.chat(
+        task="compaction",
+        messages=[ChatMessage(role="user", content="x")],
+        schema=None,
+        tools=None,
+    )
+    assert resp.content == "ERROR: failed"
+
+
+@pytest.mark.asyncio
+async def test_ansi_osc_sequence_stripped_from_content(
+    respx_mock: Any, client: LMStudioClient
+) -> None:
+    """OSC sequences (\\x1b]...\\x07) must also be stripped."""
+    raw = "\x1b]0;title\x07hello"
+    respx_mock.post("http://localhost:1234/v1/chat/completions").respond(
+        json=_payload_with_content(raw)
+    )
+    resp = await client.chat(
+        task="compaction",
+        messages=[ChatMessage(role="user", content="x")],
+        schema=None,
+        tools=None,
+    )
+    assert resp.content == "hello"
+
+
+@pytest.mark.asyncio
+async def test_ansi_NOT_stripped_from_reasoning_content(
+    respx_mock: Any, client: LMStudioClient
+) -> None:
+    """reasoning_content is informational; ANSI should survive (per §SEC-7)."""
+    raw_reasoning = "thinking \x1b[33mhighlighted\x1b[0m phase"
+    respx_mock.post("http://localhost:1234/v1/chat/completions").respond(
+        json=_payload_with_content("safe", reasoning_content=raw_reasoning)
+    )
+    resp = await client.chat(
+        task="compaction",
+        messages=[ChatMessage(role="user", content="x")],
+        schema=None,
+        tools=None,
+    )
+    assert resp.reasoning_content == raw_reasoning  # byte-for-byte preserved
+
+
+@pytest.mark.asyncio
+async def test_ansi_NOT_stripped_from_tool_call_arguments(
+    respx_mock: Any, client: LMStudioClient
+) -> None:
+    """Tool call arguments are structured input; do not corrupt them."""
+    raw_args = '{"path": "x\\u001b[31my\\u001b[0m"}'
+    respx_mock.post("http://localhost:1234/v1/chat/completions").respond(
+        json=_payload_with_content(
+            "",
+            tool_calls=[
+                {
+                    "id": "call_1",
+                    "type": "function",
+                    "function": {"name": "read_file", "arguments": raw_args},
+                }
+            ],
+            finish_reason="tool_calls",
+        )
+    )
+    resp = await client.chat(
+        task="file_audit",
+        messages=[ChatMessage(role="user", content="x")],
+        schema=None,
+        tools=[_READ_FILE_TOOL],
+    )
+    assert resp.tool_calls is not None
+    assert resp.tool_calls[0].function.arguments == raw_args
+
+
+@pytest.mark.asyncio
+async def test_aws_key_redacted_from_content(
+    respx_mock: Any, client: LMStudioClient
+) -> None:
+    """AWS access keys in content must be replaced before reaching the caller."""
+    raw = "key=AKIAIOSFODNN7EXAMPLE"
+    respx_mock.post("http://localhost:1234/v1/chat/completions").respond(
+        json=_payload_with_content(raw)
+    )
+    resp = await client.chat(
+        task="compaction",
+        messages=[ChatMessage(role="user", content="x")],
+        schema=None,
+        tools=None,
+    )
+    assert "AKIAIOSFODNN7EXAMPLE" not in resp.content
+    assert "[REDACTED:aws_access_key]" in resp.content
+
+
+@pytest.mark.asyncio
+async def test_secret_redacted_from_reasoning_content(
+    respx_mock: Any, client: LMStudioClient
+) -> None:
+    """Secrets in reasoning_content must also be redacted."""
+    raw_reasoning = "considering AKIAIOSFODNN7EXAMPLE for the example"
+    respx_mock.post("http://localhost:1234/v1/chat/completions").respond(
+        json=_payload_with_content("safe", reasoning_content=raw_reasoning)
+    )
+    resp = await client.chat(
+        task="compaction",
+        messages=[ChatMessage(role="user", content="x")],
+        schema=None,
+        tools=None,
+    )
+    assert "AKIAIOSFODNN7EXAMPLE" not in resp.reasoning_content
+    assert "[REDACTED:aws_access_key]" in resp.reasoning_content
+
+
+@pytest.mark.asyncio
+async def test_secret_redacted_from_tool_call_arguments(
+    respx_mock: Any, client: LMStudioClient
+) -> None:
+    """Tool-call arguments containing secrets must be redacted before return."""
+    raw_args = '{"token": "ghp_abcdefghijklmnopqrstuvwxyzABCDEF0123"}'
+    respx_mock.post("http://localhost:1234/v1/chat/completions").respond(
+        json=_payload_with_content(
+            "",
+            tool_calls=[
+                {
+                    "id": "call_1",
+                    "type": "function",
+                    "function": {"name": "post_secret", "arguments": raw_args},
+                }
+            ],
+            finish_reason="tool_calls",
+        )
+    )
+    resp = await client.chat(
+        task="file_audit",
+        messages=[ChatMessage(role="user", content="x")],
+        schema=None,
+        tools=[_READ_FILE_TOOL],
+    )
+    assert resp.tool_calls is not None
+    args = resp.tool_calls[0].function.arguments
+    assert "ghp_abcdefghijklmnopqrstuvwxyzABCDEF0123" not in args
+    assert "[REDACTED:github_pat]" in args
+
+
+@pytest.mark.asyncio
+async def test_secret_redacted_before_caller_observes_response(
+    respx_mock: Any, client: LMStudioClient
+) -> None:
+    """ChatResponse fields are post-redaction; the caller never sees raw secrets."""
+    raw = "snippet AKIAIOSFODNN7EXAMPLE in body"
+    respx_mock.post("http://localhost:1234/v1/chat/completions").respond(
+        json=_payload_with_content(raw)
+    )
+    resp = await client.chat(
+        task="compaction",
+        messages=[ChatMessage(role="user", content="x")],
+        schema=None,
+        tools=None,
+    )
+    # The post-redaction guarantee for everything in ChatResponse.
+    assert "AKIAIOSFODNN7EXAMPLE" not in resp.content
+    assert resp.content.endswith("in body")
+
+
+@pytest.mark.asyncio
+async def test_redaction_order_strip_then_redact(
+    respx_mock: Any, client: LMStudioClient
+) -> None:
+    """<think>...</think> is stripped first; ANSI then; redaction last."""
+    # Secret hidden inside <think> tags should be removed by the strip; the
+    # output content must therefore still be clean ('safe') with no leakage.
+    raw = "<think>secret=AKIAIOSFODNN7EXAMPLE\x1b[31m</think>safe"
+    respx_mock.post("http://localhost:1234/v1/chat/completions").respond(
+        json=_payload_with_content(raw)
+    )
+    resp = await client.chat(
+        task="compaction",
+        messages=[ChatMessage(role="user", content="x")],
+        schema=None,
+        tools=None,
+    )
+    assert resp.content == "safe"
+    assert "AKIAIOSFODNN7EXAMPLE" not in resp.content
