@@ -16,12 +16,17 @@ from .base import (
     RenderFatal,
     ResumeIncompatible,
 )
+from .discovery import DiscoveryPhase
+from .preflight import PreflightInputs, PreflightPhase
 
 __all__ = [
     "AggregateFailed",
+    "DiscoveryPhase",
     "Phase",
     "PhaseAborted",
     "PreflightFailure",
+    "PreflightInputs",
+    "PreflightPhase",
     "RenderFatal",
     "ResumeIncompatible",
 ]

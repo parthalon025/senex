@@ -294,11 +294,11 @@ class PreflightPhase:
 - Create: `senex/phases/discovery.py`
 - Create: `tests/unit/test_phases_discovery.py`
 
-- [ ] **Step 8.3.1: Failing test** — given fixture repo `tests/fixtures/repos/tiny_python/`, `DiscoveryPhase.do_work` returns deterministic ordered file list, emits exactly one `DiscoveryStart` and one `DiscoveryComplete`, and returns the same files across two runs (determinism check).
+- [x] **Step 8.3.1: Failing test** — given fixture repo `tests/fixtures/repos/tiny_python/`, `DiscoveryPhase.do_work` returns deterministic ordered file list, emits exactly one `DiscoveryStart` and one `DiscoveryComplete`, and returns the same files across two runs (determinism check).
 
-- [ ] **Step 8.3.2: Implement `DiscoveryPhase`** — wraps `Walker.discover()`. State out: `{"files": list[Path], "skipped": list[tuple[Path, str]]}`. `write_state` persists the file list to `audit_dir/discovery.json` for resume.
+- [x] **Step 8.3.2: Implement `DiscoveryPhase`** — wraps `Walker.discover()`. State out: `{"files": list[Path], "skipped": list[tuple[Path, str]]}`. `write_state` persists the file list to `audit_dir/discovery.json` for resume.
 
-- [ ] **Step 8.3.3: Commit** `feat(M8): discovery phase`.
+- [x] **Step 8.3.3: Commit** `feat(M8): discovery phase`.
 
 ### Task 8.4: FileAuditPhase (the big one)
 
