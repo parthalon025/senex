@@ -9,3 +9,8 @@ __pycache__/
 build/
 dist/
 .gitnexus
+
+# Local user config (paths + possibly secrets — never commit)
+senex.config.toml
+senex.config.local.toml
+

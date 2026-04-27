@@ -37,6 +37,34 @@ from senex.subscribers import (
 log = logging.getLogger(__name__)
 
 
+def _resolve_config_path(explicit: str | None) -> Path | None:
+    """Locate ``senex.config.toml`` per spec §6.
+
+    Lookup order (first hit wins):
+      1. ``--config <path>`` if provided
+      2. ``$SENEX_CONFIG`` env var
+      3. ``./senex.config.toml`` in cwd
+      4. ``~/.senex/senex.config.toml`` in user home
+
+    Returns the resolved Path if found, or None if no candidate exists.
+    Explicit paths from --config or $SENEX_CONFIG are returned even when
+    they don't exist (the caller surfaces a precise error for them).
+    """
+    import os
+    if explicit:
+        return Path(explicit)
+    env = os.environ.get("SENEX_CONFIG")
+    if env:
+        return Path(env)
+    cwd_candidate = Path.cwd() / "senex.config.toml"
+    if cwd_candidate.exists():
+        return cwd_candidate
+    home_candidate = Path.home() / ".senex" / "senex.config.toml"
+    if home_candidate.exists():
+        return home_candidate
+    return None
+
+
 # Internal exit-code constants (mirror senex.auditor).
 _EXIT_OK = 0
 _EXIT_PARTIAL = 1
@@ -57,7 +85,15 @@ def cmd_audit(args: argparse.Namespace) -> int:
     ``RuntimeConfig`` which short-circuits ``_run_single`` and runs the
     audit directly (TUI or headless per ``--no-tui``).
     """
-    cfg_path = Path(args.config) if args.config else Path("senex.config.toml")
+    cfg_path = _resolve_config_path(args.config)
+    if cfg_path is None:
+        searched = [str(Path.cwd() / "senex.config.toml"), str(Path.home() / ".senex" / "senex.config.toml")]
+        sys.stderr.write(
+            "senex audit: config not found. Searched:\n  - "
+            + "\n  - ".join(searched)
+            + "\nPass --config <path> or place senex.config.toml in one of these locations.\n"
+        )
+        return _EXIT_CONFIG
     try:
         config = load_config(cfg_path)
     except FileNotFoundError:
