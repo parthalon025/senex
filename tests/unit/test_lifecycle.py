@@ -332,7 +332,12 @@ async def test_load_timeout_raises_and_does_not_acquire_runlock(
         return _make_info()
 
     backend.load = slow_load
-    cfg = LifecycleCfg(auto_load=True, load_timeout_seconds=1)
+    # ``load_wait_timeout_seconds=0`` preserves the v1.0.0-rc1 immediate-failure
+    # behavior this test was written to validate; without it, M11's wait loop
+    # would extend the test by up to 10 minutes.
+    cfg = LifecycleCfg(
+        auto_load=True, load_timeout_seconds=1, load_wait_timeout_seconds=0
+    )
     lc = Lifecycle(backend, recording_bus, cfg, redactor)
     runlock_acquire = MagicMock()
     monkeypatch.setattr("senex.runlock.RunLock.acquire", runlock_acquire)
@@ -352,7 +357,9 @@ async def test_load_failure_raises_and_does_not_acquire_runlock(
     backend = MagicMock()
     backend.is_loaded = AsyncMock(return_value=False)
     backend.load = AsyncMock(side_effect=RuntimeError("GPU OOM"))
-    cfg = LifecycleCfg(auto_load=True)
+    # ``load_wait_timeout_seconds=0`` preserves the v1.0.0-rc1 immediate-failure
+    # behavior this test was written to validate (see M11 wait loop).
+    cfg = LifecycleCfg(auto_load=True, load_wait_timeout_seconds=0)
     lc = Lifecycle(backend, recording_bus, cfg, redactor)
     runlock_acquire = MagicMock()
     monkeypatch.setattr("senex.runlock.RunLock.acquire", runlock_acquire)

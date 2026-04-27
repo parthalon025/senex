@@ -19,6 +19,7 @@ import json
 import os
 import re
 import shutil
+import time
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
@@ -462,6 +463,11 @@ class Lifecycle:
         # Cache (model_id, run_id) -> fingerprint set at acquire so release can
         # find the right runlock without re-probing.
         self._fingerprints: dict[tuple[str, str], str] = {}
+        # M11 wait loop heartbeat cadence. Held as a private attribute (not a
+        # public LifecycleCfg knob) so production keeps the steady 60s
+        # heartbeat while tests can drive sub-second cadence to exercise the
+        # ``ModelLoadStillWaiting`` emission path without sleeping for minutes.
+        self._wait_heartbeat_interval_seconds: float = 60.0
 
     async def _publish(self, event_cls_name: str, **fields: Any) -> None:
         """Construct an event by name and publish to the bus."""
@@ -501,10 +507,29 @@ class Lifecycle:
         - not loaded + auto_load=True  -> load -> runlock.acquire(loaded_by_us=True)  -> (info, True)
         - not loaded + auto_load=False -> raise ModelNotLoaded BEFORE any runlock touch
         - already loaded               -> probe info -> runlock.acquire(loaded_by_us=False) -> (info, False)
+
+        M11 wait fallback (when ``load_wait_timeout_seconds > 0``):
+        if ``backend.load`` raises (e.g. LM Studio's resource guardrail
+        rejects the autoload), Lifecycle does NOT immediately re-raise.
+        It enters a polling loop calling ``backend.is_loaded`` every
+        ``load_wait_poll_interval_seconds`` until either:
+
+          * the model becomes loaded (the user clicked Load Model in the
+            LM Studio GUI, or another process loaded it) -> emits
+            ``ModelLoadCompleteAfterWait`` and returns ``(info, False)``.
+          * ``load_wait_timeout_seconds`` elapses -> the original load
+            error is re-raised so the caller sees the same failure mode.
+
+        Setting ``load_wait_timeout_seconds=0`` preserves the v1.0.0-rc1
+        behavior (immediate failure on autoload error, no waiting).
         """
         validate_model_id(model_id)
         if not await self._backend.is_loaded(model_id):
             if not auto_load:
+                # Original v1.0.0-rc1 invariant: this raise happens BEFORE any
+                # runlock touch. The wait loop is opt-in for the auto_load=True
+                # failure case only; ``auto_load=False`` keeps deterministic
+                # failure semantics so existing callers don't change.
                 raise ModelNotLoaded(
                     f"model {model_id!r} is not loaded and auto_load is disabled"
                 )
@@ -522,6 +547,10 @@ class Lifecycle:
                     self._backend.load(model_id, timeout=self._config.load_timeout_seconds),
                     timeout=self._config.load_timeout_seconds,
                 )
+            except asyncio.CancelledError:
+                # Cancellation MUST propagate cleanly (Ctrl+C). No runlock
+                # was acquired yet, so there's nothing to clean up here.
+                raise
             except asyncio.TimeoutError as exc:
                 await self._publish(
                     "ModelLoadFailed",
@@ -530,10 +559,23 @@ class Lifecycle:
                     error_kind="timeout",
                     error_message=self._redactor.redact(repr(exc)),
                 )
-                raise ModelLoadTimeout(
+                timeout_err = ModelLoadTimeout(
                     f"load({model_id!r}) timed out after "
                     f"{self._config.load_timeout_seconds}s"
-                ) from exc
+                )
+                if self._config.load_wait_timeout_seconds == 0:
+                    raise timeout_err from exc
+                return await self._wait_for_loaded(
+                    model_id,
+                    run_id,
+                    runlock,
+                    reason=(
+                        f"auto_load timed out after "
+                        f"{self._config.load_timeout_seconds}s; "
+                        "waiting for manual load via LM Studio GUI or `lms load`"
+                    ),
+                    initial_error=timeout_err,
+                )
             except Exception as exc:
                 await self._publish(
                     "ModelLoadFailed",
@@ -542,9 +584,22 @@ class Lifecycle:
                     error_kind="load_failed",
                     error_message=self._redactor.redact(repr(exc)),
                 )
-                raise ModelLoadFailed(
+                load_err = ModelLoadFailed(
                     f"load({model_id!r}) failed: {self._redactor.redact(str(exc))}"
-                ) from exc
+                )
+                load_err.__cause__ = exc
+                if self._config.load_wait_timeout_seconds == 0:
+                    raise load_err from exc
+                return await self._wait_for_loaded(
+                    model_id,
+                    run_id,
+                    runlock,
+                    reason=(
+                        f"auto_load failed ({self._redactor.redact(str(exc))}); "
+                        "waiting for manual load via LM Studio GUI or `lms load`"
+                    ),
+                    initial_error=load_err,
+                )
             duration = (datetime.now(tz=timezone.utc) - started_at).total_seconds()
             await self._publish(
                 "ModelLoadComplete",
@@ -576,6 +631,87 @@ class Lifecycle:
             holder_count=count,
         )
         return info, False
+
+    async def _wait_for_loaded(
+        self,
+        model_id: str,
+        run_id: str,
+        runlock: "type[RunLockType]",
+        *,
+        reason: str,
+        initial_error: Exception,
+    ) -> tuple[ModelInfo, bool]:
+        """Poll ``backend.is_loaded`` until the model appears or timeout expires.
+
+        Emits ``ModelLoadWaiting`` at the start, ``ModelLoadStillWaiting``
+        every ``self._wait_heartbeat_interval_seconds`` (default 60s) during
+        the wait, and ``ModelLoadCompleteAfterWait`` + ``RunLockAcquired``
+        on success. Returns ``(ModelInfo, False)`` because the user (or
+        another process) did the load — release() must therefore NOT
+        auto-unload.
+
+        On timeout the original ``initial_error`` is re-raised so the caller
+        sees the same failure mode it would have under the v1.0.0-rc1
+        immediate-failure path.
+
+        ``asyncio.CancelledError`` propagates cleanly. No runlock has been
+        acquired at this point, so cancel = nothing to undo.
+        """
+        timeout_seconds = self._config.load_wait_timeout_seconds
+        poll_interval = self._config.load_wait_poll_interval_seconds
+        deadline = time.monotonic() + timeout_seconds
+
+        await self._publish(
+            "ModelLoadWaiting",
+            run_id=run_id,
+            model_id=model_id,
+            timeout_seconds=timeout_seconds,
+            reason=reason,
+        )
+
+        start = time.monotonic()
+        last_heartbeat = start
+        while True:
+            now = time.monotonic()
+            if now >= deadline:
+                # Timed out — propagate the original error so the caller
+                # observes the same failure type as the v1.0.0-rc1 path.
+                raise initial_error
+            if await self._backend.is_loaded(model_id):
+                info = await self._probe_info(model_id)
+                wait_seconds = int(time.monotonic() - start)
+                count = runlock.acquire(
+                    info.fingerprint, run_id, _current_pid(), False
+                )
+                self._fingerprints[(model_id, run_id)] = info.fingerprint
+                await self._publish(
+                    "ModelLoadCompleteAfterWait",
+                    run_id=run_id,
+                    model_id=model_id,
+                    fingerprint=info.fingerprint,
+                    wait_seconds=wait_seconds,
+                )
+                await self._publish(
+                    "RunLockAcquired",
+                    run_id=run_id,
+                    model_fingerprint=info.fingerprint,
+                    holder_count=count,
+                )
+                return info, False
+
+            await asyncio.sleep(poll_interval)
+            now = time.monotonic()
+            if now - last_heartbeat >= self._wait_heartbeat_interval_seconds:
+                elapsed = int(now - start)
+                remaining = max(0, int(deadline - now))
+                await self._publish(
+                    "ModelLoadStillWaiting",
+                    run_id=run_id,
+                    model_id=model_id,
+                    elapsed_seconds=elapsed,
+                    remaining_seconds=remaining,
+                )
+                last_heartbeat = now
 
     async def release(
         self,
