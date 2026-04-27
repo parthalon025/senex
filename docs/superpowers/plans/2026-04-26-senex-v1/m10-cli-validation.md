@@ -243,7 +243,7 @@ None — M10 is the leaf milestone. After M10 ships, downstream is real users.
 - Create: `scripts/setup.ps1`
 - Create: `tests/unit/test_setup_ps1.py`
 
-- [ ] **Step 10.6.1: Write `scripts/run_senex.bat`** verbatim per spec §10:
+- [x] **Step 10.6.1: Write `scripts/run_senex.bat`** verbatim per spec §10:
   ```bat
   @echo off
   title senex -- Nightly Audit
@@ -252,7 +252,7 @@ None — M10 is the leaf milestone. After M10 ships, downstream is real users.
   python -m senex audit --nightly
   ```
 
-- [ ] **Step 10.6.2: Write `scripts/setup.ps1`** — full content:
+- [x] **Step 10.6.2: Write `scripts/setup.ps1`** — full content:
   ```powershell
   # senex/scripts/setup.ps1 — first-time setup on Windows
   $ErrorActionPreference = "Stop"
@@ -278,9 +278,9 @@ None — M10 is the leaf milestone. After M10 ships, downstream is real users.
   Write-Host "  3. Run: senex audit C:\path\to\your\repo"
   ```
 
-- [ ] **Step 10.6.3: Failing test** — `tests/unit/test_setup_ps1.py` runs `setup.ps1` in a temp dir (skipped on non-Windows via `pytest.skip`); asserts `.venv` is created and `python -m senex --version` returns 0 with version string.
+- [x] **Step 10.6.3: Failing test** — `tests/unit/test_setup_ps1.py` runs `setup.ps1` in a temp dir (skipped on non-Windows via `pytest.skip`); asserts `.venv` is created and `python -m senex --version` returns 0 with version string.
 
-- [ ] **Step 10.6.4: Test pass + commit** `feat(M10): Windows scheduled-task scripts`.
+- [x] **Step 10.6.4: Test pass + commit** `feat(M10): Windows scheduled-task scripts`.
 
 ### Task 10.7: README + .config.example refresh
 
