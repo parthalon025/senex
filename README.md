@@ -91,6 +91,12 @@ handful of yes/no prompts before handing off to the TUI or headless flow.
 Pass `--no-wizard` to disable it (a positional path is then required) — useful
 for scripts and CI.
 
+Inside the TUI Launcher screen, the **Scan disk for repos** button performs
+the same on-disk discovery without leaving the UI — found repos are appended
+to the configured-repos dropdown, deduplicated against any already-listed
+paths. Tune the scan via `[ui].scan_root` (defaults to your home directory)
+and `[ui].scan_max_depth` (default 6) in `senex.config.toml`.
+
 Scheduled-task entrypoint for Windows Task Scheduler: `scripts\run_senex.bat`. It
 activates the venv and runs `python -m senex audit --nightly`.
 
