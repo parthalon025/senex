@@ -513,7 +513,7 @@ class GitnexusImpactOutput(BaseModel):
 
 **Error mapping:** identical to 5.2 + 5.3.
 
-- [ ] **Step 5.4.1: Failing tests** in `tests/unit/test_tool_gitnexus_impact.py`:
+- [x] **Step 5.4.1: Failing tests** in `tests/unit/test_tool_gitnexus_impact.py`:
   - `test_happy_path_upstream_d1` — mocked subprocess returns `risk_level=HIGH`, dependents at d=1; result parses.
   - `test_invalid_direction_value` — `direction="sideways"` -> `schema_invalid` (Literal violation).
   - `test_invalid_depth_too_high` — `depth=4` -> `schema_invalid`.
@@ -521,11 +521,11 @@ class GitnexusImpactOutput(BaseModel):
   - `test_subprocess_failure` — rc=1, stderr `"target not in graph"` -> `dispatch_failed` with redacted stderr.
   - `test_empty_dependents_d2_d3` — output has only d=1 dependents, d=2/3 missing -> parses with empty lists.
 
-- [ ] **Step 5.4.2: Implement** `senex/tools/gitnexus_impact.py`.
+- [x] **Step 5.4.2: Implement** `senex/tools/gitnexus_impact.py`.
 
-- [ ] **Step 5.4.3: Run** `pytest tests/unit/test_tool_gitnexus_impact.py -v` -> green. Expected: `6 passed`.
+- [x] **Step 5.4.3: Run** `pytest tests/unit/test_tool_gitnexus_impact.py -v` -> green. Expected: `6 passed`.
 
-- [ ] **Step 5.4.4: Commit** `feat(M5): gitnexus_impact tool`.
+- [x] **Step 5.4.4: Commit** `feat(M5): gitnexus_impact tool`.
 
 ### Task 5.5: read_file tool
 
