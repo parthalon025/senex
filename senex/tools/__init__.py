@@ -28,6 +28,7 @@ from .exceptions import (
     ToolInputInvalid,
     ToolUnavailable,
 )
+from .pack_hash import compute_tool_pack_hash
 from .registry import ToolError, ToolRegistry, ToolResult
 from .safety import (
     redact_tool_result,
@@ -50,6 +51,7 @@ __all__ = [
     "ToolResult",
     "ToolUnavailable",
     "ToolingError",
+    "compute_tool_pack_hash",
     "redact_tool_result",
     "strip_ansi",
     "validate_regex_pattern",

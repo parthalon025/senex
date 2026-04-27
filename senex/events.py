@@ -54,6 +54,12 @@ class RunStart(BaseEvent):
     config_hash: str
     prompt_hash: str
     model_fingerprint: str
+    # M5 Task 5.10: tool_pack_hash is part of the resume hash discipline; it
+    # appears here so RunStart fully advertises the run's reproducibility
+    # bucket. See senex.tools.pack_hash.compute_tool_pack_hash. Default empty
+    # string for backward compatibility with pre-M5 RunStart writers; M8
+    # auditor populates it from compute_tool_pack_hash() at run start.
+    tool_pack_hash: str = ""
     started_at: datetime
 
 

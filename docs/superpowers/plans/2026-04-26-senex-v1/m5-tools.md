@@ -813,7 +813,7 @@ def compute_tool_pack_hash(enabled_tools: list[str], registry: ToolRegistry) -> 
     ).hexdigest()
 ```
 
-- [ ] **Step 5.10.1: Failing tests** in `tests/unit/test_tool_pack_hash.py`:
+- [x] **Step 5.10.1: Failing tests** in `tests/unit/test_tool_pack_hash.py`:
   - `test_hash_stable_across_calls` — same `(enabled_tools, registry)` -> identical hash twice.
   - `test_hash_independent_of_input_order` — `[A,B,C]` and `[C,B,A]` produce identical hash (sorted internally).
   - `test_hash_changes_when_tool_added` — `[A,B]` vs `[A,B,C]` -> different hashes.
@@ -821,13 +821,13 @@ def compute_tool_pack_hash(enabled_tools: list[str], registry: ToolRegistry) -> 
   - `test_hash_changes_when_input_schema_changes` — register tool `A` with schema v1, hash; re-register with schema v2 (different `max_length` cap); hash differs.
   - `test_hash_is_64_hex_chars` — sha256 -> 64 hex chars matching `^[0-9a-f]{64}$`.
 
-- [ ] **Step 5.10.2: Implement** `senex/tools/pack_hash.py`. Add `registry.input_schema(name) -> dict` method to `ToolRegistry` (returns the OpenAI-format JSON schema for the named tool's input).
+- [x] **Step 5.10.2: Implement** `senex/tools/pack_hash.py`. Add `registry.input_schema(name) -> dict` method to `ToolRegistry` (returns the OpenAI-format JSON schema for the named tool's input).
 
-- [ ] **Step 5.10.3: Wire `tool_pack_hash` into `Checkpoint`, `RunStart` event, and findings.json metadata.** Add field to each pydantic model. Update `Checkpoint.is_compatible(other_hashes)` (M1) to include `tool_pack_hash` in the comparison.
+- [x] **Step 5.10.3: Wire `tool_pack_hash` into `Checkpoint`, `RunStart` event, and findings.json metadata.** Add field to each pydantic model. Update `Checkpoint.is_compatible(other_hashes)` (M1) to include `tool_pack_hash` in the comparison.
 
-- [ ] **Step 5.10.4: Run** `pytest tests/unit/test_tool_pack_hash.py -v` -> green. Expected: `6 passed`. Also re-run `pytest tests/unit/test_checkpoint.py -v` to confirm no regression in M1 checkpoint tests after schema field addition.
+- [x] **Step 5.10.4: Run** `pytest tests/unit/test_tool_pack_hash.py -v` -> green. Expected: `6 passed`. Also re-run `pytest tests/unit/test_checkpoint.py -v` to confirm no regression in M1 checkpoint tests after schema field addition.
 
-- [ ] **Step 5.10.5: Commit** `feat(M5): tool_pack_hash for resume discipline`.
+- [x] **Step 5.10.5: Commit** `feat(M5): tool_pack_hash for resume discipline`.
 
 ## Acceptance criteria
 
