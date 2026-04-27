@@ -1,0 +1,16 @@
+schema_version = 1
+name = "correctness"
+version = "1.0.0"
+description = "Senior-developer correctness review lens"
+system_prompt = "system_senior_dev.md"
+response_schema = "audit_response.schema.json"
+crosscut_prompt = "crosscut.md"
+crosscut_schema = "crosscut_response.schema.json"
+renderer_template = "renderer.md"
+category_taxonomy = [
+  "Correctness",
+  "Robustness & Error Handling",
+  "Security",
+  "Maintainability",
+  "Testability",
+]
