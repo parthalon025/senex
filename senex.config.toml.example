@@ -81,6 +81,15 @@ auto_unload          = true
 load_timeout_seconds = 120
 runlock_dir          = ""
 
+# [ui] — Launcher / TUI surface settings (M11).
+# Drives the "Scan disk for repos" button on the Launcher screen.
+# Both keys are commented out below so the defaults apply: scan_root falls
+# back to the user's home directory at runtime, and scan_max_depth caps the
+# recursive walk so a large home tree stays responsive.
+[ui]
+# scan_root      = "E:/code"
+# scan_max_depth = 6
+
 # Repo entries (nightly iterates these; ad-hoc may target any repo by path)
 [[repos]]
 name                     = "pensiv"

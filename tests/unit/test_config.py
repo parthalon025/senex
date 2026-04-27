@@ -113,3 +113,56 @@ def test_walker_cfg_defaults_match_spec_section_6() -> None:
         "node_modules", ".venv", "venv", "dist", "build",
         "__pycache__", "*.min.*", ".git", "vendor",
     ]
+
+
+# ---------------------------------------------------------------------------
+# UICfg / [ui] section (M11 — scan-disk-for-repos launcher button)
+# ---------------------------------------------------------------------------
+
+
+def test_ui_cfg_default_values_are_none_and_six() -> None:
+    """``UICfg`` defaults must match the spec: scan_root=None, scan_max_depth=6."""
+    from senex.config import UICfg
+    cfg = UICfg()
+    assert cfg.scan_root is None
+    assert cfg.scan_max_depth == 6
+
+
+def test_senex_config_exposes_ui_section_with_defaults() -> None:
+    """``SenexConfig.ui`` must be present and default to a fresh ``UICfg``."""
+    from senex.config import SenexConfig, UICfg
+    cfg = SenexConfig()
+    assert isinstance(cfg.ui, UICfg)
+    assert cfg.ui.scan_root is None
+    assert cfg.ui.scan_max_depth == 6
+
+
+def test_ui_section_parses_from_toml(tmp_path: Path) -> None:
+    """A ``[ui]`` block in TOML must populate ``SenexConfig.ui`` correctly."""
+    f = tmp_path / "ui.toml"
+    f.write_text(
+        '[ui]\nscan_root = "E:/code"\nscan_max_depth = 4\n',
+        encoding="utf-8",
+    )
+    cfg = load_config(f)
+    assert cfg.ui.scan_root == "E:/code"
+    assert cfg.ui.scan_max_depth == 4
+
+
+def test_ui_section_rejects_unknown_key_with_extra_forbid(tmp_path: Path) -> None:
+    """Per conventions §10, ``UICfg`` must use ``extra='forbid'``."""
+    bad = tmp_path / "bad_ui.toml"
+    bad.write_text(
+        "[ui]\nbogus_key = 1\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(UnknownConfigKey):
+        load_config(bad)
+
+
+def test_ui_scan_max_depth_must_be_positive(tmp_path: Path) -> None:
+    """``scan_max_depth`` is a depth bound; must be > 0."""
+    bad = tmp_path / "bad_ui.toml"
+    bad.write_text("[ui]\nscan_max_depth = 0\n", encoding="utf-8")
+    with pytest.raises(ValueError):
+        load_config(bad)

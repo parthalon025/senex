@@ -147,6 +147,19 @@ class LmStudioCfg(_StrictModel):
     lifecycle: LifecycleCfg = Field(default_factory=LifecycleCfg)
 
 
+class UICfg(_StrictModel):
+    """[ui] — Launcher / TUI surface settings (M11).
+
+    Currently used by the "Scan disk for repos" Launcher button. ``scan_root``
+    is resolved to ``Path.home()`` at runtime when ``None`` so users can
+    override the scan root from the config without hard-coding a path that
+    might not exist on every machine.
+    """
+
+    scan_root: str | None = None
+    scan_max_depth: int = Field(default=6, gt=0)
+
+
 class RepoCfg(_StrictModel):
     name: str
     path: str  # MUST be absolute; preflight enforces (spec §6.1).
@@ -163,6 +176,7 @@ class SenexConfig(_StrictModel):
     walker: WalkerCfg = Field(default_factory=WalkerCfg)
     crosscut: CrosscutCfg = Field(default_factory=CrosscutCfg)
     lmstudio: LmStudioCfg = Field(default_factory=LmStudioCfg)
+    ui: UICfg = Field(default_factory=UICfg)
     repos: list[RepoCfg] = Field(default_factory=list)
 
 
