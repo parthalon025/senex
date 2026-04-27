@@ -110,3 +110,58 @@ async def test_widget_render_error_is_named() -> None:
     assert issubclass(WidgetRenderError, Exception)
     err = WidgetRenderError("render failed")
     assert "render failed" in str(err)
+
+
+@pytest.mark.asyncio
+async def test_senex_app_in_replay_mode_factory(tmp_path: Path) -> None:
+    audit = tmp_path / "audit"
+    audit.mkdir()
+    app = SenexApp.in_replay_mode(audit_dir=audit, truncated=True)
+    assert app.replay_mode is True
+    assert app._truncated_replay is True
+    assert app._config_path == audit / "config.snapshot.toml"
+
+
+@pytest.mark.asyncio
+async def test_senex_app_handle_widget_error_records_message(tmp_path: Path) -> None:
+    app = _app(tmp_path)
+    err = WidgetRenderError("widget x failed")
+    app._handle_widget_error(err)
+    assert app._last_error_message is not None
+    assert "widget x failed" in app._last_error_message
+
+
+@pytest.mark.asyncio
+async def test_senex_app_start_audit_with_runtime_config(tmp_path: Path) -> None:
+    """Cover the production start_audit path that consumes a RuntimeConfig."""
+    from senex.config import SenexConfig
+    from senex.lens import Lens
+    from senex.tui.runtime import RuntimeConfig
+
+    app = _app(tmp_path)
+    captured: list[dict[str, object]] = []
+
+    async def fake_audit(**kwargs: object) -> int:
+        captured.append(kwargs)
+        return 0
+
+    app._audit_runner = fake_audit  # type: ignore[assignment]
+
+    rt = RuntimeConfig(
+        repo=tmp_path,
+        config=SenexConfig(),
+        lens=Lens.load("correctness"),
+        config_path=tmp_path / "senex.config.toml",
+        output_root=tmp_path / "audits",
+    )
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        app.start_audit(rt)
+        await pilot.pause()
+        # Wait for task completion.
+        for _ in range(20):
+            await pilot.pause()
+            if app._audit_task is not None and app._audit_task.done():
+                break
+        assert len(captured) == 1
+        assert captured[0]["repo"] == tmp_path

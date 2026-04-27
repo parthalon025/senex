@@ -207,3 +207,72 @@ async def test_launcher_loaded_model_info_compatibility() -> None:
     """Sanity check: LoadedModelInfo carries an ``id`` field used by Launcher."""
     info = LoadedModelInfo(id="google/gemma-4-26b-a4b")
     assert info.id == "google/gemma-4-26b-a4b"
+
+
+@pytest.mark.asyncio
+async def test_launcher_resume_button_invokes_submit_with_resume_flag(
+    tmp_path: Path,
+) -> None:
+    audits_root = tmp_path / "audits" / tmp_path.name
+    prior = audits_root / "2026-04-26-abc"
+    prior.mkdir(parents=True)
+    (prior / "checkpoint.json").write_text("{}", encoding="utf-8")
+
+    app = _app(tmp_path)
+    captured: list[bool] = []
+
+    async def models(self: LauncherScreen) -> list[str]:
+        return ["m"]
+
+    async def fake_submit(self: LauncherScreen, resume: bool = False) -> None:
+        captured.append(resume)
+
+    with patch.object(LauncherScreen, "_fetch_loaded_models", models), patch.object(
+        LauncherScreen, "_submit", fake_submit
+    ):
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            await pilot.pause()
+            screen = pilot.app.screen
+            from textual.widgets._button import Button as _Btn
+
+            await screen.on_button_pressed(
+                _Btn.Pressed(screen.query_one("#resume_btn", Button))
+            )
+            assert captured == [True]
+
+
+@pytest.mark.asyncio
+async def test_launcher_collect_overrides_invalid_inputs_raise(tmp_path: Path) -> None:
+    app = _app(tmp_path)
+
+    async def models(self: LauncherScreen) -> list[str]:
+        return ["m"]
+
+    with patch.object(LauncherScreen, "_fetch_loaded_models", models):
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            await pilot.pause()
+            screen = pilot.app.screen
+            assert isinstance(screen, LauncherScreen)
+            screen.query_one("#temperature", Input).value = "not-a-number"
+            with pytest.raises(ValueError):
+                screen._collect_overrides()
+
+
+@pytest.mark.asyncio
+async def test_launcher_submit_blocks_when_lms_unavailable(tmp_path: Path) -> None:
+    app = _app(tmp_path)
+
+    async def boom(self: LauncherScreen) -> list[str]:
+        raise RuntimeError("LMS down")
+
+    with patch.object(LauncherScreen, "_fetch_loaded_models", boom):
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            await pilot.pause()
+            screen = pilot.app.screen
+            assert isinstance(screen, LauncherScreen)
+            await screen._submit()
+            err = screen.query_one("#error_label", Static)
+            assert "LM Studio unavailable" in str(err.render())
