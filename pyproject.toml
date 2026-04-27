@@ -19,6 +19,7 @@ dependencies = [
   "jsonschema>=4.20",
   "tomli-w",
   "ulid-py",
+  "pathspec>=0.12.0",
 ]
 
 [project.optional-dependencies]

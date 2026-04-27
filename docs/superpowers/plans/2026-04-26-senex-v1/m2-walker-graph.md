@@ -214,7 +214,7 @@ class PromptTemplateUnsubstituted(PromptError):
 
 #### Step 2.1.1: Failing tests (TDD)
 
-- [ ] **Write `tests/unit/test_walker.py` with the following test bodies.** All tests use `tmp_path` for synthetic repos (no shared state; pytest-isolated). Imports at top:
+- [x] **Write `tests/unit/test_walker.py` with the following test bodies.** All tests use `tmp_path` for synthetic repos (no shared state; pytest-isolated). Imports at top:
   ```python
   from __future__ import annotations
   import hashlib
@@ -228,7 +228,7 @@ class PromptTemplateUnsubstituted(PromptError):
   from senex.walker import Walker, WalkResult, RepoPathInvalid
   ```
 
-- [ ] **Test: gitignore is honored.**
+- [x] **Test: gitignore is honored.**
   ```python
   def test_walker_gitignore_skips_ignored_files(tmp_path: Path) -> None:
       (tmp_path / ".git").mkdir()
@@ -248,7 +248,7 @@ class PromptTemplateUnsubstituted(PromptError):
       assert "stray.log" in skipped_reasons
   ```
 
-- [ ] **Test: extension filter applied (default list).**
+- [x] **Test: extension filter applied (default list).**
   ```python
   def test_walker_extension_filter_default_list(tmp_path: Path) -> None:
       (tmp_path / ".git").mkdir()
@@ -263,7 +263,7 @@ class PromptTemplateUnsubstituted(PromptError):
       assert "data.bin" in skipped_names
   ```
 
-- [ ] **Test: default excludes (`node_modules`, `.venv`, `dist`, `build`, `__pycache__`).**
+- [x] **Test: default excludes (`node_modules`, `.venv`, `dist`, `build`, `__pycache__`).**
   ```python
   @pytest.mark.parametrize("excluded", ["node_modules", ".venv", "venv", "dist", "build", "__pycache__", ".git", "vendor"])
   def test_walker_default_excludes(tmp_path: Path, excluded: str) -> None:
@@ -277,7 +277,7 @@ class PromptTemplateUnsubstituted(PromptError):
       assert all(excluded not in p for p in relpaths)
   ```
 
-- [ ] **Test: `include_tests=False` excludes `tests/`.**
+- [x] **Test: `include_tests=False` excludes `tests/`.**
   ```python
   def test_walker_excludes_tests_dir_when_include_tests_false(tmp_path: Path) -> None:
       (tmp_path / ".git").mkdir()
@@ -298,7 +298,7 @@ class PromptTemplateUnsubstituted(PromptError):
       assert {p.name for p in result.kept} == {"src.py", "test_x.py"}
   ```
 
-- [ ] **Test: file > `max_size_bytes` skipped (BYTES, not lines).**
+- [x] **Test: file > `max_size_bytes` skipped (BYTES, not lines).**
   ```python
   def test_walker_skips_files_exceeding_max_bytes(tmp_path: Path) -> None:
       (tmp_path / ".git").mkdir()
@@ -320,7 +320,7 @@ class PromptTemplateUnsubstituted(PromptError):
       assert f in result.kept
   ```
 
-- [ ] **Test: symlink escape rejected (§SEC-3) — file symlink to outside repo.**
+- [x] **Test: symlink escape rejected (§SEC-3) — file symlink to outside repo.**
   ```python
   @pytest.mark.skipif(
       platform.system() == "Windows" and not _windows_supports_symlinks(),
@@ -357,7 +357,7 @@ class PromptTemplateUnsubstituted(PromptError):
           return False
   ```
 
-- [ ] **Test: symlink to file INSIDE repo is allowed.**
+- [x] **Test: symlink to file INSIDE repo is allowed.**
   ```python
   @pytest.mark.skipif(
       platform.system() == "Windows" and not _windows_supports_symlinks(),
@@ -377,7 +377,7 @@ class PromptTemplateUnsubstituted(PromptError):
       assert "real.py" in relpaths and "alias.py" in relpaths
   ```
 
-- [ ] **Test: `os.walk` is invoked with `followlinks=False`.**
+- [x] **Test: `os.walk` is invoked with `followlinks=False`.**
   ```python
   def test_walker_invokes_os_walk_with_followlinks_false(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
       (tmp_path / ".git").mkdir()
@@ -393,7 +393,7 @@ class PromptTemplateUnsubstituted(PromptError):
       assert seen["followlinks"] is False
   ```
 
-- [ ] **Test: resolve-then-`is_relative_to` order (regression).** Confirms the implementation does NOT do `is_relative_to` before `resolve`. Synthesized via a symlink that resolves outside but whose unresolved path *is* under the repo:
+- [x] **Test: resolve-then-`is_relative_to` order (regression).** Confirms the implementation does NOT do `is_relative_to` before `resolve`. Synthesized via a symlink that resolves outside but whose unresolved path *is* under the repo:
   ```python
   @pytest.mark.skipif(
       platform.system() == "Windows" and not _windows_supports_symlinks(),
@@ -414,7 +414,7 @@ class PromptTemplateUnsubstituted(PromptError):
       assert any(r == "symlink_escape" for _, r in result.skipped)
   ```
 
-- [ ] **Test: case-collision (§ARCH-14) on case-insensitive FS produces 2 entries with `~<short_hash>` suffix on the second's report path.**
+- [x] **Test: case-collision (§ARCH-14) on case-insensitive FS produces 2 entries with `~<short_hash>` suffix on the second's report path.**
   ```python
   @pytest.mark.skipif(
       sys.platform not in ("win32", "darwin"),
@@ -439,7 +439,7 @@ class PromptTemplateUnsubstituted(PromptError):
       assert len(suffixed) == 1
   ```
 
-- [ ] **Test: deterministic order (two calls produce identical lists).**
+- [x] **Test: deterministic order (two calls produce identical lists).**
   ```python
   def test_walker_deterministic_order(tmp_path: Path) -> None:
       (tmp_path / ".git").mkdir()
@@ -453,7 +453,7 @@ class PromptTemplateUnsubstituted(PromptError):
       assert [p.relative_to(tmp_path).as_posix() for p in r1.kept] == sorted(p.relative_to(tmp_path).as_posix() for p in r1.kept)
   ```
 
-- [ ] **Test: gitignore globs (`*.log`, `node_modules/`, `dist/`, glob negations).**
+- [x] **Test: gitignore globs (`*.log`, `node_modules/`, `dist/`, glob negations).**
   ```python
   def test_walker_gitignore_globs_and_negation(tmp_path: Path) -> None:
       (tmp_path / ".git").mkdir()
@@ -470,7 +470,7 @@ class PromptTemplateUnsubstituted(PromptError):
       assert "noise.log" not in kept and "out.py" not in kept
   ```
 
-- [ ] **Test: invalid repo path raises `RepoPathInvalid`.**
+- [x] **Test: invalid repo path raises `RepoPathInvalid`.**
   ```python
   def test_walker_raises_when_repo_missing(tmp_path: Path) -> None:
       with pytest.raises(RepoPathInvalid):
@@ -481,7 +481,7 @@ class PromptTemplateUnsubstituted(PromptError):
           Walker(EventBus()).discover(tmp_path, WalkerCfg())   # no .git/
   ```
 
-- [ ] **Run failing tests; verify they fail for the right reason.**
+- [x] **Run failing tests; verify they fail for the right reason.**
   ```bash
   pytest tests/unit/test_walker.py -v 2>&1 | head -60
   # Expected: ImportError or ModuleNotFoundError: No module named 'senex.walker'
@@ -489,9 +489,9 @@ class PromptTemplateUnsubstituted(PromptError):
 
 #### Step 2.1.2: Implement `Walker`
 
-- [ ] **Add dependency** in `pyproject.toml`: `pathspec>=0.12.0`. Run `pip install -e .` to refresh.
+- [x] **Add dependency** in `pyproject.toml`: `pathspec>=0.12.0`. Run `pip install -e .` to refresh.
 
-- [ ] **Create `senex/walker.py`.** Module docstring:
+- [x] **Create `senex/walker.py`.** Module docstring:
   ```python
   """Walker -- repo enumeration with safety guards.
 
@@ -501,7 +501,7 @@ class PromptTemplateUnsubstituted(PromptError):
   """
   ```
 
-- [ ] **Constants and helpers.**
+- [x] **Constants and helpers.**
   ```python
   from __future__ import annotations
   import hashlib
@@ -529,7 +529,7 @@ class PromptTemplateUnsubstituted(PromptError):
       relpath_to_report_path: dict[str, str]
   ```
 
-- [ ] **Implement `Walker.discover()`.** Signature and key logic:
+- [x] **Implement `Walker.discover()`.** Signature and key logic:
   ```python
   class Walker:
       def __init__(self, bus: EventBus) -> None:
@@ -641,7 +641,7 @@ class PromptTemplateUnsubstituted(PromptError):
           return False
   ```
 
-- [ ] **Edge cases enumerated and handled:**
+- [x] **Edge cases enumerated and handled:**
   - Repo path is a symlink itself -> preflight (M8) warns; M2 walker still resolves repo_root_resolved and treats it as the canonical root. Test deferred to M8 preflight; not in M2 scope.
   - Symlink target is broken (`OSError` on `resolve(strict=True)`) -> skip with reason `"symlink_broken"`; do not raise.
   - Path on a junction point (Windows) -> `resolve()` follows; same `is_relative_to` check applies.
@@ -650,7 +650,7 @@ class PromptTemplateUnsubstituted(PromptError):
 
 #### Step 2.1.3: Run tests; verify green
 
-- [ ] ```bash
+- [x] ```bash
   pytest tests/unit/test_walker.py -v
   ```
   Expected literal output (final summary line; per-test PASSED lines above):
@@ -659,7 +659,7 @@ class PromptTemplateUnsubstituted(PromptError):
   ```
   (Test count adjusts if Windows-symlink tests skip due to lack of admin; in that case expect `9 passed, 3 skipped` or similar -- the summary line should never include `failed`.)
 
-- [ ] **Run lint + type:**
+- [x] **Run lint + type:**
   ```bash
   ruff check senex/walker.py tests/unit/test_walker.py
   mypy senex/walker.py
@@ -670,7 +670,7 @@ class PromptTemplateUnsubstituted(PromptError):
   Success: no issues found in 1 source file
   ```
 
-- [ ] **Coverage check:**
+- [x] **Coverage check:**
   ```bash
   pytest tests/unit/test_walker.py --cov=senex.walker --cov-report=term-missing
   ```
@@ -680,7 +680,7 @@ class PromptTemplateUnsubstituted(PromptError):
 
 > **Ownership (R10):** M2 owns this fixture; downstream milestones consume it. Specifically: M3 + M5 use it for tool-loop tests; M8 uses it for end-to-end recorded-LMS runs; M10 Task 10.9 live-validation gates 13a/13b/13c/13d/13e cite this exact path.
 
-- [ ] **Create `tests/fixtures/repos/tiny_python/`** with these 5 files (consumed by M3, M5, M8, M10 — see R10 ownership note above):
+- [x] **Create `tests/fixtures/repos/tiny_python/`** with these 5 files (consumed by M3, M5, M8, M10 — see R10 ownership note above):
   - `tests/fixtures/repos/tiny_python/.git/` -- empty placeholder (`mkdir`, then `touch HEAD`); the walker only checks for `.git/` existence.
   - `tests/fixtures/repos/tiny_python/main.py` -- entry point with one obvious bug:
     ```python
@@ -714,11 +714,11 @@ class PromptTemplateUnsubstituted(PromptError):
     ```
   - `tests/fixtures/repos/tiny_python/.gitignore` -- `__pycache__/\n*.pyc\n`
 
-- [ ] **Add `tests/fixtures/repos/tiny_python/README.md`** explaining each file's intentional defect (or lack thereof). This is the contract M3+ tests depend on.
+- [x] **Add `tests/fixtures/repos/tiny_python/README.md`** explaining each file's intentional defect (or lack thereof). This is the contract M3+ tests depend on.
 
 #### Step 2.1.5: Commit
 
-- [ ] ```bash
+- [x] ```bash
   git add senex/walker.py tests/unit/test_walker.py tests/fixtures/repos/tiny_python pyproject.toml
   git commit -m "feat(M2): walker with symlink guard, gitignore, case-collision detection
 
@@ -727,11 +727,11 @@ class PromptTemplateUnsubstituted(PromptError):
 
 #### Definition of done (Task 2.1)
 
-- [ ] All tests in `tests/unit/test_walker.py` pass; coverage on `senex/walker.py` >= 85%.
-- [ ] `ruff check` and `mypy` clean on the new files.
-- [ ] `tests/fixtures/repos/tiny_python/` exists with 5 .py files + .git + .gitignore + README.md.
-- [ ] `_is_relative_to` is called only AFTER `Path.resolve(strict=True)`; verified by `test_walker_resolve_happens_before_is_relative_to`.
-- [ ] `os.walk(..., followlinks=False)` verified by `test_walker_invokes_os_walk_with_followlinks_false`.
+- [x] All tests in `tests/unit/test_walker.py` pass; coverage on `senex/walker.py` >= 85%.
+- [x] `ruff check` and `mypy` clean on the new files.
+- [x] `tests/fixtures/repos/tiny_python/` exists with 5 .py files + .git + .gitignore + README.md.
+- [x] `_is_relative_to` is called only AFTER `Path.resolve(strict=True)`; verified by `test_walker_resolve_happens_before_is_relative_to`.
+- [x] `os.walk(..., followlinks=False)` verified by `test_walker_invokes_os_walk_with_followlinks_false`.
 
 #### Pitfalls (Task 2.1)
 
