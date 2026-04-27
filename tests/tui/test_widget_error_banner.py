@@ -9,7 +9,10 @@ from textual.app import App, ComposeResult
 from senex.events import (
     CompactionError,
     FileError,
+    ModelLoadCompleteAfterWait,
     ModelLoadFailed,
+    ModelLoadStillWaiting,
+    ModelLoadWaiting,
     ModelUnloadFailed,
     ToolBudgetExhausted,
     ToolError,
@@ -200,3 +203,64 @@ async def test_error_banner_show_external_error() -> None:
         await pilot.pause()
         assert host.widget.display is True
         assert "boom" in host.widget.last_message
+
+
+@pytest.mark.asyncio
+async def test_error_banner_surfaces_model_load_waiting() -> None:
+    """M11: ``ModelLoadWaiting`` must show the manual-load instructions."""
+    host = _Host()
+    async with host.run_test() as pilot:
+        await pilot.pause()
+        host.widget.handle_audit_event(
+            ModelLoadWaiting(
+                ts=_now(),
+                run_id="r1",
+                model_id="google/gemma-4-26b-a4b",
+                timeout_seconds=600,
+                reason="resource guardrail rejected lms load",
+            )
+        )
+        await pilot.pause()
+        assert host.widget.display is True
+        msg = host.widget.last_message
+        assert "auto_load failed" in msg
+        assert "google/gemma-4-26b-a4b" in msg
+        assert "lms load" in msg
+
+
+@pytest.mark.asyncio
+async def test_error_banner_surfaces_model_load_still_waiting() -> None:
+    host = _Host()
+    async with host.run_test() as pilot:
+        await pilot.pause()
+        host.widget.handle_audit_event(
+            ModelLoadStillWaiting(
+                ts=_now(),
+                run_id="r1",
+                model_id="m",
+                elapsed_seconds=120,
+                remaining_seconds=480,
+            )
+        )
+        await pilot.pause()
+        assert "still waiting" in host.widget.last_message
+        assert "120s" in host.widget.last_message
+
+
+@pytest.mark.asyncio
+async def test_error_banner_surfaces_model_load_complete_after_wait() -> None:
+    host = _Host()
+    async with host.run_test() as pilot:
+        await pilot.pause()
+        host.widget.handle_audit_event(
+            ModelLoadCompleteAfterWait(
+                ts=_now(),
+                run_id="r1",
+                model_id="m",
+                fingerprint="sha256:abc",
+                wait_seconds=42,
+            )
+        )
+        await pilot.pause()
+        assert "loaded after" in host.widget.last_message
+        assert "42s" in host.widget.last_message

@@ -10,6 +10,9 @@ from senex.events import (
     FileComplete,
     FileError,
     FileStart,
+    ModelLoadCompleteAfterWait,
+    ModelLoadStillWaiting,
+    ModelLoadWaiting,
     OutputTick,
     RunComplete,
     RunStart,
@@ -174,3 +177,64 @@ async def test_headless_run_complete_nonzero_exit_status_label() -> None:
         )
     )
     assert "Exit status: partial" in buf.getvalue()
+
+
+@pytest.mark.asyncio
+async def test_headless_renders_model_load_waiting_block() -> None:
+    """M11: ``ModelLoadWaiting`` prints the manual-load instructions."""
+    buf = StringIO()
+    sub = HeadlessSubscriber(stream=buf)
+    await sub.consume(
+        ModelLoadWaiting(
+            ts=_now(),
+            run_id="r1",
+            model_id="google/gemma-4-26b-a4b",
+            timeout_seconds=600,
+            reason="lms load rejected: insufficient RAM (resource guardrail)",
+        )
+    )
+    out = buf.getvalue()
+    assert "auto_load failed" in out
+    assert "Waiting up to 600s" in out
+    assert "google/gemma-4-26b-a4b" in out
+    assert "lms load google/gemma-4-26b-a4b" in out
+    assert "Press Ctrl+C to abort" in out
+
+
+@pytest.mark.asyncio
+async def test_headless_renders_model_load_still_waiting_heartbeat() -> None:
+    """M11: heartbeat lines surface elapsed/remaining for live progress."""
+    buf = StringIO()
+    sub = HeadlessSubscriber(stream=buf)
+    await sub.consume(
+        ModelLoadStillWaiting(
+            ts=_now(),
+            run_id="r1",
+            model_id="m",
+            elapsed_seconds=120,
+            remaining_seconds=480,
+        )
+    )
+    out = buf.getvalue()
+    assert "Still waiting" in out
+    assert "120s elapsed" in out
+    assert "480s remaining" in out
+
+
+@pytest.mark.asyncio
+async def test_headless_renders_model_load_complete_after_wait() -> None:
+    """M11: success after manual load prints a confirmation."""
+    buf = StringIO()
+    sub = HeadlessSubscriber(stream=buf)
+    await sub.consume(
+        ModelLoadCompleteAfterWait(
+            ts=_now(),
+            run_id="r1",
+            model_id="m",
+            fingerprint="sha256:abc",
+            wait_seconds=42,
+        )
+    )
+    out = buf.getvalue()
+    assert "Model loaded successfully" in out
+    assert "42s wait" in out
