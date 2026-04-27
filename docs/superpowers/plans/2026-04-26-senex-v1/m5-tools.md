@@ -330,11 +330,11 @@ Used in `Checkpoint`, `RunStart` event, `findings.json` metadata. Resuming with 
 - Create: `tests/unit/test_tools_safety.py`
 - Create: `tests/unit/test_tool_registry.py`
 
-- [ ] **Step 5.1.1: Failing tests — exceptions.** In `tests/unit/test_tools_safety.py`:
+- [x] **Step 5.1.1: Failing tests — exceptions.** In `tests/unit/test_tools_safety.py`:
   - `test_exception_hierarchy_is_tooling_error` — every named exception inherits from `ToolingError` and `SenexError`.
   - `test_exceptions_carry_structured_message` — each accepts a `message: str` and exposes `.kind` matching the table in Key contracts.
 
-- [ ] **Step 5.1.2: Failing tests — `validate_repo_path`.** In `tests/unit/test_tools_safety.py`:
+- [x] **Step 5.1.2: Failing tests — `validate_repo_path`.** In `tests/unit/test_tools_safety.py`:
   - `test_rejects_dotdot_traversal` — `validate_repo_path("../etc/passwd", repo_root)` raises `PathOutsideRepo`.
   - `test_rejects_unc_path` — `validate_repo_path("\\\\server\\share\\file", repo_root)` raises `PathOutsideRepo` (Windows-only test gated by `sys.platform == "win32"`).
   - `test_rejects_drive_absolute_outside_repo` — `validate_repo_path("C:/Windows/System32/cmd.exe", repo_root=Path("E:/repo"))` raises `PathOutsideRepo`.
@@ -343,21 +343,21 @@ Used in `Checkpoint`, `RunStart` event, `findings.json` metadata. Resuming with 
   - `test_accepts_valid_relative_path` — `validate_repo_path("src/main.py", repo_root)` returns the resolved `Path`.
   - `test_accepts_absolute_path_inside_repo` — absolute path under `repo_root` returns resolved `Path`.
 
-- [ ] **Step 5.1.3: Failing tests — `validate_regex_pattern`.** In `tests/unit/test_tools_safety.py`:
+- [x] **Step 5.1.3: Failing tests — `validate_regex_pattern`.** In `tests/unit/test_tools_safety.py`:
   - `test_rejects_oversize_pattern` — pattern of 257 chars raises `RegexTooComplex`.
   - `test_rejects_catastrophic_backtracking` — `validate_regex_pattern("(a+)+$")` raises `RegexTooComplex` or `RegexTimeoutExceeded` (test-match against `"a"*30 + "X"` exceeds 0.1s).
   - `test_accepts_safe_pattern` — `validate_regex_pattern("safe.*pattern")` returns None.
   - `test_rejects_uncompilable_pattern` — `validate_regex_pattern("[unclosed")` raises `RegexTooComplex`.
 
-- [ ] **Step 5.1.4: Failing tests — `strip_ansi` and `redact_tool_result`.** In `tests/unit/test_tools_safety.py`:
+- [x] **Step 5.1.4: Failing tests — `strip_ansi` and `redact_tool_result`.** In `tests/unit/test_tools_safety.py`:
   - `test_strip_ansi_removes_csi` — input `"\x1b[31mred\x1b[0m"` returns `"red"`.
   - `test_strip_ansi_removes_osc` — input `"\x1b]0;title\x07after"` returns `"after"`.
   - `test_strip_ansi_preserves_whitespace` — `"\tline1\nline2\r\n"` is unchanged.
   - `test_redact_tool_result_chains_strip_then_redact` — input with both ANSI and an AWS key returns ANSI-free, redacted string in that order.
 
-- [ ] **Step 5.1.5: Implement** `senex/tools/exceptions.py`, `senex/tools/safety.py`, `senex/tools/context.py`. Run tests -> green.
+- [x] **Step 5.1.5: Implement** `senex/tools/exceptions.py`, `senex/tools/safety.py`, `senex/tools/context.py`. Run tests -> green.
 
-- [ ] **Step 5.1.6: Failing tests — `ToolRegistry`.** In `tests/unit/test_tool_registry.py`:
+- [x] **Step 5.1.6: Failing tests — `ToolRegistry`.** In `tests/unit/test_tool_registry.py`:
   - `test_register_then_openai_tools_returns_schema` — register a noop tool; `openai_tools(["noop"])` returns `[{"type": "function", "function": {"name": "noop", ...}}]`.
   - `test_openai_tools_unknown_name_raises` — `openai_tools(["does_not_exist"])` raises `KeyError`.
   - `test_openai_tools_orders_by_enabled_names` — register `a` then `b`; `openai_tools(["b", "a"])` returns `[b, a]`.
@@ -368,13 +368,13 @@ Used in `Checkpoint`, `RunStart` event, `findings.json` metadata. Resuming with 
   - `test_dispatch_handler_exception` — handler raises `RuntimeError` -> `ToolError(kind="dispatch_failed")` with redacted message.
   - `test_dispatch_unknown_tool` — `dispatch(call_id, "nope", "{}", ctx)` returns `ToolError(kind="unknown_tool")`.
 
-- [ ] **Step 5.1.7: Implement `ToolRegistry`** in `senex/tools/registry.py`. Run tests -> green.
+- [x] **Step 5.1.7: Implement `ToolRegistry`** in `senex/tools/registry.py`. Run tests -> green.
 
-- [ ] **Step 5.1.8: Verify.**
+- [x] **Step 5.1.8: Verify.**
   - Run `pytest tests/unit/test_tools_safety.py tests/unit/test_tool_registry.py -v` -> all pass.
   - Run `mypy senex/tools/ --strict` -> no errors.
 
-- [ ] **Step 5.1.9: Commit** `feat(M5): tool registry + safety primitives + exception hierarchy`.
+- [x] **Step 5.1.9: Commit** `feat(M5): tool registry + safety primitives + exception hierarchy`.
 
 ### Task 5.2: gitnexus_query tool
 
