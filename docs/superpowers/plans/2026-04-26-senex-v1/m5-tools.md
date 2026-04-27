@@ -777,18 +777,18 @@ For each outer iteration `i` in `range(max_calls + 1)`:
 
 **Per spec §6.1:** config can SUBSET but cannot EXTEND lens-declared tools. Names in config that are not in the lens cause Exit 2 with a warning logged for EVERY violation before raising (so the user sees all problems at once).
 
-- [ ] **Step 5.9.1: Failing tests** in `tests/unit/test_lens_tool_intersection.py`:
+- [x] **Step 5.9.1: Failing tests** in `tests/unit/test_lens_tool_intersection.py`:
   - `test_config_none_returns_lens_tools_unchanged` — `lens.tools=[A,B,C]`, `config=None` -> result `[A,B,C]`.
   - `test_config_subset_returns_intersection_in_lens_order` — `lens=[A,B,C]`, `config=[B,A]` -> result `[A,B]` (lens order).
   - `test_config_with_extension_raises_with_warnings` — `lens=[A,B,C]`, `config=[A,X,Y]` -> raises `ConfigError`. Verify `caplog` captured TWO warnings (for X and Y) before the raise.
   - `test_config_empty_list_returns_empty` — `lens=[A,B,C]`, `config=[]` -> result `[]` (empty subset is valid; tools disabled entirely).
   - `test_intersection_preserves_lens_order_not_config_order` — `lens=[A,B,C]`, `config=[C,A,B]` -> result `[A,B,C]`.
 
-- [ ] **Step 5.9.2: Implement `Lens.openai_tools_for(registry, config_subset)`** per Key contracts. Verify ALL extensions are warning-logged before raising.
+- [x] **Step 5.9.2: Implement `Lens.openai_tools_for(registry, config_subset)`** per Key contracts. Verify ALL extensions are warning-logged before raising.
 
-- [ ] **Step 5.9.3: Run** `pytest tests/unit/test_lens_tool_intersection.py -v` -> green. Expected: `5 passed`.
+- [x] **Step 5.9.3: Run** `pytest tests/unit/test_lens_tool_intersection.py -v` -> green. Expected: `5 passed`.
 
-- [ ] **Step 5.9.4: Commit** `feat(M5): lens-driven tool pack resolution with subset-only enforcement`.
+- [x] **Step 5.9.4: Commit** `feat(M5): lens-driven tool pack resolution with subset-only enforcement`.
 
 ### Task 5.10: tool_pack_hash for resume bucket
 

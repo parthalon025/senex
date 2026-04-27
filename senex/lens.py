@@ -1,18 +1,28 @@
 """senex.lens — Lens dataclass + loader for ``senex/lens/<name>/``.
 
-Implements spec §5.0 (Lens abstraction) and §5.11.2 (per-lens tool packs).
-Each Lens is loaded from a directory containing ``lens.toml`` and ``tools.toml``;
-the lens fingerprint is sha256 over the concatenated bytes of all files referenced.
+Implements spec §5.0 (Lens abstraction), §5.11.2 (per-lens tool packs),
+and §6.1 configuration resolution (config can SUBSET lens-declared tools
+but cannot EXTEND them). Each Lens is loaded from a directory containing
+``lens.toml`` and ``tools.toml``; the lens fingerprint is sha256 over
+the concatenated bytes of all files referenced.
 """
 from __future__ import annotations
 
 import hashlib
+import logging
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
+
+from senex.config import UnknownConfigKey
+
+if TYPE_CHECKING:
+    from senex.tools.registry import ToolRegistry
+
+log = logging.getLogger(__name__)
 
 
 class LensNotFound(FileNotFoundError):
@@ -107,6 +117,64 @@ class Lens:
             tools=list(ts.enabled_tools),
             fingerprint=fingerprint,
         )
+
+    def openai_tools_for(
+        self,
+        registry: ToolRegistry,
+        config_subset: list[str] | None,
+    ) -> list[str]:
+        """Return effective tool name list for this lens (spec §6.1).
+
+        Rules:
+          - ``lens_declared`` = ``self.tools`` (from ``lens/<name>/tools.toml``).
+          - ``config_subset is None`` -> returns ``lens_declared`` as-is.
+          - ``config_subset`` is set -> MUST be a subset of ``lens_declared``.
+            Names in ``config_subset`` NOT in ``lens_declared`` raise
+            ``UnknownConfigKey`` (Exit 2 — per spec §6.1 'config can subset, not
+            extend').
+          - Empty list ``config_subset == []`` is valid: tools disabled
+            entirely.
+          - Result is the intersection in **lens-declared order** (NOT
+            config-supplied order; the lens is authoritative).
+
+        Logs a WARNING for **each** name in ``config_subset`` that is not in
+        ``lens_declared`` BEFORE raising (so the user sees ALL violations,
+        not just the first).
+
+        Args:
+            registry: ToolRegistry instance (reserved; the v1 implementation
+                does not consult it but the parameter is kept for forward
+                compatibility with M8 wiring).
+            config_subset: optional list from
+                ``ToolsCfg.enabled_tools``.
+
+        Returns:
+            List of tool names, in lens-declared order, that are enabled
+            for this run.
+
+        Raises:
+            UnknownConfigKey: ``config_subset`` contains names not in the
+                lens-declared list (spec §6.1 Exit 2).
+        """
+        del registry  # reserved for forward compatibility (M8)
+        if config_subset is None:
+            return list(self.tools)
+
+        lens_declared = list(self.tools)
+        extensions = [name for name in config_subset if name not in lens_declared]
+        if extensions:
+            for ext in extensions:
+                log.warning(
+                    "config enabled_tools contains %r which is not declared by "
+                    "lens %r (lens tools: %s)",
+                    ext, self.name, lens_declared,
+                )
+            raise UnknownConfigKey(
+                f"config enabled_tools extends lens {self.name!r} with "
+                f"undeclared tools: {extensions} (lens tools: {lens_declared})"
+            )
+        # Intersection in LENS order.
+        return [name for name in lens_declared if name in config_subset]
 
 
 def _lens_root() -> Path:
