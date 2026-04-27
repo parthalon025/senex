@@ -488,10 +488,27 @@ async def run_audit(
                 await phase.write_state(audit_dir, phase_state)
                 Checkpoint.set_phase(audit_dir, phase.name, "complete")  # type: ignore[arg-type]
 
-                # Detect partial success.
+                # Detect partial success + propagate file counts to RunMetadata
+                # so combined.md and findings.json show non-zero totals (M11 bug 3).
                 if phase.name == "file_audit" and isinstance(phase_state, dict):
                     if phase_state.get("errored") or phase_state.get("skipped"):
                         partial_success = True
+                    completed = phase_state.get("completed") or []
+                    errored = phase_state.get("errored") or []
+                    skipped = phase_state.get("skipped") or []
+                    run_metadata = run_metadata.model_copy(
+                        update={
+                            "files_audited": len(completed),
+                            "files_errored": len(errored),
+                            "files_skipped": len(skipped),
+                        }
+                    )
+                    # Re-stamp the aggregate phase that follows so it sees the
+                    # updated counts when it serializes RunMetadata into
+                    # combined.md / findings.json.
+                    for p in phases:
+                        if isinstance(p, AggregatePhase):
+                            p._run_metadata = run_metadata
 
             # Snapshot config + prompts to audit_dir (TOCTOU §SEC-9).
             _snapshot_config(config, audit_dir)

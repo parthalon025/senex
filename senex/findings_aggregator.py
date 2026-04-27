@@ -89,12 +89,23 @@ class Aggregator:
             ),
         )
 
+        # ``totals.files`` reports the count of files actually audited in
+        # this run, NOT the count of distinct files that produced findings
+        # (which would be 0 on a clean run, hiding the audit's scope from
+        # the operator — see M11 bug 3). Falls back to the distinct-files
+        # heuristic only when the caller hasn't populated
+        # ``run_metadata.files_audited`` (older callers / tests).
+        files_total = (
+            run_metadata.files_audited
+            if run_metadata.files_audited > 0
+            else len({f.file for f in sorted_findings})
+        )
         totals = {
             "high": sum(1 for f in sorted_findings if f.priority == "high"),
             "medium": sum(1 for f in sorted_findings if f.priority == "medium"),
             "low": sum(1 for f in sorted_findings if f.priority == "low"),
             "healthy": sum(1 for f in sorted_findings if f.priority == "healthy"),
-            "files": len({f.file for f in sorted_findings}),
+            "files": files_total,
         }
 
         index = {

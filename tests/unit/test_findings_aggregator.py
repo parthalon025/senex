@@ -150,11 +150,45 @@ async def test_aggregate_skips_corrupt_last_line(tmp_path: Path) -> None:
 
 
 async def test_aggregate_missing_partial_returns_empty_findings_json(tmp_path: Path) -> None:
-    """No findings.partial.jsonl on disk -> empty findings + zero totals; does NOT raise."""
+    """No findings.partial.jsonl on disk -> empty findings; ``totals.files``
+    reflects the ``run_metadata.files_audited`` scope (M11 bug 3) so the
+    operator sees the audit ran even when no findings were emitted."""
     target = await Aggregator().run(tmp_path, themes=None, run_metadata=_run_metadata())
     data = json.loads(target.read_text(encoding="utf-8"))
     assert data["findings"] == []
-    assert data["totals"] == {"high": 0, "medium": 0, "low": 0, "healthy": 0, "files": 0}
+    # files_audited=3 in _run_metadata; surfaces as totals.files.
+    assert data["totals"] == {"high": 0, "medium": 0, "low": 0, "healthy": 0, "files": 3}
+
+
+async def test_aggregate_totals_files_uses_run_metadata_when_findings_present(
+    tmp_path: Path,
+) -> None:
+    """``totals.files`` MUST reflect run_metadata.files_audited even when
+    findings exist — i.e., it's "files audited", not "files with findings".
+
+    Pre-M11-bug-3-fix the aggregator returned ``len(set(f.file ...))`` which
+    only counted files that produced findings; a clean run with 1/4 files
+    finding-free reported 3 instead of 4.
+    """
+    findings = [
+        _finding(fid="f-aaaaaaaaaaaa", file="a.py"),
+        _finding(fid="f-bbbbbbbbbbbb", file="a.py"),  # same file, dup
+        _finding(fid="f-cccccccccccc", file="b.py"),
+    ]
+    with FindingsPartialWriter(tmp_path) as w:
+        for f in findings:
+            w.append(f)
+
+    # _run_metadata() defaults files_audited=3 — pretend 3 files audited
+    # but only 2 produced findings (a.py, b.py).
+    target = await Aggregator().run(
+        tmp_path, themes=None, run_metadata=_run_metadata()
+    )
+    data = json.loads(target.read_text(encoding="utf-8"))
+    assert data["totals"]["files"] == 3, (
+        "totals.files must reflect run_metadata.files_audited, not "
+        "len(set(finding.file))"
+    )
 
 
 async def test_aggregate_atomic_write(tmp_path: Path) -> None:
