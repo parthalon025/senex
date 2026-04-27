@@ -923,3 +923,167 @@ async def test_schema_negotiation_failed_when_both_modes_refused(
             schema=audit_schema,
             tools=None,
         )
+
+
+# --- Task 3.6: tools= parameter (single round-trip) -------------------------
+
+_READ_FILE_TOOL: dict[str, Any] = {
+    "type": "function",
+    "function": {
+        "name": "read_file",
+        "description": "Read a file from the workspace.",
+        "parameters": {
+            "type": "object",
+            "properties": {"path": {"type": "string"}},
+            "required": ["path"],
+            "additionalProperties": False,
+        },
+    },
+}
+
+
+@pytest.mark.asyncio
+async def test_chat_with_tools_returns_tool_calls(
+    respx_mock: Any,
+    client: LMStudioClient,
+    audit_schema: dict[str, Any],
+) -> None:
+    """tool_calls populated; finish_reason=tool_calls; no recursion."""
+    payload = {
+        "id": "x",
+        "model": "gemma",
+        "choices": [
+            {
+                "index": 0,
+                "finish_reason": "tool_calls",
+                "message": {
+                    "role": "assistant",
+                    "content": None,
+                    "tool_calls": [
+                        {
+                            "id": "call_1",
+                            "type": "function",
+                            "function": {
+                                "name": "read_file",
+                                "arguments": '{"path":"a.py"}',
+                            },
+                        }
+                    ],
+                },
+            }
+        ],
+        "usage": {"prompt_tokens": 100, "completion_tokens": 20},
+    }
+    respx_mock.post("http://localhost:1234/v1/chat/completions").respond(json=payload)
+
+    resp = await client.chat(
+        task="file_audit",
+        messages=[ChatMessage(role="user", content="audit a.py")],
+        schema=audit_schema,
+        tools=[_READ_FILE_TOOL],
+    )
+
+    assert resp.finish_reason == "tool_calls"
+    assert resp.tool_calls is not None
+    assert len(resp.tool_calls) == 1
+    assert resp.tool_calls[0].function.name == "read_file"
+    assert resp.tool_calls[0].function.arguments == '{"path":"a.py"}'
+    # No JSON content yet — schema validation skipped on tool_calls finish.
+    assert resp.content_dict is None
+
+
+@pytest.mark.asyncio
+async def test_chat_with_tools_passes_tools_and_tool_choice_to_request(
+    respx_mock: Any,
+    client: LMStudioClient,
+    audit_schema: dict[str, Any],
+) -> None:
+    """Request body MUST contain tools verbatim and tool_choice='auto'."""
+    captured_bodies: list[dict[str, Any]] = []
+
+    def _record(request: httpx.Request) -> httpx.Response:
+        captured_bodies.append(json.loads(request.content.decode("utf-8")))
+        return httpx.Response(200, json=_success_payload(_valid_audit_json()))
+
+    respx_mock.post("http://localhost:1234/v1/chat/completions").mock(side_effect=_record)
+
+    await client.chat(
+        task="file_audit",
+        messages=[ChatMessage(role="user", content="hi")],
+        schema=audit_schema,
+        tools=[_READ_FILE_TOOL],
+    )
+
+    assert len(captured_bodies) == 1
+    body = captured_bodies[0]
+    assert body.get("tools") == [_READ_FILE_TOOL]
+    assert body.get("tool_choice") == "auto"
+
+
+@pytest.mark.asyncio
+async def test_chat_without_tools_omits_tools_field(
+    respx_mock: Any,
+    client: LMStudioClient,
+    audit_schema: dict[str, Any],
+) -> None:
+    """When tools=None or [] the request MUST NOT include 'tools' or 'tool_choice'."""
+    captured_bodies: list[dict[str, Any]] = []
+
+    def _record(request: httpx.Request) -> httpx.Response:
+        captured_bodies.append(json.loads(request.content.decode("utf-8")))
+        return httpx.Response(200, json=_success_payload(_valid_audit_json()))
+
+    respx_mock.post("http://localhost:1234/v1/chat/completions").mock(side_effect=_record)
+
+    # tools=None
+    await client.chat(
+        task="file_audit",
+        messages=[ChatMessage(role="user", content="hi")],
+        schema=audit_schema,
+        tools=None,
+    )
+    # tools=[]
+    await client.chat(
+        task="file_audit",
+        messages=[ChatMessage(role="user", content="hi")],
+        schema=audit_schema,
+        tools=[],
+    )
+
+    assert len(captured_bodies) == 2
+    for body in captured_bodies:
+        assert "tools" not in body
+        assert "tool_choice" not in body
+
+
+@pytest.mark.asyncio
+async def test_chat_streamed_tool_calls_assembled_correctly(
+    respx_mock: Any,
+    client: LMStudioClient,
+    audit_schema: dict[str, Any],
+) -> None:
+    """SSE delivers tool_calls deltas progressively; final arguments must be assembled."""
+    chunks = [
+        _delta(tool_calls=[{"index": 0, "id": "call_1", "type": "function"}]),
+        _delta(tool_calls=[{"index": 0, "function": {"name": "read_file"}}]),
+        _delta(tool_calls=[{"index": 0, "function": {"arguments": '{"path":'}}]),
+        _delta(tool_calls=[{"index": 0, "function": {"arguments": '"a.py"}'}}]),
+        _delta(finish_reason="tool_calls"),
+    ]
+    respx_mock.post("http://localhost:1234/v1/chat/completions").mock(
+        return_value=_sse_response(chunks)
+    )
+
+    resp = await client.chat(
+        task="file_audit",
+        messages=[ChatMessage(role="user", content="hi")],
+        schema=audit_schema,
+        tools=[_READ_FILE_TOOL],
+    )
+
+    assert resp.finish_reason == "tool_calls"
+    assert resp.tool_calls is not None
+    assert len(resp.tool_calls) == 1
+    assert resp.tool_calls[0].id == "call_1"
+    assert resp.tool_calls[0].function.name == "read_file"
+    assert resp.tool_calls[0].function.arguments == '{"path":"a.py"}'
