@@ -57,6 +57,26 @@ def test_chat_docstring_documents_round_trip_boundary() -> None:
     assert "senex.tools.loop.ToolLoop" in doc
 
 
+def test_lmstudio_client_implements_llm_client_protocol() -> None:
+    """LMStudioClient satisfies the senex.llm_client.LLMClient structural protocol."""
+    from senex.llm_client import LLMClient
+
+    cfg = LmStudioCfg(
+        base_url="http://localhost:1234/v1",
+        api_key="x",
+        connect_timeout=1,
+        read_timeout=1,
+        http_retries=0,
+        backoff_seconds=[],
+        model="m",
+        context_window=1024,
+        token_budget_pct=0.9,
+        fingerprint_recheck_interval_s=60.0,
+    )
+    inst = LMStudioClient(config=cfg, bus=EventBus(), redactor=SecretRedactor())
+    assert isinstance(inst, LLMClient)
+
+
 # --- Shared fixtures ----------------------------------------------------------
 
 _FIXTURE_DIR = Path(__file__).resolve().parents[1] / "fixtures" / "lms_responses"
