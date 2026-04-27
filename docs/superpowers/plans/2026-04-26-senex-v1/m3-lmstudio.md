@@ -316,7 +316,7 @@ class LoadedModelInfo(BaseModel):
 
 **Spec/conv refs:** §5.5 streaming clause, §5.6 Tick scoping ("per-turn counter resets on each `*_Started`"), §5 conventions (ANSI strip, `<think>` strip), §8.2 ("`<think>` tags leaked into JSON").
 
-- [ ] **Step 3.2.1: Failing tests.**
+- [x] **Step 3.2.1: Failing tests.**
   - `test_stream_emits_thinking_lifecycle_events`: SSE chunks with `delta.reasoning_content` deltas; assert sequence `ThinkingStarted` → ≥1 `ThinkingTick` → `ThinkingComplete` → `OutputStarted` → ≥1 `OutputTick` → `OutputComplete`.
   - `test_thinking_tick_coalesces_at_256_tokens_or_500ms`: drive 1024 reasoning tokens through the parser; assert ≥4 ticks (one per 256), but never two ticks within 500ms.
   - `test_per_turn_counter_resets_between_thinking_starts`: simulate **two** turns by feeding two SSE streams back-to-back (one chat call returns; second call reuses the same client). Assert turn-2's first `ThinkingTick.tokens_so_far == delta_since_last_tick` (i.e. counter started at 0 for turn 2).
@@ -324,7 +324,7 @@ class LoadedModelInfo(BaseModel):
   - `test_interleaved_think_tags_stripped`: SSE delivers `content="prefix<think>x</think>middle<think>y</think>suffix"`; `ChatResponse.content == "prefixmiddlesuffix"`. Use `re.DOTALL` because tags may contain newlines.
   - `test_total_thinking_tokens_equals_sum_of_ticks`: sum `ThinkingTick.delta_since_last_tick` events for the turn; assert it equals `ThinkingComplete.total_thinking_tokens`.
 
-- [ ] **Step 3.2.2: Implement streaming `chat()`.**
+- [x] **Step 3.2.2: Implement streaming `chat()`.**
 
   ```python
   _THINK_TAG_RE: Final = re.compile(r"<think>.*?</think>", re.DOTALL)
@@ -443,24 +443,24 @@ class LoadedModelInfo(BaseModel):
       )
   ```
 
-- [ ] **Step 3.2.3: Run** tests → green.
+- [x] **Step 3.2.3: Run** tests → green.
 
-- [ ] **Step 3.2.4: Verification command:**
+- [x] **Step 3.2.4: Verification command:**
   ```bash
   pytest tests/unit/test_lmstudio_client.py -v -k "stream or think_tag or tick or counter_resets"
   ```
   Expected: `6 passed` in the trailing summary.
 
-- [ ] **Step 3.2.5: Pitfalls.**
+- [x] **Step 3.2.5: Pitfalls.**
   - Using `re.compile(r"<think>.*?</think>")` without `re.DOTALL` → tags spanning newlines leak through.
   - Forgetting to reset `_TickCoalescer` on the second turn → counter monotonically grows across the whole run; `tokens_so_far` becomes meaningless. The `test_per_turn_counter_resets_between_thinking_starts` test exists specifically to catch this.
   - Emitting `ThinkingTick` before `ThinkingStarted` (race when `phase == "pre"` and the first chunk has reasoning_content) → subscribers may drop tickets they assume are mid-stream. The phase guard MUST set `ThinkingStarted` before the first tick, never after.
   - Stripping `<think>` tags AFTER schema validation → JSON parse fails on the unstripped text; spec §8.2 says strip first, then if stripping leaves invalid JSON, retry once with stricter prompt (Task 3.3 handles the retry).
   - ANSI strip applied to `reasoning_content` → spec §5 conventions explicitly says ANSI strip on `content` only.
 
-- [ ] **Step 3.2.6: Definition of done.** All 6 streaming tests green; tick cadence asserted both by token count AND wall-clock time; per-turn reset asserted across two turns; `<think>` tag regex byte-matches the spec literal `re.compile(r"<think>.*?</think>", re.DOTALL)`.
+- [x] **Step 3.2.6: Definition of done.** All 6 streaming tests green; tick cadence asserted both by token count AND wall-clock time; per-turn reset asserted across two turns; `<think>` tag regex byte-matches the spec literal `re.compile(r"<think>.*?</think>", re.DOTALL)`.
 
-- [ ] **Step 3.2.7: Commit** `feat(M3): streaming chat with Tick coalescing + think-tag strip`.
+- [x] **Step 3.2.7: Commit** `feat(M3): streaming chat with Tick coalescing + think-tag strip`.
 
 ---
 
