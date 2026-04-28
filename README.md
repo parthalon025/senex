@@ -126,6 +126,56 @@ senex aggregate <audit-dir>                # re-run Phase 5 after a crash
 Run `senex doctor` once after install. Every check should return `pass` or `warn`;
 `fail` exits non-zero and prints the failing check's diagnostic.
 
+## Performance tuning
+
+senex's per-file audit time is dominated by model thinking. With
+`google/gemma-4-26b-a4b` at default settings, expect **~7-8 minutes per file**
+on `effort=high`. Two axes to tune.
+
+### LM Studio (GUI knobs — frees GPU VRAM)
+
+| Knob | Default | Recommended start | Effect |
+|------|---------|-------------------|--------|
+| **Context length** | 262144 | **16384** or **32768** | Largest single VRAM win — KV cache scales with context; senex prompts are <16K tokens |
+| **GPU offload** | All layers | All if you have headroom | Off-loaded layers run on CPU (slower but frees VRAM) |
+| **Concurrent requests (`parallel`)** | 4 | **1** if VRAM-constrained, **4** if you want to enable senex's future parallel-files feature | Each parallel slot reserves KV cache headroom |
+| **Speculative decoding** | varies | enable if available | 1.5-3× speedup with negligible quality loss |
+| **Flash Attention v2** | varies | enable | KV cache compression |
+
+### senex (config knobs — shapes what senex requests)
+
+```toml
+# senex.config.toml
+[lmstudio]
+# Should match (or be slightly under) LM Studio's context length.
+context_window = 16384
+# Set true ONLY for OpenAI/Together/Groq backends that honor strict json_schema
+# reliably. False (default) routes through json_object + post-hoc Pydantic
+# validation, which is what gemma-class models actually return correctly.
+strict_json_schema = false
+
+[lmstudio.sampling]
+max_tokens = 4096   # output cap; lower = faster, less KV growth
+
+[lmstudio.thinking]
+# "high" -> deep reasoning, ~7-8 min/file
+# "medium" -> balanced, ~3-4 min/file
+# "low" -> shallow, ~1-2 min/file (fine for first-pass triage)
+effort = "high"
+max_thinking_tokens = 8192   # cap on reasoning phase
+```
+
+### Estimated audit time by configuration
+
+| Config | Per-file | 50-file project | 500-file project |
+|--------|---------:|----------------:|-----------------:|
+| Default (`effort=high`, 8K thinking, 4K output) | ~7-8 min | 6.5 hr | 64 hr |
+| `effort=low`, 2K thinking | ~1-2 min | 1 hr | 11 hr |
+
+For nightly Windows scheduled-task usage on real repos, `effort=low` + small
+thinking budget is usually the right tradeoff. For spot audits of critical
+files, run with `effort=high` directly.
+
 ## Where reports go
 
 ```
