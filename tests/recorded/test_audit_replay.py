@@ -35,6 +35,13 @@ def replay_cfg() -> LmStudioCfg:
         context_window=32768,
         token_budget_pct=0.9,
         fingerprint_recheck_interval_s=60.0,
+        # The recorded fixture (`f3ed229...`.json) was captured against the
+        # v1.0.1 wire shape (response_format=json_schema, tools-less). v1.0.2
+        # default flipped to ``strict_json_schema=False`` which omits
+        # response_format entirely and would change the canonical request
+        # hash. Opt into strict mode here to keep the existing fixture
+        # valid; capture-mode users (RECORD_LMS=1) get the same wire shape.
+        strict_json_schema=True,
     )
 
 

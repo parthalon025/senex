@@ -149,6 +149,16 @@ class LmStudioCfg(_StrictModel):
     # wasteful under tool-loop iteration; cache the observed fingerprint for
     # this many seconds before re-verifying.
     fingerprint_recheck_interval_s: float = Field(default=60.0, gt=0.0)
+    strict_json_schema: bool = Field(
+        default=False,
+        description=(
+            "If true, use OpenAI-compat 'json_schema' response_format strictly. "
+            "If false (default), pre-emptively use 'json_object' + post-hoc Pydantic "
+            "validation. Default false because Gemma + LM Studio rejects strict "
+            "json_schema unreliably (returns empty content). Set true for OpenAI/"
+            "Together/Groq backends that honor strict schema."
+        ),
+    )
     sampling: SamplingCfg = Field(default_factory=SamplingCfg)
     thinking: ThinkingCfg = Field(default_factory=ThinkingCfg)
     tasks: TasksCfg = Field(default_factory=TasksCfg)

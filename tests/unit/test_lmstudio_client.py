@@ -490,7 +490,14 @@ async def test_schema_fallback_on_400_schema_error(
     client: LMStudioClient,
     audit_schema: dict[str, Any],
 ) -> None:
-    """First request gets 400 schema error; client falls back to json_object."""
+    """First request gets 400 schema error; client falls back to json_object.
+
+    v1.0.2: this strict-mode probe-then-fallback behavior is gated on
+    ``strict_json_schema=True`` (the default flipped to ``False`` in v1.0.2
+    because Gemma is unreliable in strict mode). Opt back in here so the
+    fallback decision tree is still exercised.
+    """
+    client._config.strict_json_schema = True  # type: ignore[attr-defined]
     route = respx_mock.post("http://localhost:1234/v1/chat/completions")
     route.side_effect = [
         httpx.Response(
@@ -523,7 +530,11 @@ async def test_schema_fallback_caches_decision_per_session(
     client: LMStudioClient,
     audit_schema: dict[str, Any],
 ) -> None:
-    """After first fallback, subsequent calls skip the json_schema probe."""
+    """After first fallback, subsequent calls skip the json_schema probe.
+
+    v1.0.2: opt into strict mode so the probe-then-fallback path runs.
+    """
+    client._config.strict_json_schema = True  # type: ignore[attr-defined]
     route = respx_mock.post("http://localhost:1234/v1/chat/completions")
     route.side_effect = [
         httpx.Response(
@@ -558,7 +569,12 @@ async def test_schema_fallback_400_unrelated_does_not_fallback(
     client: LMStudioClient,
     audit_schema: dict[str, Any],
 ) -> None:
-    """A 400 unrelated to schema (e.g. context length) propagates as HTTPStatusError."""
+    """A 400 unrelated to schema (e.g. context length) propagates as HTTPStatusError.
+
+    v1.0.2: opt into strict mode so the json_schema probe actually runs and
+    can surface the unrelated 400.
+    """
+    client._config.strict_json_schema = True  # type: ignore[attr-defined]
     respx_mock.post("http://localhost:1234/v1/chat/completions").mock(
         return_value=httpx.Response(
             400, json={"error": {"message": "context length exceeded"}}
@@ -936,7 +952,14 @@ async def test_schema_negotiation_failed_when_both_modes_refused(
     client: LMStudioClient,
     audit_schema: dict[str, Any],
 ) -> None:
-    """Both json_schema and json_object 4xx → SchemaNegotiationFailed."""
+    """Both json_schema and json_object 4xx → SchemaNegotiationFailed.
+
+    v1.0.2: opt into strict mode so the probe-then-fallback decision tree
+    is exercised. (The default ``strict_json_schema=False`` skips the
+    initial json_schema probe and would never observe the negotiation
+    failure on a 4xx-then-4xx sequence.)
+    """
+    client._config.strict_json_schema = True  # type: ignore[attr-defined]
     route = respx_mock.post("http://localhost:1234/v1/chat/completions")
     route.side_effect = [
         httpx.Response(400, json={"error": {"message": "response_format invalid"}}),
@@ -1097,6 +1120,78 @@ async def test_chat_with_tools_and_schema_omits_response_format(
     # subsequent tool-less calls may still use json_schema where supported.
     assert client._schema_mode is None  # type: ignore[attr-defined]
     # And the response was still parsed + validated post-hoc.
+    assert resp.content_dict is not None
+    assert resp.content_dict["schema_version"] == 1
+
+
+@pytest.mark.asyncio
+async def test_strict_json_schema_false_uses_json_object_when_tools_none(
+    respx_mock: Any,
+    client: LMStudioClient,
+    audit_schema: dict[str, Any],
+) -> None:
+    """v1.0.2 fix: with ``strict_json_schema=False`` (the default) and
+    ``tools=None``, the request MUST go out without
+    ``response_format=json_schema`` — i.e., go through the json_object +
+    post-hoc Pydantic validation path. Background:
+
+    * Gemma + LM Studio + ``response_format=json_schema`` returns empty
+      content even on tools-less calls (the strict structured-output
+      enforcement is fragile across both tools-bearing and tools-less
+      paths). The v1.0.1 fix only covered tools+schema; v1.0.2 extends
+      it to ALL Gemma calls.
+    * LM Studio's OpenAI-compat surface 400s on ``response_format`` of
+      ``json_object`` literal, so the workaround is to omit
+      ``response_format`` entirely and rely on the system-prompt JSON
+      reminder + post-hoc validation.
+
+    Backends that honor strict schema reliably (OpenAI / Together / Groq)
+    can opt back in with ``[lmstudio].strict_json_schema = true`` — that
+    path is covered by ``test_schema_fallback_on_400_schema_error`` and
+    friends.
+    """
+    # Sanity: default config has strict mode off (v1.0.2).
+    assert client._config.strict_json_schema is False  # type: ignore[attr-defined]
+
+    captured_bodies: list[dict[str, Any]] = []
+
+    def _record(request: httpx.Request) -> httpx.Response:
+        captured_bodies.append(json.loads(request.content.decode("utf-8")))
+        return httpx.Response(200, json=_success_payload(_valid_audit_json()))
+
+    respx_mock.post("http://localhost:1234/v1/chat/completions").mock(side_effect=_record)
+
+    resp = await client.chat(
+        task="file_audit",
+        messages=[ChatMessage(role="user", content="hi")],
+        schema=audit_schema,
+        tools=None,
+    )
+
+    # Exactly one round-trip — no probe-then-fallback (the v1.0.1 path
+    # would have done two: json_schema attempt then json_object retry).
+    assert len(captured_bodies) == 1
+    body = captured_bodies[0]
+    # Critical assertion: response_format MUST NOT be json_schema. Either
+    # omitted entirely or set to "text"; the empty-response bug is
+    # specifically triggered by json_schema strict mode on Gemma.
+    rf = body.get("response_format")
+    if rf is not None:
+        assert rf.get("type") != "json_schema", (
+            "strict_json_schema=False must not send response_format=json_schema "
+            "on tools-less calls (Gemma returns empty content)"
+        )
+    # System-prompt reminder is the JSON-coercion mechanism on this path.
+    system_msgs = [m for m in body.get("messages", []) if m.get("role") == "system"]
+    assert system_msgs, "JSON reminder must be injected as a system message"
+    assert "JSON" in str(system_msgs[0].get("content", ""))
+    # No tools / tool_choice when tools=None.
+    assert "tools" not in body
+    assert "tool_choice" not in body
+    # The session-wide cache is NOT flipped — strict_json_schema is the
+    # config-level switch, the cache is only for hard 400 fallbacks.
+    assert client._schema_mode is None  # type: ignore[attr-defined]
+    # Post-hoc validation still runs and succeeds on the valid payload.
     assert resp.content_dict is not None
     assert resp.content_dict["schema_version"] == 1
 

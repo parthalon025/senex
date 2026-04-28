@@ -33,6 +33,12 @@ backoff_seconds    = [5, 15, 45]
 model              = "google/gemma-4-26b-a4b"
 preset             = ""
 allow_non_loopback = false
+# If true, use OpenAI-compat 'json_schema' response_format strictly. If false
+# (default), pre-emptively use 'json_object' + post-hoc Pydantic validation.
+# Default false because Gemma + LM Studio rejects strict json_schema unreliably
+# (returns empty content). Set true for OpenAI/Together/Groq backends that
+# honor strict schema.
+strict_json_schema = false
 
 [lmstudio.sampling]
 temperature       = 0.6

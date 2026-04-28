@@ -2,6 +2,23 @@
 
 All notable changes to senex are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses semantic versioning.
 
+## [1.0.2] — 2026-04-27
+
+Patch release.
+
+### Fixed
+- Extended the v1.0.1 json_object fallback to cover ALL gemma calls
+  (previously only tools+schema combos used the fallback). Strict
+  `json_schema` mode on gemma + LM Studio sometimes returned empty
+  content even on tools-less calls; defaulting to `json_object` +
+  post-hoc Pydantic validation eliminates the stochastic empty-response
+  bug. Live audits now consistently return findings.
+
+### Added
+- `[lmstudio].strict_json_schema` config flag (default `false`). Set
+  to `true` for OpenAI/Together/Groq backends that honor strict schema
+  enforcement reliably.
+
 ## [1.0.1] — 2026-04-27
 
 Patch release.

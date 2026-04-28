@@ -887,7 +887,20 @@ class LMStudioClient:
         # subsequently calls chat() WITHOUT tools to gather the final
         # response, json_schema may still be the better mode for that
         # turn. The session-wide cache is reserved for hard 400 fallbacks.
-        if base_body.get("tools"):
+        #
+        # v1.0.2 — Extended the same pre-emptive switch to ALL Gemma calls,
+        # not just tools+schema combos. Strict ``json_schema`` mode on
+        # Gemma + LM Studio sometimes returns empty content even on
+        # tools-less calls (the structured-output enforcement is fragile
+        # across both paths). When ``strict_json_schema=False`` (default)
+        # we skip the strict-mode probe entirely and rely on system-prompt
+        # JSON coercion + post-hoc Pydantic validation. Backends that
+        # honor strict schema reliably (OpenAI / Together / Groq) can opt
+        # back into the strict path with ``[lmstudio].strict_json_schema = true``.
+        use_json_object_preemptively = (
+            bool(base_body.get("tools")) or not self._config.strict_json_schema
+        )
+        if use_json_object_preemptively:
             return await self._post_validate(
                 base_body=base_body, schema=schema, mode="json_object", path=path
             )
@@ -950,16 +963,24 @@ class LMStudioClient:
             # we cannot use ``json_schema`` either (Gemma returns empty
             # content). Solution: omit ``response_format`` entirely and rely
             # on the system-prompt JSON reminder + post-hoc Pydantic
-            # validation to coerce + check structure. When tools are absent
-            # we keep using ``json_schema`` so we retain server-side
-            # enforcement on the strict-retry path. Either way, the
-            # ``_inject_json_object_reminder`` pushes the model toward
-            # producing valid JSON content.
+            # validation to coerce + check structure.
+            #
+            # v1.0.2 — Extended the omission to tools-less calls when
+            # ``strict_json_schema`` is false (the default for Gemma).
+            # Empirically Gemma sometimes returns empty content even on
+            # tools-less ``json_schema`` calls, so the strict server-side
+            # enforcement isn't actually buying reliability — it's the
+            # source of the empty-response bug. The system-prompt reminder
+            # + post-hoc Pydantic validation is now the canonical coercion
+            # path for Gemma. Backends that honor strict schema (OpenAI,
+            # Together, Groq) can opt back in via ``strict_json_schema=true``;
+            # the json_schema response_format is then re-emitted on this
+            # branch so the strict-retry path retains server-side enforcement.
             body["messages"] = _inject_json_object_reminder(
                 _deep_copy_messages(body.get("messages", [])), schema
             )
-            if not body.get("tools"):
-                # No tools → use the strictest mode LM Studio accepts.
+            if not body.get("tools") and self._config.strict_json_schema:
+                # Strict-mode fallback path: keep server-side enforcement.
                 body["response_format"] = {
                     "type": "json_schema",
                     "json_schema": {
@@ -968,8 +989,9 @@ class LMStudioClient:
                         "strict": True,
                     },
                 }
-            # else: omit response_format; system prompt + post-hoc validation
-            # do the work. body["tools"] / body["tool_choice"] stay as-is.
+            # else: omit response_format entirely. System prompt + post-hoc
+            # validation do the work. body["tools"] / body["tool_choice"]
+            # (when set) stay as-is so the model can still request tool calls.
 
         if _strict_retry:
             body["messages"] = _inject_strict_retry_preamble(
