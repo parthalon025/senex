@@ -55,9 +55,9 @@ class WalkResult:
         kept: absolute paths, sorted by relpath ascending (forward-slash
             relpath as sort key).
         skipped: list of (path, reason); reason in
-            {"gitignore", "extension", "exclude", "too_large_bytes",
+            {"extension", "exclude", "too_large_bytes",
              "symlink_escape", "symlink_broken", "case_collision",
-             "tests_excluded", "binary"}.
+             "tests_excluded", "binary", "worktrees", "Notion"}.
         relpath_to_report_path: forward-slash relpath -> forward-slash
             report-relpath. Differs only when a case-collision suffix is
             applied (§ARCH-14).

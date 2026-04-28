@@ -11,12 +11,13 @@ worker thread for typical repo sizes (<= 50_000 files).
 from __future__ import annotations
 
 import json
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from senex.events import DiscoveryComplete, DiscoveryStart, EventBus
-from senex.walker import Walker
+from senex.walker import Walker, WalkerLimitExceeded
 
 if TYPE_CHECKING:  # pragma: no cover
     from senex.config import SenexConfig
@@ -66,7 +67,23 @@ class DiscoveryPhase:
         )
 
         walker = Walker(bus)
-        result = walker.discover(self._repo, config.walker)
+        try:
+            result = walker.discover(self._repo, config.walker)
+        except WalkerLimitExceeded:
+            src_path = self._repo / "src"
+            if not config.walker.scan_subdir and src_path.is_dir():
+                # Repo exceeded the file limit with no subdir restriction set.
+                # Auto-retry scoped to src/ and surface the implicit narrowing
+                # via the skipped list so auditors can see it happened.
+                logging.getLogger(__name__).warning(
+                    "walker limit exceeded; retrying with scan_subdir='src' "
+                    "(%s)",
+                    self._repo,
+                )
+                fallback_cfg = config.walker.model_copy(update={"scan_subdir": "src"})
+                result = walker.discover(self._repo, fallback_cfg)
+            else:
+                raise
 
         files = list(result.kept)
         skipped = [(str(p), reason) for p, reason in result.skipped]

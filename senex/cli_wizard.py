@@ -474,6 +474,65 @@ def _select_effort(
 
 
 # ---------------------------------------------------------------------------
+# Helpers — scan subdirectory selection
+# ---------------------------------------------------------------------------
+
+
+def _select_scan_subdir(
+    repo_path: Path,
+    current: str,
+    *,
+    stdin: TextIO | None = None,
+    stdout: TextIO | None = None,
+) -> str:
+    """Prompt for an optional scan subdirectory; returns the chosen value.
+
+    Args:
+        repo_path: Resolved repo root; used to probe for common subdirs.
+        current: Current configured scan_subdir ('' means full repo walk).
+        stdin: Input stream (default ``sys.stdin``).
+        stdout: Output stream (default ``sys.stdout``).
+
+    Returns:
+        Relative path string (e.g. 'src') or empty string for full repo.
+
+    Raises:
+        WizardCancelled: User cancelled.
+    """
+    import sys
+
+    sin: TextIO = stdin if stdin is not None else sys.stdin
+    sout: TextIO = stdout if stdout is not None else sys.stdout
+
+    has_src = (repo_path / "src").is_dir()
+    default = current if current else ("src" if has_src else "")
+
+    for _ in range(8):
+        _print(sout, "")
+        if default:
+            _print(sout, f"Scan subdirectory (Enter = '{default}', blank = full repo):")
+        else:
+            _print(sout, "Scan subdirectory (Enter or blank = full repo walk):")
+        if has_src and not current:
+            _print(sout, "  (src/ detected — recommended to avoid file-count limit)")
+        _print(sout, "  q) Cancel")
+        sout.flush()
+
+        raw = _read_line(sin).strip()
+        if raw.lower() in ("q", "quit", "exit"):
+            raise WizardCancelled("user cancelled at scan subdir")
+        if raw == "":
+            return default
+        candidate = repo_path / raw
+        if not candidate.is_dir():
+            _print(sout, f"  ! '{raw}' is not a directory under {repo_path}")
+            continue
+        return raw
+
+    raise WizardCancelled("scan subdir selection exhausted retries")
+
+
+# ---------------------------------------------------------------------------
 # Helpers — yes/no
 # ---------------------------------------------------------------------------
 
@@ -675,6 +734,20 @@ def interactive_audit_setup(
         repo_name, repo_path = _select_repo(config, stdin=stdin, stdout=sout)
         _print(sout, f"  -> repo: {repo_name} ({repo_path})")
 
+        # 2b. Scan subdirectory (limits walk to a subdir; avoids file-count errors).
+        chosen_scan_subdir = _select_scan_subdir(
+            repo_path,
+            config.walker.scan_subdir,
+            stdin=stdin,
+            stdout=sout,
+        )
+        _print(
+            sout,
+            f"  -> scan subdir: {chosen_scan_subdir!r}"
+            if chosen_scan_subdir
+            else "  -> scan subdir: (full repo)",
+        )
+
         # 3. Model selection.
         chosen_model = _select_model(
             client,
@@ -748,7 +821,7 @@ def interactive_audit_setup(
             "name": lens_name,
             "include_tests": include_tests,
         },
-        "walker": {"include_tests": include_tests},
+        "walker": {"include_tests": include_tests, "scan_subdir": chosen_scan_subdir},
     }
     merged = _deep_merge_dict(config.model_dump(), overrides)
     resolved = SenexConfig.model_validate(merged)
@@ -785,4 +858,5 @@ __all__ = [
     "interactive_audit_setup",
     "_select_context_window",
     "_select_effort",
+    "_select_scan_subdir",
 ]
