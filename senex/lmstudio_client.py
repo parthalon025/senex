@@ -52,7 +52,12 @@ _ANSI_RE: Final = re.compile(r"\x1b\[[0-9;]*[a-zA-Z]|\x1b\][^\x07]*\x07")
 # §8.2: think tags stripped before JSON parse / schema validation.
 _THINK_TAG_RE: Final = re.compile(r"<think>.*?</think>", re.DOTALL)
 # §8.2: schema-related 4xx body fragments that trigger json_schema -> json_object fallback.
-_SCHEMA_ERROR_RE: Final = re.compile(r"schema|response_format|json_schema", re.IGNORECASE)
+# Covers both legacy "response_format / json_schema not supported" messages and the newer
+# LM Studio "Cannot combine structured output constraints with lazy grammar" message.
+_SCHEMA_ERROR_RE: Final = re.compile(
+    r"schema|response_format|json_schema|lazy.grammar|structured.output",
+    re.IGNORECASE,
+)
 # §5.6: Tick coalescer thresholds (256 tokens OR 500ms).
 _TICK_TOKEN_THRESHOLD: Final = 256
 _TICK_TIME_THRESHOLD_S: Final = 0.5

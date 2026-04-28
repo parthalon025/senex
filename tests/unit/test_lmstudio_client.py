@@ -592,6 +592,47 @@ async def test_schema_fallback_400_unrelated_does_not_fallback(
 
 
 @pytest.mark.asyncio
+async def test_schema_fallback_on_lazy_grammar_400(
+    respx_mock: Any,
+    client: LMStudioClient,
+    audit_schema: dict[str, Any],
+) -> None:
+    """LM Studio 'Cannot combine structured output constraints with lazy grammar'
+    triggers the same json_schema -> json_object fallback as other schema errors.
+
+    Regression: _SCHEMA_ERROR_RE previously didn't match this message so the
+    HTTPStatusError propagated uncaught instead of falling back to json_object.
+    """
+    client._config.strict_json_schema = True  # type: ignore[attr-defined]
+    route = respx_mock.post("http://localhost:1234/v1/chat/completions")
+    route.side_effect = [
+        httpx.Response(
+            400,
+            json={
+                "error": {
+                    "message": (
+                        "Cannot combine structured output constraints with lazy grammar."
+                        " Error Data: n/a, Additional Data: n/a"
+                    )
+                }
+            },
+        ),
+        httpx.Response(200, json=_success_payload(_valid_audit_json())),
+    ]
+
+    resp = await client.chat(
+        task="file_audit",
+        messages=[ChatMessage(role="user", content="hi")],
+        schema=audit_schema,
+        tools=None,
+    )
+
+    assert resp.content_dict is not None
+    assert client._schema_mode == "json_object"  # type: ignore[attr-defined]
+    assert route.call_count == 2
+
+
+@pytest.mark.asyncio
 async def test_post_hoc_validation_failure_raises_LMSResponseSchemaInvalid(
     respx_mock: Any,
     client: LMStudioClient,
