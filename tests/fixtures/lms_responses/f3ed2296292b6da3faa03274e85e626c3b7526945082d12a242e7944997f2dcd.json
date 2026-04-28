@@ -1,0 +1,29 @@
+{
+  "request_hash": "f3ed2296292b6da3faa03274e85e626c3b7526945082d12a242e7944997f2dcd",
+  "status_code": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "id": "chatcmpl-recorded-replay-2",
+    "object": "chat.completion",
+    "created": 1777334400,
+    "model": "google/gemma-4-26b-a4b",
+    "choices": [
+      {
+        "index": 0,
+        "finish_reason": "stop",
+        "message": {
+          "role": "assistant",
+          "content": "{\"schema_version\":1,\"overall_assessment\":\"The single-line assignment is trivially safe; no concerns raised by this synthetic recorded-replay fixture used for offline regression of the LMStudioClient end-to-end path after the M7 schema oneOf->anyOf change. Captured against post-M7 schema bytes (v1.0.1).\",\"findings\":[],\"recommendations\":[{\"title\":\"Add a docstring describing the file's purpose\",\"rationale\":\"Module docstrings aid downstream readers and tooling.\",\"language\":\"python\"}]}",
+          "reasoning_content": "Tiny snippet, single integer literal binding. No issues to flag."
+        }
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 120,
+      "completion_tokens": 70,
+      "total_tokens": 190
+    }
+  }
+}

@@ -876,6 +876,22 @@ class LMStudioClient:
                 base_body=base_body, schema=schema, mode="json_object", path=path
             )
 
+        # v1.0.1 — Gemma + tools + response_format=json_schema returns an
+        # empty completion (the model's structured-output enforcement and
+        # tool-calling are mutually exclusive in current LM Studio: when
+        # both are requested, the model emits tool_calls or empty content
+        # and skips the structured content path entirely). Pre-emptively
+        # switch to json_object mode for THIS call so the model produces
+        # structured output, then validate post-hoc with Pydantic. We
+        # deliberately do NOT cache the decision here — when ToolLoop
+        # subsequently calls chat() WITHOUT tools to gather the final
+        # response, json_schema may still be the better mode for that
+        # turn. The session-wide cache is reserved for hard 400 fallbacks.
+        if base_body.get("tools"):
+            return await self._post_validate(
+                base_body=base_body, schema=schema, mode="json_object", path=path
+            )
+
         try:
             stream, parsed = await self._post_validate(
                 base_body=base_body, schema=schema, mode="json_schema", path=path
@@ -928,10 +944,32 @@ class LMStudioClient:
                 },
             }
         else:
-            body["response_format"] = {"type": "json_object"}
+            # v1.0.1 — LM Studio's OpenAI-compat surface only accepts
+            # ``response_format.type`` of ``json_schema`` or ``text``; it 400s
+            # on ``json_object`` (the OpenAI value). When tools are present
+            # we cannot use ``json_schema`` either (Gemma returns empty
+            # content). Solution: omit ``response_format`` entirely and rely
+            # on the system-prompt JSON reminder + post-hoc Pydantic
+            # validation to coerce + check structure. When tools are absent
+            # we keep using ``json_schema`` so we retain server-side
+            # enforcement on the strict-retry path. Either way, the
+            # ``_inject_json_object_reminder`` pushes the model toward
+            # producing valid JSON content.
             body["messages"] = _inject_json_object_reminder(
                 _deep_copy_messages(body.get("messages", [])), schema
             )
+            if not body.get("tools"):
+                # No tools → use the strictest mode LM Studio accepts.
+                body["response_format"] = {
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": "audit_response",
+                        "schema": _sanitize_schema_for_lmstudio(schema),
+                        "strict": True,
+                    },
+                }
+            # else: omit response_format; system prompt + post-hoc validation
+            # do the work. body["tools"] / body["tool_choice"] stay as-is.
 
         if _strict_retry:
             body["messages"] = _inject_strict_retry_preamble(

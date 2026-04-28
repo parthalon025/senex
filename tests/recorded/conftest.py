@@ -93,6 +93,58 @@ def recorded_lms(respx_mock: Any, fixture_dir: Path) -> Any:
     overwrite = record_env == "overwrite"
     fixture_dir.mkdir(parents=True, exist_ok=True)
 
+    def _live_send(req: httpx.Request) -> httpx.Response:
+        """Send ``req`` to the real upstream, bypassing respx interception.
+
+        respx hooks ``httpx``'s transport layer globally for the duration of
+        the test, so a naive ``httpx.Client(...).send(req)`` recurses back
+        into the mock router. We use stdlib ``http.client.HTTPConnection``
+        directly — it speaks raw HTTP without going through httpx and is
+        therefore not intercepted.
+
+        Constraints (intentionally narrow):
+        * ``http://`` only — LM Studio is always plaintext-localhost. We do
+          not enable HTTPS to sidestep TLS-validation pitfalls of the stdlib
+          ``HTTPSConnection`` API and to keep the recording surface minimal.
+        * Loopback hosts only — refuses non-localhost targets so a misconfigured
+          ``base_url`` cannot exfiltrate request bodies during recording.
+        """
+        import http.client
+
+        scheme = (req.url.scheme or "").lower()
+        if scheme != "http":
+            raise ValueError(
+                f"recorded_lms live mode only supports http://; got {scheme!r}"
+            )
+        host = req.url.host
+        if host not in ("localhost", "127.0.0.1", "::1"):
+            raise ValueError(
+                f"recorded_lms live mode only targets loopback; got host={host!r}"
+            )
+        port = req.url.port or 80
+        path = req.url.raw_path.decode("ascii") or "/"
+        conn = http.client.HTTPConnection(host, port, timeout=120.0)
+        try:
+            headers = {
+                k: v
+                for k, v in req.headers.items()
+                if k.lower() not in ("host", "content-length")
+            }
+            conn.request(
+                req.method, path, body=req.content or None, headers=headers
+            )
+            r = conn.getresponse()
+            body_bytes = r.read()
+            resp_headers = dict(r.getheaders())
+            status = r.status
+        finally:
+            conn.close()
+        return httpx.Response(
+            status_code=status,
+            headers=resp_headers,
+            content=body_bytes,
+        )
+
     def replay_or_capture(req: httpx.Request) -> httpx.Response:
         try:
             body = json.loads(req.content.decode("utf-8")) if req.content else {}
@@ -106,8 +158,11 @@ def recorded_lms(respx_mock: Any, fixture_dir: Path) -> Any:
                 # Replay rather than re-capture to avoid silent corruption
                 # (per plan §3.9.5 pitfall: gate destructive overwrites).
                 return _build_response_from_fixture(_load_fixture(fixture_path))
-            with httpx.Client(timeout=httpx.Timeout(60.0)) as live:
-                live_resp = live.send(req)
+            live_resp = _live_send(req)
+            try:
+                live_resp.read()  # materialize body before transport closes
+            except httpx.ResponseNotRead:
+                pass
             payload: dict[str, Any] = {
                 "request_hash": sha,
                 "status_code": live_resp.status_code,

@@ -2,6 +2,19 @@
 
 All notable changes to senex are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses semantic versioning.
 
+## [1.0.1] — 2026-04-27
+
+Patch release.
+
+### Fixed
+- Gemma + tools + `response_format=json_schema` returned empty content;
+  senex now pre-emptively uses `json_object` mode when tools are enabled
+  and validates the response post-hoc with Pydantic. Live audits now
+  produce findings on real flaws.
+- Recorded-LMS replay fixture regenerated against the post-M7 schema
+  shape; the previously-xfailed `test_replayed_audit_produces_valid_response`
+  now passes deterministically.
+
 ## [1.0.0] — 2026-04-27
 
 First stable release. Live validation gate 13a passed: full audit pipeline runs end-to-end against `google/gemma-4-26b-a4b` in LM Studio, produces all spec'd artifacts (per-file Markdown reports, `findings.json`, `combined.md`, `claude-handoff.md`, canonical `events.jsonl` event stream), with structured per-file metadata (tokens, latency, tools used, compactions) and run-level totals correctly populated.

@@ -1047,6 +1047,61 @@ async def test_chat_with_tools_passes_tools_and_tool_choice_to_request(
 
 
 @pytest.mark.asyncio
+async def test_chat_with_tools_and_schema_omits_response_format(
+    respx_mock: Any,
+    client: LMStudioClient,
+    audit_schema: dict[str, Any],
+) -> None:
+    """v1.0.1 fix: when tools AND schema are both supplied, the client must
+    pre-emptively switch to a no-server-enforcement mode. Background:
+
+    * Gemma + ``response_format=json_schema`` + ``tools`` returns empty
+      content (the model picks one path or the other, drops the schema one).
+    * LM Studio (current) 400s on ``response_format={"type":"json_object"}``
+      — its OpenAI-compat surface only accepts ``json_schema`` or ``text``.
+
+    Workaround: omit ``response_format`` entirely on this path, prepend a
+    system-prompt JSON reminder, then validate the response post-hoc with
+    Pydantic. Tools and tool_choice still go on the wire so the model can
+    request file reads, etc.
+    """
+    captured_bodies: list[dict[str, Any]] = []
+
+    def _record(request: httpx.Request) -> httpx.Response:
+        captured_bodies.append(json.loads(request.content.decode("utf-8")))
+        return httpx.Response(200, json=_success_payload(_valid_audit_json()))
+
+    respx_mock.post("http://localhost:1234/v1/chat/completions").mock(side_effect=_record)
+
+    resp = await client.chat(
+        task="file_audit",
+        messages=[ChatMessage(role="user", content="hi")],
+        schema=audit_schema,
+        tools=[_READ_FILE_TOOL],
+    )
+
+    # Exactly one round-trip — no probe-then-fallback.
+    assert len(captured_bodies) == 1
+    body = captured_bodies[0]
+    assert body.get("tools") == [_READ_FILE_TOOL]
+    assert body.get("tool_choice") == "auto"
+    # Critical: response_format MUST be omitted when tools are present —
+    # LM Studio rejects "json_object" outright and "json_schema" empties
+    # the response on Gemma. Validation is post-hoc via Pydantic instead.
+    assert "response_format" not in body
+    # System-prompt reminder is the JSON-coercion mechanism on this path.
+    system_msgs = [m for m in body.get("messages", []) if m.get("role") == "system"]
+    assert system_msgs, "JSON reminder must be injected as a system message"
+    assert "JSON" in str(system_msgs[0].get("content", ""))
+    # The session-wide cache MUST NOT be flipped by this per-call adaptation:
+    # subsequent tool-less calls may still use json_schema where supported.
+    assert client._schema_mode is None  # type: ignore[attr-defined]
+    # And the response was still parsed + validated post-hoc.
+    assert resp.content_dict is not None
+    assert resp.content_dict["schema_version"] == 1
+
+
+@pytest.mark.asyncio
 async def test_chat_without_tools_omits_tools_field(
     respx_mock: Any,
     client: LMStudioClient,
