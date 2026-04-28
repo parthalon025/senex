@@ -13,6 +13,7 @@ include_tests    = false
 
 [walker]
 max_size_bytes        = 524288
+max_files             = 50000
 extensions            = [".py", ".ts", ".tsx", ".js", ".jsx", ".go", ".rs", ".java", ".kt", ".cs", ".cpp", ".c", ".h", ".hpp", ".swift", ".rb", ".php", ".sh", ".ps1", ".scala", ".ex", ".exs", ".dart", ".lua", ".zig", ".nim"]
 default_excludes      = ["node_modules", ".venv", "venv", "dist", "build", "__pycache__", "*.min.*", ".git", "vendor"]
 respect_gitignore     = true

@@ -38,6 +38,7 @@ class LensCfg(_StrictModel):
 class WalkerCfg(_StrictModel):
     # Defaults per spec §6 (must match the senex.config.toml.example values).
     max_size_bytes: int = Field(default=524_288, gt=0)
+    max_files: int = Field(default=50_000, gt=0)
     extensions: list[str] = Field(
         default_factory=lambda: [
             ".py", ".ts", ".tsx", ".js", ".jsx", ".go", ".rs",

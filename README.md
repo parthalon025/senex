@@ -73,6 +73,66 @@ Minimum edits to ship:
 3. **`[[repos]]`** — at least one `name` + absolute `path` entry. `senex audit --nightly`
    iterates every entry; ad-hoc runs target a single repo by argument.
 
+## LM Studio setup
+
+senex talks to LM Studio's local OpenAI-compat API. Two things must be done in the
+LM Studio UI before every audit (they persist across restarts once configured):
+
+### 1. Enable the local server
+
+Open LM Studio → click the **server icon** in the left sidebar (or go to the
+**Developer** tab) → click **Start Server**. The default address is
+`http://localhost:1234`; leave it unless you also change `[lmstudio].base_url`.
+
+> If the server is not running, `senex doctor` reports `lmstudio_reachable: fail`
+> and the audit exits with code 3.
+
+### 2. Load the model
+
+In LM Studio, search for and load the model whose **identifier matches exactly**
+what you have in `[lmstudio].model` (default: `google/gemma-4-26b-a4b`). The
+identifier must match byte-for-byte; senex compares it against `/v1/models` at
+preflight.
+
+If you set `[lmstudio.lifecycle].auto_load = true`, senex will load/unload the
+model automatically via the `lmstudio` Python SDK or the `lms` CLI — whichever
+is available. The `lmstudio` SDK ships with the Python package; the `lms` CLI
+requires a separate install from lmstudio.ai.
+
+> Model not loaded + `auto_load = false` → `model_loaded: fail`, exit code 3.
+
+### 3. Set context length before the first run (required)
+
+LM Studio's default context window is **262 144 tokens**. At that size the
+KV cache alone consumes ~24 GB of VRAM on gemma-4-26b and the model will fail
+to load on most hardware. **Change it to 16384 or 32768** in the model's
+load settings before starting the server.
+
+To change it: in LM Studio, open the loaded model's settings panel →
+**Context Length** → type `16384` → reload the model.
+
+Also set this in `senex.config.toml` so the two values stay in sync:
+
+```toml
+[lmstudio]
+context_window = 16384   # must match what you set in LM Studio
+```
+
+### 4. Recommended one-time settings
+
+| LM Studio setting | Recommended value | Why |
+|---|---|---|
+| **Context Length** | 16384 or 32768 | Reduces KV-cache VRAM from ~24 GB to ~2–4 GB |
+| **Parallel requests** | 1 | Each slot reserves KV cache headroom; use 4 only if VRAM allows |
+| **Flash Attention v2** | On | KV cache compression; enable if your model supports it |
+| **Speculative decoding** | On | 1.5–3× speedup; enable if available for your model |
+| **GPU offload** | Max layers that fit | Any layer offloaded to CPU degrades throughput |
+
+These settings persist per-model in LM Studio and do not need to be changed on
+subsequent runs unless you switch models.
+
+---
+
 ## Run
 
 ```powershell

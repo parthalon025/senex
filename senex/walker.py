@@ -7,7 +7,7 @@ audit.
 
 Conventions cross-refs:
 - §1 Code style: pathlib over os.path; ``from __future__ import annotations``.
-- §3 Async/concurrency: bounded iteration (`_MAX_FILES_HARD_CAP`).
+- §3 Async/concurrency: bounded iteration (`WalkerCfg.max_files`).
 - §4 Error handling: named exceptions only.
 - §5 Security: §SEC-3 symlink-escape guard; resolve THEN is_relative_to.
 - §6 Testing: pure data return; no async I/O; auditor (M8) publishes
@@ -25,8 +25,6 @@ import pathspec
 from .config import WalkerCfg
 from .events import EventBus
 
-# Hard cap on discovered files; refuses to silently truncate (Conventions §3).
-_MAX_FILES_HARD_CAP: int = 50_000
 
 
 class WalkerError(Exception):
@@ -46,7 +44,7 @@ class PathOutsideRepo(WalkerError):
 
 
 class WalkerLimitExceeded(WalkerError):
-    """Exceeded `_MAX_FILES_HARD_CAP` (default 50000); refuses to truncate."""
+    """Exceeded `WalkerCfg.max_files`; refuses to truncate silently."""
 
 
 @dataclass(frozen=True)
@@ -97,7 +95,7 @@ class Walker:
 
         Raises:
             RepoPathInvalid: repo_path missing / not a directory / no `.git/`.
-            WalkerLimitExceeded: > `_MAX_FILES_HARD_CAP` files discovered.
+            WalkerLimitExceeded: > `config.max_files` files discovered.
         """
         # 1. Validate repo
         if not repo_path.exists() or not repo_path.is_dir():
@@ -133,26 +131,12 @@ class Walker:
             repo_path, followlinks=False, topdown=True
         ):
             # Prune excluded dirs in-place so os.walk does not descend.
-            # Exception: if a dir is also matched by .gitignore, descend
-            # so every file inside is recorded with a "gitignore" reason
-            # (otherwise the dir vanishes silently from the report).
-            kept_dirs: list[str] = []
-            for d in sorted(dirnames):
-                if d not in excludes:
-                    kept_dirs.append(d)
-                    continue
-                # Check if gitignore matches this dir; if so, descend.
-                dir_rel = (
-                    (Path(dirpath) / d).relative_to(repo_path).as_posix() + "/"
-                )
-                if spec.match_file(dir_rel):
-                    kept_dirs.append(d)
-            dirnames[:] = kept_dirs
+            dirnames[:] = [d for d in sorted(dirnames) if d not in excludes]
             for fname in sorted(filenames):
                 file_count += 1
-                if file_count > _MAX_FILES_HARD_CAP:
+                if file_count > config.max_files:
                     raise WalkerLimitExceeded(
-                        f"discovered > {_MAX_FILES_HARD_CAP} files; "
+                        f"discovered > {config.max_files} files; "
                         f"raise WalkerCfg.max_files or narrow excludes"
                     )
                 candidate = Path(dirpath) / fname

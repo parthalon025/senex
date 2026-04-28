@@ -241,8 +241,8 @@ def test_wizard_confirm_yes_returns_runtime_config(tmp_path: Path) -> None:
         lmstudio=cfg.lmstudio.model_copy(update={"model": "m1"}),
     )
     client = _fake_client(["m1", "m2"])
-    # 1=repo  ""=default model  ""=include_tests N  ""=thinking Y  ""=confirm Y
-    stdin = io.StringIO("1\n\n\n\n\n")
+    # 1=repo  ""=default model  ""=ctx_window  ""=effort  ""=include_tests N  ""=thinking Y  ""=confirm Y
+    stdin = io.StringIO("1\n\n\n\n\n\n\n")
     stdout = io.StringIO()
     rt = interactive_audit_setup(cfg, client, stdin=stdin, stdout=stdout)
     assert rt.repo == repo_a
@@ -259,8 +259,8 @@ def test_wizard_confirm_no_raises_cancelled(tmp_path: Path) -> None:
         lmstudio=cfg.lmstudio.model_copy(update={"model": "m1"}),
     )
     client = _fake_client(["m1"])
-    # 1=repo  ""=default model  ""=tests-N  ""=thinking-Y  n=confirm
-    stdin = io.StringIO("1\n\n\n\n n\n")
+    # 1=repo  ""=default model  ""=ctx_window  ""=effort  ""=tests-N  ""=thinking-Y  n=confirm
+    stdin = io.StringIO("1\n\n\n\n\n\n n\n")
     stdout = io.StringIO()
     with pytest.raises(WizardCancelled):
         interactive_audit_setup(cfg, client, stdin=stdin, stdout=stdout)
@@ -280,6 +280,101 @@ def test_wizard_ctrl_c_raises_cancelled(tmp_path: Path) -> None:
     stdout = io.StringIO()
     with pytest.raises(WizardCancelled):
         interactive_audit_setup(cfg, client, stdin=_BoomStream(), stdout=stdout)
+
+
+# ---------------------------------------------------------------------------
+# Context window selection
+# ---------------------------------------------------------------------------
+
+
+def test_select_context_window_enter_keeps_current() -> None:
+    from senex.cli_wizard import _select_context_window
+
+    stdin = io.StringIO("\n")
+    stdout = io.StringIO()
+    assert _select_context_window(32768, stdin=stdin, stdout=stdout) == 32768
+
+
+def test_select_context_window_pick_by_number() -> None:
+    from senex.cli_wizard import _select_context_window, _CONTEXT_WINDOW_OPTIONS
+
+    stdin = io.StringIO("1\n")
+    stdout = io.StringIO()
+    result = _select_context_window(_CONTEXT_WINDOW_OPTIONS[0], stdin=stdin, stdout=stdout)
+    assert result == _CONTEXT_WINDOW_OPTIONS[0]
+
+
+def test_select_context_window_shows_recommended_tag() -> None:
+    from senex.cli_wizard import _select_context_window
+
+    stdin = io.StringIO("\n")
+    stdout = io.StringIO()
+    _select_context_window(32768, stdin=stdin, stdout=stdout)
+    out = stdout.getvalue()
+    assert "recommended" in out
+
+
+# ---------------------------------------------------------------------------
+# Effort selection
+# ---------------------------------------------------------------------------
+
+
+def test_select_effort_enter_keeps_current() -> None:
+    from senex.cli_wizard import _select_effort
+
+    stdin = io.StringIO("\n")
+    stdout = io.StringIO()
+    assert _select_effort("high", stdin=stdin, stdout=stdout) == "high"
+
+
+def test_select_effort_pick_medium_by_number() -> None:
+    from senex.cli_wizard import _select_effort
+
+    # Options are high(1), medium(2), low(3).
+    stdin = io.StringIO("2\n")
+    stdout = io.StringIO()
+    assert _select_effort("high", stdin=stdin, stdout=stdout) == "medium"
+
+
+def test_select_effort_pick_by_name() -> None:
+    from senex.cli_wizard import _select_effort
+
+    stdin = io.StringIO("low\n")
+    stdout = io.StringIO()
+    assert _select_effort("high", stdin=stdin, stdout=stdout) == "low"
+
+
+def test_select_effort_shows_time_estimates() -> None:
+    from senex.cli_wizard import _select_effort
+
+    stdin = io.StringIO("\n")
+    stdout = io.StringIO()
+    _select_effort("medium", stdin=stdin, stdout=stdout)
+    out = stdout.getvalue()
+    assert "min/file" in out
+
+
+# ---------------------------------------------------------------------------
+# Full wizard — effort and context_window propagate to RuntimeConfig
+# ---------------------------------------------------------------------------
+
+
+def test_wizard_effort_and_ctx_propagate_to_config(tmp_path: Path) -> None:
+    """Selecting effort=low and context_window=16384 reaches RuntimeConfig."""
+    from senex.cli_wizard import interactive_audit_setup
+
+    cfg, repo_a, _ = _two_repo_config(tmp_path)
+    cfg = SenexConfig(
+        repos=cfg.repos,
+        lmstudio=cfg.lmstudio.model_copy(update={"model": "m1"}),
+    )
+    client = _fake_client(["m1"])
+    # 1=repo  ""=model  2=ctx(16384)  3=effort(low)  ""=tests  ""=thinking  ""=confirm
+    stdin = io.StringIO("1\n\n2\n3\n\n\n\n")
+    stdout = io.StringIO()
+    rt = interactive_audit_setup(cfg, client, stdin=stdin, stdout=stdout)
+    assert rt.config.lmstudio.context_window == 16384
+    assert rt.config.lmstudio.thinking.effort == "low"
 
 
 # ---------------------------------------------------------------------------

@@ -326,6 +326,154 @@ def _select_model(
 
 
 # ---------------------------------------------------------------------------
+# Helpers — LM Studio checklist
+# ---------------------------------------------------------------------------
+
+_LMS_CHECKLIST_ITEMS: tuple[str, ...] = (
+    "Server running  →  LM Studio > server icon > Start Server",
+    "Context Length  →  model settings > Context Length > set to 16384 or 32768",
+    "Parallel reqs   →  model settings > Parallel requests > 1 (if VRAM-constrained)",
+)
+
+
+def _print_lms_checklist(base_url: str, stdout: "TextIO") -> None:
+    """Print the LM Studio pre-flight checklist; no user input required."""
+    _print(stdout, "")
+    _print(stdout, "LM Studio — confirm these are set before continuing:")
+    for item in _LMS_CHECKLIST_ITEMS:
+        _print(stdout, f"  [ ] {item}")
+    _print(stdout, f"      (API at {base_url})")
+
+
+# ---------------------------------------------------------------------------
+# Helpers — context window selection
+# ---------------------------------------------------------------------------
+
+_CONTEXT_WINDOW_OPTIONS: tuple[int, ...] = (8192, 16384, 32768, 65536, 131072)
+
+
+def _select_context_window(
+    current: int,
+    *,
+    stdin: TextIO | None = None,
+    stdout: TextIO | None = None,
+) -> int:
+    """Prompt for the context window size; returns the chosen value.
+
+    The chosen value must match whatever is set in LM Studio's model
+    settings — senex uses it to compute per-call token budgets.
+
+    Args:
+        current: Current configured value (shown as pre-selected default).
+        stdin: Input stream (default ``sys.stdin``).
+        stdout: Output stream (default ``sys.stdout``).
+
+    Returns:
+        Selected context window size (int).
+
+    Raises:
+        WizardCancelled: User cancelled.
+    """
+    import sys
+
+    sin: TextIO = stdin if stdin is not None else sys.stdin
+    sout: TextIO = stdout if stdout is not None else sys.stdout
+
+    options = list(_CONTEXT_WINDOW_OPTIONS)
+    if current not in options:
+        options = sorted({current, *options})
+
+    for _ in range(8):
+        _print(sout, "")
+        _print(sout, "Context window (must match LM Studio model settings → Context Length):")
+        for i, v in enumerate(options, start=1):
+            tag = " ← recommended" if v in (16384, 32768) else ""
+            cur = "  (current)" if v == current else ""
+            _print(sout, f"  {i}) {v}{tag}{cur}")
+        _print(sout, f"  Enter to keep current ({current})")
+        _print(sout, "  q) Cancel")
+        sout.flush()
+
+        raw = _read_line(sin).strip()
+        if raw.lower() in ("q", "quit", "exit"):
+            raise WizardCancelled("user cancelled at context window")
+        if raw == "":
+            return current
+        if raw.isdigit():
+            idx = int(raw)
+            if 1 <= idx <= len(options):
+                return options[idx - 1]
+            _print(sout, f"  ! choice out of range: {idx}")
+            continue
+        _print(sout, "  ! please enter a number or press Enter")
+
+    raise WizardCancelled("context window selection exhausted retries")
+
+
+# ---------------------------------------------------------------------------
+# Helpers — effort level selection
+# ---------------------------------------------------------------------------
+
+_EFFORT_OPTIONS: tuple[tuple[str, str], ...] = (
+    ("high",   "~7-8 min/file  deep reasoning, best quality"),
+    ("medium", "~3-4 min/file  balanced"),
+    ("low",    "~1-2 min/file  quick triage"),
+)
+
+
+def _select_effort(
+    current: str,
+    *,
+    stdin: TextIO | None = None,
+    stdout: TextIO | None = None,
+) -> str:
+    """Prompt for audit effort (thinking depth); returns the chosen level.
+
+    Args:
+        current: Current configured effort (shown as pre-selected default).
+        stdin: Input stream (default ``sys.stdin``).
+        stdout: Output stream (default ``sys.stdout``).
+
+    Returns:
+        One of ``"high"``, ``"medium"``, ``"low"``.
+
+    Raises:
+        WizardCancelled: User cancelled.
+    """
+    import sys
+
+    sin: TextIO = stdin if stdin is not None else sys.stdin
+    sout: TextIO = stdout if stdout is not None else sys.stdout
+
+    for _ in range(8):
+        _print(sout, "")
+        _print(sout, "Audit effort:")
+        for i, (level, desc) in enumerate(_EFFORT_OPTIONS, start=1):
+            cur = "  (current)" if level == current else ""
+            _print(sout, f"  {i}) {level:<8} {desc}{cur}")
+        _print(sout, f"  Enter to keep current ({current})")
+        _print(sout, "  q) Cancel")
+        sout.flush()
+
+        raw = _read_line(sin).strip()
+        if raw.lower() in ("q", "quit", "exit"):
+            raise WizardCancelled("user cancelled at effort select")
+        if raw == "":
+            return current
+        if raw.isdigit():
+            idx = int(raw)
+            if 1 <= idx <= len(_EFFORT_OPTIONS):
+                return _EFFORT_OPTIONS[idx - 1][0]
+            _print(sout, f"  ! choice out of range: {idx}")
+            continue
+        if raw in {level for level, _ in _EFFORT_OPTIONS}:
+            return raw
+        _print(sout, "  ! please enter a number, level name, or press Enter")
+
+    raise WizardCancelled("effort selection exhausted retries")
+
+
+# ---------------------------------------------------------------------------
 # Helpers — yes/no
 # ---------------------------------------------------------------------------
 
@@ -517,10 +665,11 @@ def interactive_audit_setup(
     sout: TextIO = stdout if stdout is not None else sys.stdout
 
     try:
-        # 1. Welcome banner.
+        # 1. Welcome banner + LM Studio checklist.
         _print(sout, "")
         _print(sout, f"senex audit wizard (v{senex.__version__})")
         _print(sout, "─" * 40)
+        _print_lms_checklist(config.lmstudio.base_url, sout)
 
         # 2. Repo selection.
         repo_name, repo_path = _select_repo(config, stdin=stdin, stdout=sout)
@@ -535,14 +684,30 @@ def interactive_audit_setup(
         )
         _print(sout, f"  -> model: {chosen_model}")
 
-        # 4. Lens — fixed at "correctness" for v1; no prompt.
+        # 4. Context window (must match LM Studio's model settings).
+        chosen_ctx = _select_context_window(
+            config.lmstudio.context_window,
+            stdin=stdin,
+            stdout=sout,
+        )
+        _print(sout, f"  -> context window: {chosen_ctx}")
+
+        # 5. Effort level.
+        chosen_effort = _select_effort(
+            config.lmstudio.thinking.effort,
+            stdin=stdin,
+            stdout=sout,
+        )
+        _print(sout, f"  -> effort: {chosen_effort}")
+
+        # 6. Lens — fixed at "correctness" for v1; no prompt.
         lens_name = "correctness"
         try:
             lens = Lens.load(lens_name)
         except FileNotFoundError as exc:
             raise WizardError(f"lens {lens_name!r} not found: {exc}") from exc
 
-        # 5. Include tests?
+        # 7. Include tests?
         include_tests = _yes_no(
             "Include tests?",
             default=False,
@@ -550,7 +715,7 @@ def interactive_audit_setup(
             stdout=sout,
         )
 
-        # 6. Save thinking traces?
+        # 8. Save thinking traces?
         save_thinking = _yes_no(
             "Save thinking traces?",
             default=True,
@@ -558,9 +723,9 @@ def interactive_audit_setup(
             stdout=sout,
         )
 
-        # 7. Confirm.
+        # 9. Confirm.
         proceed = _yes_no(
-            f"Start audit on {repo_name} with {chosen_model}?",
+            f"Start audit on {repo_name} with {chosen_model} ({chosen_effort} effort)?",
             default=True,
             stdin=stdin,
             stdout=sout,
@@ -576,7 +741,8 @@ def interactive_audit_setup(
     overrides: dict[str, Any] = {
         "lmstudio": {
             "model": chosen_model,
-            "thinking": {"save_traces": save_thinking},
+            "context_window": chosen_ctx,
+            "thinking": {"save_traces": save_thinking, "effort": chosen_effort},
         },
         "lens": {
             "name": lens_name,
@@ -617,4 +783,6 @@ __all__ = [
     "WizardCancelled",
     "WizardError",
     "interactive_audit_setup",
+    "_select_context_window",
+    "_select_effort",
 ]

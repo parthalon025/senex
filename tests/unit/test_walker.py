@@ -40,14 +40,17 @@ def _windows_supports_symlinks() -> bool:
 
 def test_walker_gitignore_skips_ignored_files(tmp_path: Path) -> None:
     (tmp_path / ".git").mkdir()
+    # Use "generated/" — gitignored but not in default_excludes, so walker
+    # descends and reports files as "gitignore".  "build/" is in default_excludes
+    # and is pruned outright (no skipped entry emitted).
     (tmp_path / ".gitignore").write_text(
-        "ignored.py\nbuild/\n*.log\n", encoding="utf-8"
+        "ignored.py\ngenerated/\n*.log\n", encoding="utf-8"
     )
     (tmp_path / "kept.py").write_text("x = 1\n", encoding="utf-8")
     (tmp_path / "ignored.py").write_text("x = 2\n", encoding="utf-8")
     (tmp_path / "stray.log").write_text("noise\n", encoding="utf-8")
-    (tmp_path / "build").mkdir()
-    (tmp_path / "build" / "out.py").write_text("x = 3\n", encoding="utf-8")
+    (tmp_path / "generated").mkdir()
+    (tmp_path / "generated" / "out.py").write_text("x = 3\n", encoding="utf-8")
     result = Walker(EventBus()).discover(tmp_path, WalkerCfg())
     kept_relpaths = {p.relative_to(tmp_path).as_posix() for p in result.kept}
     assert kept_relpaths == {"kept.py"}
@@ -85,6 +88,23 @@ def test_walker_default_excludes(tmp_path: Path, excluded: str) -> None:
     relpaths = {p.relative_to(tmp_path).as_posix() for p in result.kept}
     assert "kept.py" in relpaths
     assert all(excluded not in p for p in relpaths)
+
+
+def test_walker_excluded_dir_also_in_gitignore_does_not_count_toward_limit(
+    tmp_path: Path,
+) -> None:
+    # Regression: .venv is in default_excludes AND .gitignore. Previously the
+    # walker descended into it anyway, causing WalkerLimitExceeded on real repos.
+    (tmp_path / ".git").mkdir()
+    (tmp_path / ".gitignore").write_text(".venv/\n", encoding="utf-8")
+    venv = tmp_path / ".venv"
+    venv.mkdir()
+    for i in range(10):
+        (venv / f"pkg{i}.py").write_text("x=1\n", encoding="utf-8")
+    (tmp_path / "src.py").write_text("x=1\n", encoding="utf-8")
+    cfg = WalkerCfg(max_files=5)  # would trip if walker descends into .venv
+    result = Walker(EventBus()).discover(tmp_path, cfg)
+    assert {p.name for p in result.kept} == {"src.py"}
 
 
 def test_walker_excludes_tests_dir_when_include_tests_false(tmp_path: Path) -> None:
