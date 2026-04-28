@@ -55,6 +55,11 @@ class WalkerCfg(_StrictModel):
     )
     respect_gitignore: bool = True
     include_tests: bool = False
+    scan_subdir: str = Field(default="", description=(
+        "Relative path (from repo root) to restrict the file walk to. "
+        "Useful for monorepos or repos with large non-code trees outside src/. "
+        "Empty string (default) walks the entire repo root."
+    ))
 
 
 class CrosscutCfg(_StrictModel):

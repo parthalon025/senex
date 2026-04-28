@@ -60,6 +60,14 @@ def select_anchor(file_path: str | Path) -> str | None:
 _UNSUBBED_RE = re.compile(r"\{[A-Za-z_][A-Za-z0-9_]*\}")
 
 
+_TEMPLATE_KEYS: tuple[str, ...] = (
+    "file_relpath",
+    "language",
+    "graph_context",
+    "numbered_source",
+)
+
+
 def build_user_prompt(
     *,
     file_relpath: str,
@@ -79,21 +87,23 @@ def build_user_prompt(
         The substituted prompt body.
 
     Raises:
-        PromptTemplateUnsubstituted: a ``{name}`` token survived
-            substitution (template typo or missing variable).
+        PromptTemplateUnsubstituted: a template token (e.g. ``{file_relpath}``)
+            was missing from the template — indicates a template authoring bug.
+            Does NOT fire on ``{word}`` patterns inside substituted values
+            (graph context, source code) since those are external data.
     """
     template = _read_prompt("per_file_user.md")
-    out = template
-    for key, val in (
-        ("file_relpath", file_relpath),
-        ("language", language),
-        ("graph_context", graph_context),
-        ("numbered_source", numbered_source),
-    ):
-        out = out.replace("{" + key + "}", val)
-    leftover = _UNSUBBED_RE.findall(out)
-    if leftover:
+    values = (file_relpath, language, graph_context, numbered_source)
+    missing = [
+        "{" + k + "}"
+        for k in _TEMPLATE_KEYS
+        if "{" + k + "}" not in template
+    ]
+    if missing:
         raise PromptTemplateUnsubstituted(
-            f"unsubstituted template tokens: {leftover}"
+            f"unsubstituted template tokens: {missing}"
         )
+    out = template
+    for key, val in zip(_TEMPLATE_KEYS, values):
+        out = out.replace("{" + key + "}", val)
     return out

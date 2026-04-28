@@ -107,6 +107,28 @@ def test_walker_excluded_dir_also_in_gitignore_does_not_count_toward_limit(
     assert {p.name for p in result.kept} == {"src.py"}
 
 
+def test_walker_scan_subdir_restricts_walk(tmp_path: Path) -> None:
+    # Only files under src/ are kept; noise at root and in other dirs is ignored.
+    (tmp_path / ".git").mkdir()
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "app.py").write_text("x=1\n", encoding="utf-8")
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "readme.py").write_text("x=1\n", encoding="utf-8")
+    (tmp_path / "root.py").write_text("x=1\n", encoding="utf-8")
+    cfg = WalkerCfg(scan_subdir="src")
+    result = Walker(EventBus()).discover(tmp_path, cfg)
+    relpaths = {p.relative_to(tmp_path).as_posix() for p in result.kept}
+    assert relpaths == {"src/app.py"}
+
+
+def test_walker_scan_subdir_missing_raises(tmp_path: Path) -> None:
+    from senex.walker import RepoPathInvalid
+    (tmp_path / ".git").mkdir()
+    cfg = WalkerCfg(scan_subdir="nonexistent")
+    with pytest.raises(RepoPathInvalid, match="scan_subdir"):
+        Walker(EventBus()).discover(tmp_path, cfg)
+
+
 def test_walker_excludes_tests_dir_when_include_tests_false(tmp_path: Path) -> None:
     (tmp_path / ".git").mkdir()
     (tmp_path / "src.py").write_text("x=1\n", encoding="utf-8")

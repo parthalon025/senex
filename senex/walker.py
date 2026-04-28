@@ -106,6 +106,16 @@ class Walker:
             raise RepoPathInvalid(f"repo_path {repo_path} has no .git/ subdir")
         repo_root_resolved = repo_path.resolve(strict=True)
 
+        # 1b. Resolve scan root: walk from repo_path/scan_subdir when set.
+        if config.scan_subdir:
+            walk_root = repo_path / config.scan_subdir
+            if not walk_root.exists() or not walk_root.is_dir():
+                raise RepoPathInvalid(
+                    f"scan_subdir {config.scan_subdir!r} does not exist under {repo_path}"
+                )
+        else:
+            walk_root = repo_path
+
         # 2. Load .gitignore (if present) via pathspec (Conventions §14: do
         #    not re-implement what the ecosystem covers).
         gi = repo_path / ".gitignore"
@@ -128,7 +138,7 @@ class Walker:
 
         # 4. Walk; followlinks=False is mandatory (§SEC-3).
         for dirpath, dirnames, filenames in os.walk(
-            repo_path, followlinks=False, topdown=True
+            walk_root, followlinks=False, topdown=True
         ):
             # Prune excluded dirs in-place so os.walk does not descend.
             dirnames[:] = [d for d in sorted(dirnames) if d not in excludes]
