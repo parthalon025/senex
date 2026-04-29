@@ -47,7 +47,15 @@ async def test_gitnexus_subprocess_uses_listform_args_no_shell() -> None:
         await provider.fetch("senex/walker.py")
         assert exec_mock.called
         args, kwargs = exec_mock.call_args
-        assert args[0] == "C:/abs/npx.cmd"
+        # On Windows, .cmd wrappers go through cmd.exe /c; on other platforms
+        # the npx path is the first arg directly.
+        import sys
+        if sys.platform == "win32":
+            assert args[0] == "cmd.exe"
+            assert args[1] == "/c"
+            assert args[2] == "C:/abs/npx.cmd"
+        else:
+            assert args[0] == "C:/abs/npx.cmd"
         # No shell-mode invocation under any circumstance.
         assert "shell" not in kwargs or kwargs.get("shell") is False
         # The CLI used: gitnexus query --repo <repo> "<goal>".
@@ -226,8 +234,8 @@ async def test_preflight_resolves_npx_absolute_path() -> None:
 
 @pytest.mark.asyncio
 async def test_preflight_raises_when_npx_missing() -> None:
-    with patch(
-        "senex.graph_awareness.shutil.which", return_value=None
+    with patch("senex.graph_awareness.shutil.which", return_value=None), patch(
+        "senex.graph_awareness.Path.is_file", return_value=False
     ):
         with pytest.raises(GitNexusUnavailable):
             await GitNexusCLIProvider.preflight(

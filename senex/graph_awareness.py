@@ -18,10 +18,13 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import re
 import shutil
+import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Protocol
 
 from .events import EventBus, GraphContextUnavailable
@@ -139,12 +142,27 @@ class GitNexusCLIProvider:
     ) -> GitNexusCLIProvider:
         """Resolve `npx` once and pin the absolute path for the run.
 
+        On Windows, ``shutil.which`` may return ``None`` when senex is launched
+        from Git Bash (which omits the Node.js directory from PATH).  We fall
+        back to well-known installation paths before giving up.
+
         Raises:
-            GitNexusUnavailable: npx not on PATH.
+            GitNexusUnavailable: npx not found anywhere.
         """
         npx = shutil.which("npx")
+        if npx is None and sys.platform == "win32":
+            _candidates = [
+                Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "nodejs" / "npx.cmd",
+                Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")) / "nodejs" / "npx.cmd",
+                Path(os.environ.get("APPDATA", "")) / "npm" / "npx.cmd",
+                Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "nodejs" / "npx.cmd",
+            ]
+            for candidate in _candidates:
+                if candidate.is_file():
+                    npx = str(candidate)
+                    break
         if not npx:
-            raise GitNexusUnavailable("npx not found on PATH")
+            raise GitNexusUnavailable("npx not found on PATH or in common Windows locations")
         return cls(repo_name=repo_name, npx_path=npx, bus=bus)
 
     async def fetch(self, file_relpath: str) -> GraphContext:
@@ -194,15 +212,25 @@ class GitNexusCLIProvider:
         )
         return {rp: ctx for rp, ctx in zip(file_relpaths, results)}
 
+    def _npx_argv(self) -> tuple[str, ...]:
+        """Return the argv prefix for invoking npx.
+
+        On Windows, ``.cmd`` / ``.bat`` wrappers must go through ``cmd.exe``
+        because ``CreateProcess`` cannot execute batch files directly.
+        """
+        if sys.platform == "win32" and Path(self._npx_path).suffix.lower() in (".cmd", ".bat"):
+            return ("cmd.exe", "/c", self._npx_path)
+        return (self._npx_path,)
+
     async def _run(self, args: list[str]) -> dict[str, Any]:
         """Subprocess wrapper -- the security boundary (section SEC-4).
 
         NEVER ``shell=True``; NEVER string-concatenated args.
         """
+        _npx_argv = self._npx_argv()
+        _full_argv = (*_npx_argv, "gitnexus", *args)
         proc = await asyncio.create_subprocess_exec(
-            self._npx_path,
-            "gitnexus",
-            *args,
+            *_full_argv,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )

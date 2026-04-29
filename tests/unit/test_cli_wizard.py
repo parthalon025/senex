@@ -241,8 +241,8 @@ def test_wizard_confirm_yes_returns_runtime_config(tmp_path: Path) -> None:
         lmstudio=cfg.lmstudio.model_copy(update={"model": "m1"}),
     )
     client = _fake_client(["m1", "m2"])
-    # 1=repo  ""=default model  ""=ctx_window  ""=effort  ""=include_tests N  ""=thinking Y  ""=confirm Y
-    stdin = io.StringIO("1\n\n\n\n\n\n\n")
+    # 1=repo  ""=scan_subdir  ""=default model  ""=ctx_window  ""=effort  ""=include_tests N  ""=thinking Y  ""=confirm Y
+    stdin = io.StringIO("1\n\n\n\n\n\n\n\n")
     stdout = io.StringIO()
     rt = interactive_audit_setup(cfg, client, stdin=stdin, stdout=stdout)
     assert rt.repo == repo_a
@@ -369,8 +369,8 @@ def test_wizard_effort_and_ctx_propagate_to_config(tmp_path: Path) -> None:
         lmstudio=cfg.lmstudio.model_copy(update={"model": "m1"}),
     )
     client = _fake_client(["m1"])
-    # 1=repo  ""=model  2=ctx(16384)  3=effort(low)  ""=tests  ""=thinking  ""=confirm
-    stdin = io.StringIO("1\n\n2\n3\n\n\n\n")
+    # 1=repo  ""=scan_subdir  ""=model  2=ctx(16384)  3=effort(low)  ""=tests  ""=thinking  ""=confirm
+    stdin = io.StringIO("1\n\n\n2\n3\n\n\n\n")
     stdout = io.StringIO()
     rt = interactive_audit_setup(cfg, client, stdin=stdin, stdout=stdout)
     assert rt.config.lmstudio.context_window == 16384

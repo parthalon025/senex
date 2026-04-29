@@ -59,8 +59,8 @@ async def gitnexus_query_handler(
     we still bound the subprocess at the same timeout for defense-in-depth
     so we can reap a stuck child process.
     """
-    proc = await asyncio.create_subprocess_exec(
-        str(ctx.npx_path),
+    _argv = [
+        *ctx.npx_cmd,
         "gitnexus",
         "query",
         "--repo",
@@ -70,6 +70,9 @@ async def gitnexus_query_handler(
         "--limit",
         str(inp.limit),
         "--json",
+    ]
+    proc = await asyncio.create_subprocess_exec(
+        *_argv,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )

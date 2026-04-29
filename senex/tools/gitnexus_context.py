@@ -72,7 +72,7 @@ async def gitnexus_context_handler(
 ) -> GitnexusContextOutput:
     """Run npx gitnexus context with hardened list-form arguments."""
     args = [
-        str(ctx.npx_path),
+        *ctx.npx_cmd,
         "gitnexus",
         "context",
         "--repo",

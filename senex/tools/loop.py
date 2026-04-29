@@ -35,6 +35,9 @@ M6 integration contract:
 """
 from __future__ import annotations
 
+import os
+import shutil
+import sys
 from collections import Counter
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
@@ -62,6 +65,31 @@ from .registry import ToolRegistry, ToolResult
 # Compaction hook signature: receives the message history, returns the
 # rewritten list when compaction fires, or ``None`` to leave it unchanged.
 MaybeCompact = Callable[[list[dict[str, Any]]], Awaitable[list[dict[str, Any]] | None]]
+
+
+def _resolve_npx_path() -> Path:
+    """Resolve the ``npx`` binary to an absolute path.
+
+    ``shutil.which`` covers the common case.  On Windows it may return
+    ``None`` when senex is launched from Git Bash (whose ``PATH`` often
+    omits the Node.js directory); we fall back to well-known installation
+    locations so the gitnexus tools work regardless of the launch shell.
+    """
+    found = shutil.which("npx")
+    if found:
+        return Path(found)
+    if sys.platform == "win32":
+        _candidates = [
+            Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "nodejs" / "npx.cmd",
+            Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")) / "nodejs" / "npx.cmd",
+            Path(os.environ.get("APPDATA", "")) / "npm" / "npx.cmd",
+            Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "nodejs" / "npx.cmd",
+        ]
+        for candidate in _candidates:
+            if candidate.is_file():
+                return candidate
+    return Path("npx")  # last resort — subprocess will raise FileNotFoundError
+
 
 # Mapping from registry-result kind -> event-Literal kind. The events module
 # restricts ToolError.kind to a fixed Literal; tool-side kinds are richer.
@@ -190,7 +218,7 @@ class ToolLoop:
         self._max_calls = max_calls
         self._tool_timeout_seconds = tool_timeout_seconds
         self._max_result_tokens = max_result_tokens
-        self._npx_path = npx_path or Path("npx")
+        self._npx_path = npx_path if npx_path is not None else _resolve_npx_path()
         self._bus = bus
         # Per-file tool dispatch counts; reset by each ``run()`` so a
         # reused loop instance reports the most recent file's tools.

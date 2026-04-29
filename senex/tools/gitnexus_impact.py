@@ -63,8 +63,8 @@ async def gitnexus_impact_handler(
     inp: GitnexusImpactInput, ctx: ToolContext
 ) -> GitnexusImpactOutput:
     """Run npx gitnexus impact with hardened list-form arguments."""
-    proc = await asyncio.create_subprocess_exec(
-        str(ctx.npx_path),
+    _argv = [
+        *ctx.npx_cmd,
         "gitnexus",
         "impact",
         "--repo",
@@ -76,6 +76,9 @@ async def gitnexus_impact_handler(
         "--depth",
         str(inp.depth),
         "--json",
+    ]
+    proc = await asyncio.create_subprocess_exec(
+        *_argv,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
