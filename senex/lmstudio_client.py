@@ -328,14 +328,29 @@ class LMStudioClient:
 
         # 4. Dispatch via schema fallback decision tree (§3.3).
         path_event = None  # M3 client doesn't know "path"; M8 supplies via task wrapper.
-        if schema is None:
-            # Unstructured (e.g. compaction) — single direct stream.
-            stream = await self._stream_with_retry(base_body, path=path_event)
-            content_dict: dict[str, object] | None = None
-        else:
-            stream, content_dict = await self._chat_with_schema_fallback(
-                base_body=base_body, schema=schema, path=path_event
-            )
+        try:
+            if schema is None:
+                # Unstructured (e.g. compaction) — single direct stream.
+                stream = await self._stream_with_retry(base_body, path=path_event)
+                content_dict: dict[str, object] | None = None
+            else:
+                stream, content_dict = await self._chat_with_schema_fallback(
+                    base_body=base_body, schema=schema, path=path_event
+                )
+        except httpx.HTTPStatusError as exc:
+            # Schema-related 400s are already handled inside _chat_with_schema_fallback
+            # (they trigger the json_schema → json_object fallback or SchemaNegotiationFailed).
+            # Any OTHER 4xx that escapes (e.g. jinja template rendering failure on qwen3
+            # models — "No user query found in messages") reaches here as a raw
+            # httpx.HTTPStatusError and is NOT caught by _audit_one's LMStudioError handler,
+            # which would crash the entire run. Wrap 4xx so the §8.2 recovery matrix
+            # treats it as a per-file lms_error instead. 5xx re-raises unchanged
+            # (has its own retry/abort semantics in _stream_with_retry).
+            if 400 <= exc.response.status_code < 500:
+                raise SchemaNegotiationFailed(
+                    f"LM Studio HTTP {exc.response.status_code}: {exc.response.text[:200]}"
+                ) from exc
+            raise
 
         return ChatResponse(
             content=stream.content,

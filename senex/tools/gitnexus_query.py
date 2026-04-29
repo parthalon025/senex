@@ -65,11 +65,9 @@ async def gitnexus_query_handler(
         "query",
         "--repo",
         ctx.repo_name,
-        "--query",
-        inp.query,
         "--limit",
         str(inp.limit),
-        "--json",
+        inp.query,  # positional <search_query>
     ]
     proc = await asyncio.create_subprocess_exec(
         *_argv,

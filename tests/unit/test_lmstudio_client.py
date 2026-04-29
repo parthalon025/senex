@@ -569,10 +569,11 @@ async def test_schema_fallback_400_unrelated_does_not_fallback(
     client: LMStudioClient,
     audit_schema: dict[str, Any],
 ) -> None:
-    """A 400 unrelated to schema (e.g. context length) propagates as HTTPStatusError.
+    """A non-schema 400 (e.g. context length) is wrapped in SchemaNegotiationFailed.
 
-    v1.0.2: opt into strict mode so the json_schema probe actually runs and
-    can surface the unrelated 400.
+    v1.0.2: opt into strict mode so the json_schema probe actually runs.
+    v1.0.3: wrapped as SchemaNegotiationFailed so _audit_one recovery matrix
+    catches it per §8.2 (per-file lms_error) instead of crashing the run.
     """
     client._config.strict_json_schema = True  # type: ignore[attr-defined]
     respx_mock.post("http://localhost:1234/v1/chat/completions").mock(
@@ -580,15 +581,45 @@ async def test_schema_fallback_400_unrelated_does_not_fallback(
             400, json={"error": {"message": "context length exceeded"}}
         )
     )
-    with pytest.raises(httpx.HTTPStatusError):
+    with pytest.raises(SchemaNegotiationFailed):
         await client.chat(
             task="file_audit",
             messages=[ChatMessage(role="user", content="hi")],
             schema=audit_schema,
             tools=None,
         )
-    # Mode was NOT cached.
+    # Mode was NOT cached (non-schema 400 does not trigger the fallback).
     assert client._schema_mode is None  # type: ignore[attr-defined]
+
+
+@pytest.mark.asyncio
+async def test_jinja_template_error_wrapped_as_schema_negotiation_failed(
+    respx_mock: Any,
+    client: LMStudioClient,
+    audit_schema: dict[str, Any],
+) -> None:
+    """qwen3 jinja template 400 is wrapped as SchemaNegotiationFailed, not uncaught.
+
+    LM Studio returns 400 with body 'Error rendering prompt with jinja template:
+    No user query found in messages' when qwen3 models receive tool-result messages
+    they can't process. Without wrapping, this propagates as httpx.HTTPStatusError
+    past _audit_one's LMStudioError handler and crashes the entire run.
+    """
+    respx_mock.post("http://localhost:1234/v1/chat/completions").mock(
+        return_value=httpx.Response(
+            400,
+            text="Error rendering prompt with jinja template: No user query found in messages",
+        )
+    )
+    with pytest.raises(SchemaNegotiationFailed) as exc_info:
+        await client.chat(
+            task="file_audit",
+            messages=[ChatMessage(role="user", content="hi")],
+            schema=audit_schema,
+            tools=None,
+        )
+    assert "400" in str(exc_info.value)
+    assert "jinja" in str(exc_info.value).lower() or "No user query" in str(exc_info.value)
 
 
 @pytest.mark.asyncio
@@ -888,10 +919,10 @@ async def test_4xx_not_retried(
     audit_schema: dict[str, Any],
     sleep_recorder: list[float],
 ) -> None:
-    """401 fails fast — exactly 1 request, no sleeps."""
+    """401 fails fast — exactly 1 request, no sleeps, wrapped as SchemaNegotiationFailed."""
     route = respx_mock.post("http://localhost:1234/v1/chat/completions")
     route.return_value = httpx.Response(401, json={"error": "unauthorized"})
-    with pytest.raises(httpx.HTTPStatusError):
+    with pytest.raises(SchemaNegotiationFailed):
         await client.chat(
             task="file_audit",
             messages=[ChatMessage(role="user", content="hi")],

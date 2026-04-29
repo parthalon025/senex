@@ -69,13 +69,11 @@ async def gitnexus_impact_handler(
         "impact",
         "--repo",
         ctx.repo_name,
-        "--target",
-        inp.target,
         "--direction",
         inp.direction,
         "--depth",
         str(inp.depth),
-        "--json",
+        inp.target,  # positional <target>
     ]
     proc = await asyncio.create_subprocess_exec(
         *_argv,
