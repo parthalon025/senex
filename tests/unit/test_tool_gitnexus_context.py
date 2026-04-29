@@ -58,11 +58,13 @@ def registry() -> ToolRegistry:
 async def test_happy_path_returns_360_view(
     registry: ToolRegistry, tmp_path: Path
 ) -> None:
+    # Use real gitnexus context CLI output format.
     payload = {
-        "callers_d1": ["a", "b"],
-        "callees_d1": ["c"],
-        "processes": ["login"],
-        "cluster": "auth",
+        "status": "found",
+        "symbol": {"uid": "u", "name": "validateUser", "kind": "Function", "filePath": "a.py"},
+        "incoming": {"calls": [{"name": "a", "uid": "u1"}, {"name": "b", "uid": "u2"}]},
+        "outgoing": {"calls": [{"name": "c", "uid": "u3"}]},
+        "processes": [],
     }
     factory, _ = _mock_subprocess(json.dumps(payload).encode("utf-8"))
     with patch(
@@ -74,7 +76,8 @@ async def test_happy_path_returns_360_view(
     assert isinstance(result, ToolResult)
     parsed = json.loads(result.content)
     assert parsed["callers_d1"] == ["a", "b"]
-    assert parsed["cluster"] == "auth"
+    assert parsed["callees_d1"] == ["c"]
+    assert parsed["cluster"] is None
 
 
 @pytest.mark.asyncio
@@ -121,10 +124,10 @@ async def test_optional_file_omitted(
     registry: ToolRegistry, tmp_path: Path
 ) -> None:
     payload = {
-        "callers_d1": [],
-        "callees_d1": [],
+        "status": "found",
+        "incoming": {},
+        "outgoing": {},
         "processes": [],
-        "cluster": None,
     }
     factory, _ = _mock_subprocess(json.dumps(payload).encode("utf-8"))
     with patch(
@@ -168,11 +171,11 @@ async def test_malformed_json_output(
 
 
 @pytest.mark.asyncio
-async def test_output_failing_schema(
+async def test_error_key_in_output(
     registry: ToolRegistry, tmp_path: Path
 ) -> None:
-    """Subprocess returning JSON missing required keys -> dispatch_failed."""
-    factory, _ = _mock_subprocess(b'{"only_one_key": "x"}')
+    """gitnexus returning {\"error\": ...} at rc=0 -> dispatch_failed."""
+    factory, _ = _mock_subprocess(b'{"error": "Symbol \'X\' not found"}')
     with patch(
         "senex.tools.gitnexus_context.asyncio.create_subprocess_exec", factory
     ):
@@ -181,6 +184,7 @@ async def test_output_failing_schema(
         )
     assert isinstance(result, ToolError)
     assert result.kind == "dispatch_failed"
+    assert "not found" in result.message
 
 
 @pytest.mark.asyncio
@@ -188,10 +192,10 @@ async def test_oversize_result_truncated(
     registry: ToolRegistry, tmp_path: Path
 ) -> None:
     payload = {
-        "callers_d1": [f"caller_{i}" for i in range(2000)],
-        "callees_d1": [],
+        "status": "found",
+        "incoming": {"calls": [{"name": f"caller_{i}", "uid": f"u{i}"} for i in range(2000)]},
+        "outgoing": {},
         "processes": [],
-        "cluster": "x",
     }
     factory, _ = _mock_subprocess(json.dumps(payload).encode("utf-8"))
     with patch(

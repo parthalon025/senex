@@ -67,22 +67,56 @@ class GitnexusContextOutput(BaseModel):
     cluster: str | None
 
 
+def _extract_output(payload: dict[str, object]) -> dict[str, object]:
+    """Map real ``gitnexus context`` JSON to ``GitnexusContextOutput`` fields.
+
+    The CLI outputs ``{"status", "symbol", "incoming", "outgoing", "processes"}``.
+    When a symbol is not found it exits 0 with ``{"error": "Symbol '...' not found"}``.
+    """
+    if "error" in payload:
+        raise ToolDispatchFailed(str(payload["error"]))
+
+    incoming: dict = payload.get("incoming", {})  # type: ignore[assignment]
+    outgoing: dict = payload.get("outgoing", {})  # type: ignore[assignment]
+
+    def _names(items: object) -> list[str]:
+        if not isinstance(items, list):
+            return []
+        return [r["name"] for r in items if isinstance(r, dict) and r.get("name")]
+
+    proc_raw = payload.get("processes", [])
+    processes = [
+        (p.get("heuristicLabel") or p.get("name") or str(p))
+        if isinstance(p, dict)
+        else str(p)
+        for p in (proc_raw if isinstance(proc_raw, list) else [])
+    ]
+
+    return {
+        "callers_d1": _names(incoming.get("calls")),
+        "callees_d1": _names(outgoing.get("calls")),
+        "processes": processes,
+        "cluster": None,
+    }
+
+
 async def gitnexus_context_handler(
     inp: GitnexusContextInput, ctx: ToolContext
 ) -> GitnexusContextOutput:
     """Run npx gitnexus context with hardened list-form arguments."""
+    # symbol is a positional arg — must come after flags.
+    # --name is not a valid flag for `gitnexus context`; the CLI signature is
+    # `gitnexus context [options] [name]`.
     args = [
         *ctx.npx_cmd,
         "gitnexus",
         "context",
         "--repo",
         ctx.repo_name,
-        "--name",
-        inp.symbol,
     ]
     if inp.file is not None:
         args.extend(["--file", inp.file])
-    args.append("--json")
+    args.append(inp.symbol)
 
     proc = await asyncio.create_subprocess_exec(
         *args,
@@ -110,7 +144,9 @@ async def gitnexus_context_handler(
         raise ToolDispatchFailed(f"malformed gitnexus output: {exc}") from exc
 
     try:
-        return GitnexusContextOutput.model_validate(payload)
+        return GitnexusContextOutput.model_validate(_extract_output(payload))
+    except ToolDispatchFailed:
+        raise
     except Exception as exc:  # noqa: BLE001 - pydantic validation
         raise ToolDispatchFailed(f"gitnexus output failed schema: {exc}") from exc
 
