@@ -282,15 +282,16 @@ def _select_model(
         models = asyncio.run(client.list_loaded_models())
     except LMSConnectionLost as exc:
         raise WizardError(
-            "LM Studio not running or unreachable at the configured base_url. "
+            "Inference server (LM Studio / SGLang) not running or unreachable "
+            "at the configured base_url. "
             f"Details: {exc}"
         ) from exc
 
     if not models:
         raise WizardError(
-            "LM Studio is reachable but no models are loaded. "
-            "Load a model in LM Studio (or set [lmstudio.lifecycle].auto_load) "
-            "and re-run."
+            "Inference server is reachable but no models are loaded. "
+            "Load a model (LM Studio: GUI; SGLang: restart the container with "
+            "the desired SGLANG_MODEL) and re-run."
         )
 
     # Bounded loop: allow at most 8 re-prompts.
@@ -335,12 +336,56 @@ _LMS_CHECKLIST_ITEMS: tuple[str, ...] = (
     "Parallel reqs   →  model settings > Parallel requests > 1 (if VRAM-constrained)",
 )
 
+_SGLANG_CHECKLIST_ITEMS: tuple[str, ...] = (
+    "Server running  →  bash infra/sglang/sglang.sh up (or `docker compose up -d`)",
+    "Model loaded    →  GET /v1/models returns the configured model id",
+    "GPU healthy     →  bash infra/sglang/sglang.sh status (free VRAM > model size)",
+)
+
+
+def _detect_backend(base_url: str) -> str:
+    """Return ``"sglang"`` | ``"lmstudio"`` | ``"unknown"`` by probing /v1/models.
+
+    Best-effort: a network failure returns ``"unknown"`` and the caller falls
+    back to the LM-Studio-flavored checklist. Detection inspects the
+    ``owned_by`` field, which SGLang reports as ``"sglang"`` and LM Studio
+    reports as ``"lmstudio"``-flavored values.
+    """
+    try:
+        import httpx
+
+        with httpx.Client(timeout=2.0) as cx:
+            resp = cx.get(f"{base_url.rstrip('/')}/models")
+            if resp.status_code != 200:
+                return "unknown"
+            data = resp.json().get("data") or []
+            for rec in data:
+                owner = str(rec.get("owned_by", "")).lower()
+                if "sglang" in owner or "vllm" in owner:
+                    return "sglang"
+                if "lmstudio" in owner or "lm-studio" in owner or "lm studio" in owner:
+                    return "lmstudio"
+            return "unknown"
+    except Exception:
+        return "unknown"
+
 
 def _print_lms_checklist(base_url: str, stdout: "TextIO") -> None:
-    """Print the LM Studio pre-flight checklist; no user input required."""
+    """Print the inference-server pre-flight checklist; no user input required.
+
+    Auto-detects SGLang vs LM Studio at ``base_url`` and prints the relevant
+    checklist; falls back to the LM Studio variant when detection is
+    inconclusive (preserves existing behaviour).
+    """
+    backend = _detect_backend(base_url)
     _print(stdout, "")
-    _print(stdout, "LM Studio — confirm these are set before continuing:")
-    for item in _LMS_CHECKLIST_ITEMS:
+    if backend == "sglang":
+        _print(stdout, "SGLang — confirm these are set before continuing:")
+        items = _SGLANG_CHECKLIST_ITEMS
+    else:
+        _print(stdout, "LM Studio — confirm these are set before continuing:")
+        items = _LMS_CHECKLIST_ITEMS
+    for item in items:
         _print(stdout, f"  [ ] {item}")
     _print(stdout, f"      (API at {base_url})")
 

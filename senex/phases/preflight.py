@@ -328,7 +328,7 @@ def _is_loopback(base_url: str) -> bool:
 
 
 async def check_lms_reachable(client: "LMStudioClient") -> CheckResult:
-    """LM Studio reachable at ``/v1/models`` and bound to loopback."""
+    """Inference server (SGLang/LM Studio) reachable at ``/v1/models`` and bound to loopback."""
     cfg = client._config
     if not _is_loopback(cfg.base_url) and not cfg.allow_non_loopback:
         return _fail(
@@ -339,9 +339,11 @@ async def check_lms_reachable(client: "LMStudioClient") -> CheckResult:
     try:
         await client.list_loaded_models()
     except LMSConnectionLost as exc:
-        return _fail(f"LM Studio unreachable at {cfg.base_url}: {exc}", exit_code=3)
-    except Exception as exc:  # noqa: BLE001 — surface any LMS misbehavior
-        return _fail(f"LMS probe failed: {exc}", exit_code=3)
+        return _fail(
+            f"inference server unreachable at {cfg.base_url}: {exc}", exit_code=3
+        )
+    except Exception as exc:  # noqa: BLE001 — surface any backend misbehavior
+        return _fail(f"inference-server probe failed: {exc}", exit_code=3)
     return _ok()
 
 

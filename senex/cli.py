@@ -261,7 +261,7 @@ def build_parser() -> argparse.ArgumentParser:
     life_p = subparsers.add_parser(
         "lifecycle",
         parents=[parent],
-        help="Inspect / manage LM Studio model lifecycle state.",
+        help="Inspect / manage inference-server model lifecycle state.",
     )
     life_sub = life_p.add_subparsers(dest="lifecycle_cmd", required=True)
     life_status = life_sub.add_parser(

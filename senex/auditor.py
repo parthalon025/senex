@@ -135,6 +135,7 @@ async def lifecycle_acquire_or_resume(
     backend = await LifecycleBackendFactory.select(
         base_url=config.lmstudio.base_url,
         api_key=config.lmstudio.api_key,
+        sglang_cfg=config.lmstudio.sglang,
     )
     lifecycle = Lifecycle(
         backend=backend,

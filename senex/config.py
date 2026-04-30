@@ -115,6 +115,30 @@ class MemoryCfg(_StrictModel):
     min_priority: Literal["high", "medium", "low"] = "medium"
 
 
+class SglangCfg(_StrictModel):
+    """SGLang Docker container management.
+
+    When ``manage_container`` is true, senex starts the SGLang container at
+    audit start (``Lifecycle.acquire``) and stops it at audit completion
+    (``Lifecycle.release``), giving you "load on startup, shutdown on
+    completion" behaviour. Requires Docker available via WSL on Windows.
+
+    Set ``manage_container=false`` to keep the container running between
+    runs (the previous default — manual ``bash infra/sglang/sglang.sh up``).
+    """
+
+    manage_container: bool = False
+    compose_file: str = "infra/sglang/docker-compose.yml"
+    env_file: str = "infra/sglang/.env"
+    # Health-check timeout after `compose up` before raising ModelLoadFailed.
+    startup_timeout_seconds: int = Field(default=180, gt=0)
+    # When true on Windows, prepend `wsl -d Ubuntu -e bash -c "..."` to the
+    # docker-compose calls so the WSL Docker daemon is reached. Set to false
+    # if Docker is on the Windows host directly (e.g. Docker Desktop without WSL).
+    via_wsl: bool = True
+    wsl_distro: str = "Ubuntu"
+
+
 class CompactionCfg(_StrictModel):
     enabled: bool = True
     trigger_pct: float = Field(default=0.80, gt=0.0, le=1.0)
@@ -181,6 +205,7 @@ class LmStudioCfg(_StrictModel):
     tasks: TasksCfg = Field(default_factory=TasksCfg)
     tools: ToolsCfg = Field(default_factory=ToolsCfg)
     memory: MemoryCfg = Field(default_factory=MemoryCfg)
+    sglang: SglangCfg = Field(default_factory=SglangCfg)
     compaction: CompactionCfg = Field(default_factory=CompactionCfg)
     lifecycle: LifecycleCfg = Field(default_factory=LifecycleCfg)
 
