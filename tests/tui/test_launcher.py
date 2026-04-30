@@ -90,7 +90,7 @@ async def test_launcher_unreachable_lms_shows_placeholder(tmp_path: Path) -> Non
             screen = pilot.app.screen
             assert isinstance(screen, LauncherScreen)
             select = screen.query_one("#model_select", Select)
-            assert select.value == "[no LM Studio]"
+            assert select.value == "[no inference server]"
             start_btn = screen.query_one("#start_btn", Button)
             assert start_btn.disabled is True
 
@@ -275,7 +275,7 @@ async def test_launcher_submit_blocks_when_lms_unavailable(tmp_path: Path) -> No
             assert isinstance(screen, LauncherScreen)
             await screen._submit()
             err = screen.query_one("#error_label", Static)
-            assert "LM Studio unavailable" in str(err.render())
+            assert "Inference server unavailable" in str(err.render())
 
 
 # ---------------------------------------------------------------------------

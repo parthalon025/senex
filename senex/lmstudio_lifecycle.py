@@ -361,17 +361,110 @@ class LMSCLIBackend:
 class HTTPBackend:
     """OpenAI-compatible HTTP backend (SGLang, vLLM, etc.).
 
-    SGLang loads its served model on container start; ``load`` / ``unload``
-    are no-ops (the container restart is the lifecycle boundary).
+    Two operating modes:
+
+    1. ``manage_container=False`` (default): the container is run manually
+       outside senex. ``load`` / ``unload`` reduce to no-ops that just
+       verify the configured model is being served.
+    2. ``manage_container=True``: senex orchestrates the container via
+       ``docker compose up -d`` / ``down`` against ``compose_file`` +
+       ``env_file``. Use this for "load on startup, shutdown on completion"
+       behaviour — the GPU is freed between runs.
+
     ``is_loaded`` queries ``GET /v1/models`` and checks for ``model_id`` in
     the returned list.
+
+    Subprocess safety: docker is invoked via ``execFile``-style argv (no
+    shell), so ``compose_file`` / ``env_file`` cannot be used to inject
+    shell metacharacters even though they come from config.
     """
 
     backend_name = "http"
 
-    def __init__(self, base_url: str, api_key: str = "lm-studio") -> None:
+    def __init__(
+        self,
+        base_url: str,
+        api_key: str = "lm-studio",
+        *,
+        manage_container: bool = False,
+        compose_file: str | None = None,
+        env_file: str | None = None,
+        startup_timeout_seconds: int = 180,
+        via_wsl: bool = True,
+        wsl_distro: str = "Ubuntu",
+    ) -> None:
         self._base_url = base_url.rstrip("/")
         self._api_key = api_key
+        self._manage_container = manage_container
+        self._compose_file = compose_file
+        self._env_file = env_file
+        self._startup_timeout_seconds = startup_timeout_seconds
+        self._via_wsl = via_wsl
+        self._wsl_distro = wsl_distro
+
+    def _docker_argv(self, action: str) -> list[str]:
+        """Return argv list for ``docker compose <-f> <--env-file> <action>``.
+
+        argv form (no shell), so ``compose_file`` / ``env_file`` are passed
+        as literal arguments and cannot inject shell metacharacters. When
+        ``via_wsl`` is true the argv is prefixed with ``wsl -d <distro> -e``
+        so the command runs inside the WSL distro that owns Docker.
+        """
+        if not self._compose_file:
+            raise ModelLoadFailed("manage_container=true but compose_file is not set")
+        base: list[str] = ["docker", "compose", "-f", self._compose_file]
+        if self._env_file:
+            base += ["--env-file", self._env_file]
+        # ``action`` is hardcoded by callers (``up -d`` / ``down``); split it.
+        base += action.split()
+        if self._via_wsl:
+            return ["wsl", "-d", self._wsl_distro, "-e", *base]
+        return base
+
+    async def _run_docker(self, action: str, timeout: int) -> None:
+        """Run a docker compose subcommand and raise ModelLoadFailed on error."""
+        argv = self._docker_argv(action)
+        proc = await asyncio.create_subprocess_exec(
+            *argv,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        try:
+            stdout, stderr = await asyncio.wait_for(
+                proc.communicate(), timeout=timeout
+            )
+        except asyncio.TimeoutError as exc:
+            proc.kill()
+            await proc.wait()
+            raise ModelLoadFailed(
+                f"docker compose {action} timed out after {timeout}s"
+            ) from exc
+        if proc.returncode != 0:
+            err = (stderr or b"").decode("utf-8", "replace")[:1000]
+            raise ModelLoadFailed(
+                f"docker compose {action} failed (rc={proc.returncode}): {err}"
+            )
+
+    async def _wait_for_health(self, timeout: int) -> None:
+        """Poll ``GET /v1/models`` until success or timeout."""
+        import httpx
+
+        deadline = time.monotonic() + timeout
+        last_error: Exception | None = None
+        while time.monotonic() < deadline:
+            try:
+                async with httpx.AsyncClient(timeout=5.0) as cx:
+                    resp = await cx.get(f"{self._base_url}/models")
+                    if resp.status_code == 200:
+                        return
+                    last_error = RuntimeError(f"HTTP {resp.status_code}")
+            except Exception as exc:  # noqa: BLE001
+                last_error = exc
+            await asyncio.sleep(3.0)
+        raise ModelLoadFailed(
+            f"inference server did not become healthy within {timeout}s "
+            f"at {self._base_url}: last error: {last_error}"
+        )
 
     async def _list_models(self) -> list[dict[str, Any]]:
         import httpx
@@ -393,14 +486,27 @@ class HTTPBackend:
         return any(r.get("id") == model_id for r in records)
 
     async def load(self, model_id: str, timeout: int) -> ModelInfo:
-        # SGLang loads at container start; treat as already-loaded.
         validate_model_id(model_id)
+        # When senex owns the container lifecycle, bring it up and wait for
+        # /v1/models to respond before checking the model id.
+        if self._manage_container:
+            startup = max(timeout, self._startup_timeout_seconds)
+            await self._run_docker("up -d", timeout=startup)
+            await self._wait_for_health(timeout=startup)
         records = await self._list_models()
-        digest = "sglang-served"
+        digest: str | None = None
         for r in records:
             if r.get("id") == model_id:
                 digest = str(r.get("created", "sglang-served"))
                 break
+        if digest is None:
+            available = ", ".join(str(r.get("id", "?")) for r in records) or "(none)"
+            raise ModelLoadFailed(
+                f"model {model_id!r} is not served at {self._base_url}; "
+                f"available: {available}. "
+                "Restart the SGLang container with the desired SGLANG_MODEL, "
+                "or update [lmstudio].model in senex.config.toml to match."
+            )
         fp = _compute_fingerprint(model_id, "auto", digest)
         return ModelInfo(
             model_id=model_id,
@@ -411,8 +517,12 @@ class HTTPBackend:
         )
 
     async def unload(self, model_id: str) -> None:
-        # No-op: SGLang model lifecycle is bound to the container.
         validate_model_id(model_id)
+        # ``manage_container`` brings the SGLang container DOWN at shutdown,
+        # freeing GPU memory between runs. Otherwise this is a no-op since
+        # SGLang's model lifecycle is bound to the container.
+        if self._manage_container:
+            await self._run_docker("down", timeout=60)
 
     async def list_loaded(self) -> list[ModelInfo]:
         records = await self._list_models()
@@ -437,15 +547,39 @@ class LifecycleBackendFactory:
     """Selects the best available backend (HTTP -> SDK -> CLI)."""
 
     @classmethod
-    async def select(cls, base_url: str | None = None, api_key: str = "lm-studio") -> LifecycleBackend:
+    async def select(
+        cls,
+        base_url: str | None = None,
+        api_key: str = "lm-studio",
+        *,
+        sglang_cfg: Any = None,
+    ) -> LifecycleBackend:
         """Probe backends in order and return the first that responds.
 
-        When ``base_url`` is provided and ``GET {base_url}/models`` succeeds,
-        the HTTPBackend is selected (matches SGLang/vLLM-style servers). Falls
-        back to the lmstudio Python SDK then the ``lms`` CLI.
+        When ``base_url`` is provided, the HTTPBackend is preferred. If
+        ``sglang_cfg.manage_container`` is true, the HTTPBackend is returned
+        even when ``GET /v1/models`` fails — it will spin up the container
+        on ``load()`` instead.
         """
         if base_url:
-            http = HTTPBackend(base_url=base_url, api_key=api_key)
+            kwargs: dict[str, Any] = {"base_url": base_url, "api_key": api_key}
+            if sglang_cfg is not None:
+                kwargs.update(
+                    manage_container=bool(getattr(sglang_cfg, "manage_container", False)),
+                    compose_file=getattr(sglang_cfg, "compose_file", None),
+                    env_file=getattr(sglang_cfg, "env_file", None),
+                    startup_timeout_seconds=int(
+                        getattr(sglang_cfg, "startup_timeout_seconds", 180)
+                    ),
+                    via_wsl=bool(getattr(sglang_cfg, "via_wsl", True)),
+                    wsl_distro=str(getattr(sglang_cfg, "wsl_distro", "Ubuntu")),
+                )
+            http = HTTPBackend(**kwargs)
+            # When manage_container is on, the container may legitimately be
+            # down right now — return the backend without probing so load()
+            # can bring it up.
+            if kwargs.get("manage_container"):
+                return http
             try:
                 await http._list_models()
             except Exception:
@@ -540,6 +674,7 @@ async def doctor_check_lifecycle_backend(config: Any) -> DoctorCheck:
         backend = await LifecycleBackendFactory.select(
             base_url=config.lmstudio.base_url,
             api_key=config.lmstudio.api_key,
+            sglang_cfg=getattr(config.lmstudio, "sglang", None),
         )
     except LifecycleBackendUnavailable as exc:
         if auto_load:

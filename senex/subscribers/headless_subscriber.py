@@ -105,8 +105,9 @@ class HeadlessSubscriber:
                 f"[lifecycle] auto_load failed: {event.reason}\n"
                 f"[lifecycle] Waiting up to {event.timeout_seconds}s for "
                 f"model `{event.model_id}` to be loaded manually.\n"
-                f"[lifecycle] Open LM Studio and load the model, or run: "
-                f"lms load {event.model_id}\n"
+                f"[lifecycle] Load the model on your inference server "
+                f"(SGLang: restart with SGLANG_MODEL={event.model_id}; "
+                f"LM Studio: GUI or `lms load {event.model_id}`).\n"
                 f"[lifecycle] Press Ctrl+C to abort."
             )
         if isinstance(event, ModelLoadStillWaiting):

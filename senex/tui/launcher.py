@@ -27,7 +27,7 @@ from senex.lens import Lens, LensNotFound
 log = logging.getLogger(__name__)
 
 
-_NO_LMS = "[no LM Studio]"
+_NO_LMS = "[no inference server]"
 
 
 class LauncherScreen(Screen[None]):
@@ -303,7 +303,7 @@ class LauncherScreen(Screen[None]):
 
     async def _submit(self, resume: bool = False) -> None:
         if not self._lms_available:
-            self._set_error("LM Studio unavailable — cannot start audit")
+            self._set_error("Inference server unavailable — cannot start audit")
             return
 
         repo_str = self.query_one("#repo_path", Input).value

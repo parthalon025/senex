@@ -89,8 +89,8 @@ class ErrorBannerWidget(Widget):
             # stays sticky so the user sees them even while heartbeats arrive.
             return (
                 f"auto_load failed: {event.reason} — "
-                f"open LM Studio and load `{event.model_id}` "
-                f"(or `lms load {event.model_id}`); "
+                f"load `{event.model_id}` on the inference server "
+                f"(SGLang: restart container; LM Studio: GUI/`lms load`); "
                 f"waiting up to {event.timeout_seconds}s"
             )
         if isinstance(event, ModelLoadStillWaiting):
