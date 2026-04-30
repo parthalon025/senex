@@ -103,10 +103,11 @@ async def test_select_falls_back_to_cli(monkeypatch: pytest.MonkeyPatch) -> None
 
 
 async def test_select_raises_when_neither_available(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Both backends absent -> LifecycleBackendUnavailable."""
+    """All backends absent (HTTP unreachable + SDK + CLI) -> LifecycleBackendUnavailable."""
     monkeypatch.setitem(sys.modules, "lmstudio", None)
     monkeypatch.setattr("shutil.which", lambda name: None)
-    with pytest.raises(LifecycleBackendUnavailable, match="neither lmstudio Python SDK nor lms CLI"):
+    # Don't pass base_url so HTTPBackend isn't probed.
+    with pytest.raises(LifecycleBackendUnavailable, match="no usable lifecycle backend"):
         await LifecycleBackendFactory.select()
 
 

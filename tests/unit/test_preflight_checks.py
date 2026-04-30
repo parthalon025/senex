@@ -248,6 +248,8 @@ def test_check_lifecycle_backend_warn_when_auto_load_off(monkeypatch: pytest.Mon
     cfg.lmstudio.lifecycle = cfg.lmstudio.lifecycle.model_copy(
         update={"auto_load": False, "auto_unload": False}
     )
+    # Point HTTP probe at an unreachable endpoint so HTTPBackend reports unavailable.
+    cfg.lmstudio = cfg.lmstudio.model_copy(update={"base_url": "http://127.0.0.1:1/v1"})
     import shutil
 
     monkeypatch.setattr(shutil, "which", lambda name: None)
@@ -261,6 +263,7 @@ def test_check_lifecycle_backend_warn_when_auto_load_off(monkeypatch: pytest.Mon
 
 def test_check_lifecycle_backend_fail_when_auto_load_on(monkeypatch: pytest.MonkeyPatch) -> None:
     cfg = SenexConfig()
+    cfg.lmstudio = cfg.lmstudio.model_copy(update={"base_url": "http://127.0.0.1:1/v1"})
     import shutil
 
     monkeypatch.setattr(shutil, "which", lambda name: None)

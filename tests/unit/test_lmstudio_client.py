@@ -1141,6 +1141,10 @@ async def test_chat_with_tools_passes_tools_and_tool_choice_to_request(
     assert body.get("tool_choice") == "auto"
 
 
+@pytest.mark.skip(
+    reason="LM Studio + Gemma workaround obsolete after SGLang migration; "
+    "SGLang serves tools + json_schema natively in one round-trip."
+)
 @pytest.mark.asyncio
 async def test_chat_with_tools_and_schema_omits_response_format(
     respx_mock: Any,
@@ -1196,6 +1200,10 @@ async def test_chat_with_tools_and_schema_omits_response_format(
     assert resp.content_dict["schema_version"] == 1
 
 
+@pytest.mark.skip(
+    reason="LM Studio + Gemma json_object fallback obsolete after SGLang migration; "
+    "SGLang honors response_format=json_schema natively; default is now strict_json_schema=True."
+)
 @pytest.mark.asyncio
 async def test_strict_json_schema_false_uses_json_object_when_tools_none(
     respx_mock: Any,

@@ -171,7 +171,7 @@ def test_anchor_loader_module_has_nonempty_docstring() -> None:
 # ----------------------------------------------------------------------
 
 EXPECTED_SYSTEM_PROMPT_SHA256 = (
-    "b901a49bcf3848f5c0afd934d6d9be12fc9ba25714a67a6e9c5f15d684c123b9"
+    "02f600d62f5192b00c92d489308fc77280499be3adf24a567b36c0203351199a"
 )
 
 
