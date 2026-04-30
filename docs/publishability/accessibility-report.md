@@ -1,7 +1,7 @@
 # senex TUI - Accessibility Audit (Read-Only)
 
 **Auditor**: accessibility-tester (senior, WCAG 2.1/3.0)
-**Scope**: E:\senex\senex	ui\ + adjacent CLI surface (senex\cli.py, senex\cli_audit.py, senex\cli_wizard.py, senex\subscribers\headless_subscriber.py)
+**Scope**: E:/senex/senex/tui/ + adjacent CLI surface (senex/cli.py, senex/cli_audit.py, senex/cli_wizard.py, senex/subscribers/headless_subscriber.py)
 **Date**: 2026-04-29
 **Standards reference**: WCAG 2.1 (mapped to TUI semantics - Textual rendering layer), Section 508, EN 301 549
 **Tools**: source review only - no live ATs run (terminal screen readers: NVDA-with-terminal, JAWS, Orca, macOS VoiceOver).
@@ -245,3 +245,78 @@ None observed. Every interactive element has a Textual Binding or is reachable v
 
 ---
 
+## Cross-cutting non-defect observations
+
+### O-1 - Replay mode (senex view) correctly mutes destructive bindings (PASS)
+- monitor.py:181-212: _replay_mode short-circuits s (Skip), r (Rerun), and converts q from confirm-dialog to instant-exit. This prevents a screen-reader user replaying a run from accidentally posting a Skip command into a dead command-bus.
+- WCAG 3.3.4 Error Prevention (Level AA) - PASS.
+
+### O-2 - Widget render errors converted to user-visible banner, never propagated (PASS)
+- monitor.py:155-160: every widget call is wrapped in try/except that re-raises as WidgetRenderError and surfaces via the banner. A blind user gets a textual error, not a crash. WCAG 3.3.1 Error Identification - PASS.
+
+### O-3 - ctrl+q priority binding ensures escape hatch is always available (PASS)
+- app.py:58-60: Binding("ctrl+q", "force_quit", priority=True). Even if every other binding broke, ctrl+q exits cleanly with 130. WCAG 2.1.2 No Keyboard Trap - PASS.
+
+---
+
+## Findings table (compact)
+
+| # | WCAG | Level | Priority | File:line | Description |
+|---|---|---|---|---|---|
+| F-1 | 3.3.2 | A | must | widgets/error_banner.py:9, 123 | Banner advertises e to dismiss; no e binding exists |
+| F-2 | 4.1.2 | A | should | monitor.py:84 | Pause/Resume label is static |
+| F-3 | 4.1.3 | AA | should | monitor.py:221-222 | t toggle has no UI feedback |
+| F-4 | 2.4.3 | A | nice | launcher.py:64-112 | Tab order acceptable; advisory only |
+| F-5 | 2.4.1 | A | should | widgets/findings_panel.py:53-54 | No skip-to-recent in findings |
+| F-6 | 1.3.1, 4.1.2 | A | should | multiple (see section 2) | Static used where Label would announce |
+| F-7 | 4.1.3 | AA | should | widgets/error_banner.py:38-41 | display: none may break live-region latch |
+| F-8 | 1.3.1, 4.1.2 | A | should | launcher.py:103-106 | Switches lack programmatic name binding |
+| F-9 | 3.3.5 | AAA | must | cli.py:128-191; no help screen | No in-app help; audit --help omits TUI keys |
+| F-10 | 2.4.3 | A | must | monitor.py:41-62 + Monitor compose | Modal focus restoration not asserted; no focusable host |
+| F-11 | 1.4.10 | AA | nice | launcher.py:51 | Hardcoded width: 80% |
+| F-12 | 3.1.1 | A | should | TUI Labels (multiple) | em-dash/arrow not ASCII-safe in TUI text |
+| F-13 | 3.3.2, 3.2.4 | A/AA | must | cli.py:82-87; cli_audit.py:322-388; subscribers/headless_subscriber.py | audit --json advertised but not implemented |
+| N-1 | - | - | nice | widgets/status.py:34-44 | StatusStrip color accent for HIGH would aid scanning |
+| N-2 | 1.4.1 | A | nice | launcher.py:52 | Error label color-only; add [ERROR] text marker |
+| N-3 | 2.3.3 | AAA | nice | widgets/current_file.py:80-91 | Per-tick token counter motion (no --reduced-motion) |
+
+Compliant (passes verified):
+
+| Area | Files |
+|---|---|
+| Color not sole channel for findings priority | widgets/findings_panel.py:31-34 ([HIGH] text marker) |
+| Tick coalescing (StatusStrip + Headless) | widgets/status.py:46-48, subscribers/headless_subscriber.py:72-73, events.py:16 |
+| Escape always closes modal | monitor.py:46 |
+| Ctrl+C / Ctrl+D / piped stdin in wizard | cli_wizard.py:87-103 |
+| Replay mode mutes destructive keys | monitor.py:181-212 |
+| Widget errors caught, surfaced not propagated | monitor.py:155-160 |
+| ctrl+q priority escape hatch | app.py:58-60 |
+| Wizard ASCII fallback for cp1252 terminals | cli_wizard.py:105-132 |
+
+---
+
+## Publishability gate
+
+| Gate | Status |
+|---|---|
+| Zero must-fix at WCAG Level A | FAIL - F-1, F-9, F-10, F-13 |
+| Zero color-only signals | PASS |
+| Keyboard reach to every action | PARTIAL - F-1 (advertised key absent) |
+| Tick / motion compliance | PASS |
+| Documentation parity (help vs behavior) | FAIL - F-9, F-13 |
+
+Verdict: NOT PUBLISHABLE as-is. Fix F-1, F-9, F-10, F-13 to clear the gate. The other findings can ship as a follow-up M12 accessibility milestone.
+
+---
+
+## Suggested remediation order (out of scope - for planning)
+
+1. F-13 (audit --json mismatch) - strip the flag from the audit parser OR implement JSONLinesHeadlessSubscriber. ~1-day fix.
+2. F-1 (banner-advertised e key) - add the binding + action. ~30-minute fix.
+3. F-9 (in-app help screen + --help epilog) - small HelpScreen(ModalScreen), plus a 10-line epilog. ~half-day.
+4. F-10 (modal focus restoration) - introduce a focusable Monitor pane + Pilot test asserting focus state pre/post modal. ~half-day.
+5. F-2, F-3, F-5, F-6, F-7, F-8, F-12 - batched milestone. ~2-3 days.
+
+---
+
+Report saved to E:/senex/docs/publishability/accessibility-report.md
