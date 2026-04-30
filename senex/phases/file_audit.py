@@ -70,7 +70,9 @@ from senex.lmstudio_errors import (
     LMStudioError,
     TokenBudgetExceeded,
 )
+from senex.memory import MemoryBuffer
 from senex.prompts._anchor_loader import build_user_prompt, select_anchor
+from senex.skills import select_skills
 from senex.render_models import (
     FileMetadata,
     FindingRecord,
@@ -174,6 +176,7 @@ class FileAuditPhase:
         self._lens_tools_resolved = lens_tools_resolved
         self._config_hash = config_hash
         self._prompt_hash = prompt_hash
+        self._memory: MemoryBuffer | None = None
 
     async def read_state(self, audit_dir: Path) -> Any:
         return None
@@ -195,6 +198,12 @@ class FileAuditPhase:
         relpath_map: dict[str, str] = state.get("relpath_to_report_path", {})
         if not files:
             return {"completed": [], "errored": [], "skipped": []}
+
+        if config.lmstudio.memory.enabled:
+            self._memory = MemoryBuffer(
+                max_tokens=config.lmstudio.memory.max_tokens,
+                min_priority=config.lmstudio.memory.min_priority,
+            )
 
         completed: list[str] = []
         errored: list[str] = []
@@ -342,6 +351,19 @@ class FileAuditPhase:
         if anchor:
             system_prompt = f"{system_prompt}\n\n---\n\n{anchor}"
 
+        skill_fragments = select_skills(
+            file_path=str(file),
+            source=source,
+            awareness=awareness,
+            lens_dir=lens.system_prompt_path.parent,
+        )
+        if skill_fragments:
+            system_prompt = (
+                system_prompt
+                + "\n\n---\n\n"
+                + "\n\n---\n\n".join(skill_fragments)
+            )
+
         user_prompt = build_user_prompt(
             file_relpath=relpath,
             language=_detect_language(file),
@@ -352,6 +374,12 @@ class FileAuditPhase:
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ]
+
+        # ---- Cross-file memory injection ----
+        if self._memory is not None:
+            self._memory.update(self._audit_dir)
+            if mem_block := self._memory.format_injection():
+                messages.append({"role": "system", "content": mem_block})
 
         # ---- Token budget gate (§8.2 row "Pre-LMS token count > 90%") ----
         chat_messages = [ChatMessage(**m) for m in messages]
@@ -395,6 +423,7 @@ class FileAuditPhase:
             tool_timeout_seconds=float(config.lmstudio.tools.tool_timeout_seconds),
             max_result_tokens=config.lmstudio.tools.max_result_tokens,
             bus=bus,
+            cot_reasoning_turn=config.lmstudio.tools.cot_reasoning_turn,
         )
         # Track for FileMetadata population (M11 bug 2). Both objects expose
         # public counters that survive the recovery branches below.
@@ -667,6 +696,7 @@ class FileAuditPhase:
             thinking_seconds=thinking_ms / 1000.0,
             output_seconds=output_ms / 1000.0,
             tools_used=tools_used,
+            tools_max=config.lmstudio.tools.max_calls_per_file,
             compactions_used=compactions_used,
             compactions_max=config.lmstudio.compaction.max_compactions_per_file,
             graph_context_summary="(see graph block in user prompt)",
