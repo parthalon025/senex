@@ -102,8 +102,33 @@ def _read_line(stdin: TextIO) -> str:
     return line.rstrip("\r\n")
 
 
+_ASCII_FALLBACKS: dict[str, str] = {
+    "→": "->",
+    "—": "--",
+    "─": "-",
+    "•": "*",
+    "…": "...",
+    "“": '"',
+    "”": '"',
+    "‘": "'",
+    "’": "'",
+}
+
+
 def _print(stdout: TextIO, msg: str = "") -> None:
-    """Single ``print`` site so tests can capture every line cleanly."""
+    """Single ``print`` site so tests can capture every line cleanly.
+
+    Windows default terminals use cp1252, which cannot encode several
+    characters used in the checklist (``→ — ─ …``). Detect the encoding
+    capability and substitute ASCII fallbacks instead of crashing the
+    wizard mid-render.
+    """
+    enc = getattr(stdout, "encoding", None) or "utf-8"
+    try:
+        msg.encode(enc)
+    except (UnicodeEncodeError, LookupError):
+        for ch, replacement in _ASCII_FALLBACKS.items():
+            msg = msg.replace(ch, replacement)
     print(msg, file=stdout)
 
 
