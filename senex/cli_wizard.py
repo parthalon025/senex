@@ -417,10 +417,16 @@ def _print_lms_checklist(base_url: str, stdout: "TextIO") -> None:
     """Print the inference-server pre-flight checklist; no user input required.
 
     Auto-detects SGLang vs LM Studio at ``base_url`` and prints the relevant
-    checklist; falls back to the LM Studio variant when detection is
-    inconclusive (preserves existing behaviour).
+    checklist. When detection is inconclusive (server unreachable), falls
+    back to a port-based heuristic — :30000 maps to SGLang (the senex
+    default), other ports map to LM Studio (the legacy default at :1234).
     """
     backend = _detect_backend(base_url)
+    if backend == "unknown":
+        # Fallback heuristic: SGLang's compose-default port is 30000, LM
+        # Studio's default is 1234. Anything else falls back to LM Studio
+        # for backward compatibility with pre-SGLang installs.
+        backend = "sglang" if ":30000" in base_url else "lmstudio"
     _print(stdout, "")
     if backend == "sglang":
         _print(stdout, "SGLang — confirm these are set before continuing:")

@@ -836,7 +836,9 @@ class Lifecycle:
                     reason=(
                         f"auto_load timed out after "
                         f"{self._config.load_timeout_seconds}s; "
-                        "waiting for manual load via LM Studio GUI or `lms load`"
+                        "waiting for manual load on the inference server "
+                        "(SGLang: restart container with desired SGLANG_MODEL; "
+                        "LM Studio: GUI or `lms load`)"
                     ),
                     initial_error=timeout_err,
                 )
@@ -860,7 +862,9 @@ class Lifecycle:
                     runlock,
                     reason=(
                         f"auto_load failed ({self._redactor.redact(str(exc))}); "
-                        "waiting for manual load via LM Studio GUI or `lms load`"
+                        "waiting for manual load on the inference server "
+                        "(SGLang: restart container with desired SGLANG_MODEL; "
+                        "LM Studio: GUI or `lms load`)"
                     ),
                     initial_error=load_err,
                 )

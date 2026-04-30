@@ -51,7 +51,7 @@ def test_main_config_show_dispatches() -> None:
 def test_main_lifecycle_status_dispatches() -> None:
     from senex.cli import main
 
-    async def _ok(*, as_json: bool) -> int:
+    async def _ok(*, as_json: bool, config_path: str | None = None) -> int:
         return 0
 
     with patch(

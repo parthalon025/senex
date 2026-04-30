@@ -22,6 +22,34 @@ from senex.lmstudio_lifecycle import (
 from senex.runlock import RunLock, _is_pid_alive
 
 
+def _load_lifecycle_kwargs(config_path: str | None) -> dict[str, Any]:
+    """Read ``senex.config.toml`` and produce kwargs for ``LifecycleBackendFactory.select``.
+
+    Returns a kwargs dict that wires the HTTP backend (SGLang / vLLM /
+    OpenAI-compat servers) when ``base_url`` is set in the config; falls
+    back to the auto-discovery path (SDK / CLI) on any error so missing
+    or malformed config never breaks ``senex lifecycle status``.
+    """
+    try:
+        from senex.config import load_config
+
+        cfg_path = Path(config_path) if config_path else Path("senex.config.toml")
+        if not cfg_path.exists():
+            return {}
+        cfg = load_config(cfg_path)
+        base_url = getattr(cfg.lmstudio, "base_url", "") or ""
+        api_key = getattr(cfg.lmstudio, "api_key", "lm-studio") or "lm-studio"
+        sglang_cfg = getattr(cfg.lmstudio, "sglang", None)
+        kwargs: dict[str, Any] = {"api_key": api_key}
+        if base_url:
+            kwargs["base_url"] = base_url
+        if sglang_cfg is not None:
+            kwargs["sglang_cfg"] = sglang_cfg
+        return kwargs
+    except Exception:  # noqa: BLE001 — never let config trouble break status.
+        return {}
+
+
 def _default_runlock_root() -> Path:
     return Path.home() / ".senex" / "locks"
 
@@ -40,7 +68,9 @@ def _holder_with_pid_alive(holder: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
-async def cli_lifecycle_status(*, as_json: bool) -> int:
+async def cli_lifecycle_status(
+    *, as_json: bool, config_path: str | None = None
+) -> int:
     """Print the lifecycle status report. Returns the process exit code.
 
     Output schema (JSON, byte-pinned per M4 plan Task 4.4.1):
@@ -51,10 +81,16 @@ async def cli_lifecycle_status(*, as_json: bool) -> int:
           "runlock_holders": [{"fingerprint", "run_id", "pid", "started_at",
                                 "loaded_by_us", "pid_alive"}]
         }
+
+    When ``config_path`` is provided (or ``./senex.config.toml`` exists),
+    the configured ``[lmstudio].base_url`` is used so the HTTP backend
+    (SGLang / vLLM / OpenAI-compat servers) is preferred. Otherwise the
+    factory falls back to the lmstudio SDK or the ``lms`` CLI.
     """
     loaded_models: list[dict[str, str]] = []
     try:
-        backend = await LifecycleBackendFactory.select()
+        select_kwargs = _load_lifecycle_kwargs(config_path)
+        backend = await LifecycleBackendFactory.select(**select_kwargs)
         infos = await backend.list_loaded()
         for info in infos:
             loaded_models.append({
@@ -198,7 +234,7 @@ def register_lifecycle_subparser(
     """
     lp = subparsers.add_parser(
         "lifecycle",
-        help="Inspect/manage LM Studio model lifecycle state",
+        help="Inspect/manage inference-server model lifecycle state",
     )
     lp_sub = lp.add_subparsers(dest="lifecycle_cmd", required=True)
     status = lp_sub.add_parser("status")

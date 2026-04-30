@@ -113,7 +113,7 @@ def test_cmd_view_returns_two_on_replay_error(tmp_path: Path) -> None:
 def test_cmd_lifecycle_status_dispatches() -> None:
     from senex.cli_handlers import cmd_lifecycle
 
-    async def _ok(*, as_json: bool) -> int:
+    async def _ok(*, as_json: bool, config_path: str | None = None) -> int:
         return 0
 
     with patch(

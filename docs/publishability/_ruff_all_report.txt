@@ -1,0 +1,1545 @@
+warning: `incorrect-blank-line-before-class` (D203) and `no-blank-line-before-class` (D211) are incompatible. Ignoring `incorrect-blank-line-before-class`.
+warning: `multi-line-summary-first-line` (D212) and `multi-line-summary-second-line` (D213) are incompatible. Ignoring `multi-line-summary-second-line`.
+senex\__main__.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+senex\atomic_io.py:14:21: TC003 Move standard library import `pathlib.Path` into a type-checking block
+senex\atomic_io.py:50:5: D413 [*] Missing blank line after last section ("Returns")
+senex\atomic_io.py:68:9: PTH105 `os.replace()` should be replaced by `Path.replace()`
+senex\atomic_io.py:72:84: COM812 [*] Trailing comma missing
+senex\auditor.py:38:1: UP035 [*] Import from `collections.abc` instead: `AsyncIterator`
+senex\auditor.py:99:28: UP017 [*] Use `datetime.UTC` alias
+senex\auditor.py:103:53: COM812 [*] Trailing comma missing
+senex\auditor.py:111:11: PLR0913 Too many arguments in function definition (6 > 5)
+senex\auditor.py:113:13: UP037 [*] Remove quotes from type annotation
+senex\auditor.py:128:5: D413 [*] Missing blank line after last section ("Raises")
+senex\auditor.py:199:11: C901 `run_audit` is too complex (33 > 10)
+senex\auditor.py:199:11: PLR0913 Too many arguments in function definition (9 > 5)
+senex\auditor.py:199:11: PLR0911 Too many return statements (10 > 6)
+senex\auditor.py:199:11: PLR0912 Too many branches (34 > 12)
+senex\auditor.py:199:11: PLR0915 Too many statements (147 > 50)
+senex\auditor.py:202:13: UP037 [*] Remove quotes from type annotation
+senex\auditor.py:203:11: UP037 [*] Remove quotes from type annotation
+senex\auditor.py:205:18: UP037 [*] Remove quotes from type annotation
+senex\auditor.py:213:5: D413 [*] Missing blank line after last section ("Returns")
+senex\auditor.py:234:5: PLC0415 `import` should be at the top-level of a file
+senex\auditor.py:239:77: COM812 [*] Trailing comma missing
+senex\auditor.py:261:13: TRY400 Use `logging.exception` instead of `logging.error`
+senex\auditor.py:263:72: COM812 [*] Trailing comma missing
+senex\auditor.py:274:14: COM812 [*] Trailing comma missing
+senex\auditor.py:277:82: COM812 [*] Trailing comma missing
+senex\auditor.py:280:68: COM812 [*] Trailing comma missing
+senex\auditor.py:309:78: COM812 [*] Trailing comma missing
+senex\auditor.py:336:67: COM812 [*] Trailing comma missing
+senex\auditor.py:352:21: SLF001 Private member accessed: `_fingerprint_pinned`
+senex\auditor.py:355:21: SLF001 Private member accessed: `_fingerprint_pinned`
+senex\auditor.py:362:17: SLF001 Private member accessed: `_fingerprint_pinned`
+senex\auditor.py:372:49: COM812 [*] Trailing comma missing
+senex\auditor.py:379:13: PLC0415 `import` should be at the top-level of a file
+senex\auditor.py:381:50: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `compactor_factory`
+senex\auditor.py:425:79: COM812 [*] Trailing comma missing
+senex\auditor.py:445:75: COM812 [*] Trailing comma missing
+senex\auditor.py:468:18: COM812 [*] Trailing comma missing
+senex\auditor.py:490:64: COM812 [*] Trailing comma missing
+senex\auditor.py:508:26: COM812 [*] Trailing comma missing
+senex\auditor.py:515:29: SLF001 Private member accessed: `_run_metadata`
+senex\auditor.py:534:17: PLC0415 `import` should be at the top-level of a file
+senex\auditor.py:536:21: PLW2901 `for` loop variable `raw` overwritten by assignment target
+senex\auditor.py:548:101: E501 Line too long (104 > 100)
+senex\auditor.py:558:18: COM812 [*] Trailing comma missing
+senex\auditor.py:565:9: TRY400 Use `logging.exception` instead of `logging.error`
+senex\auditor.py:569:9: TRY400 Use `logging.exception` instead of `logging.error`
+senex\auditor.py:573:9: TRY400 Use `logging.exception` instead of `logging.error`
+senex\auditor.py:577:9: TRY400 Use `logging.exception` instead of `logging.error`
+senex\auditor.py:579:70: COM812 [*] Trailing comma missing
+senex\auditor.py:583:9: TRY400 Use `logging.exception` instead of `logging.error`
+senex\auditor.py:585:70: COM812 [*] Trailing comma missing
+senex\auditor.py:588:31: RUF100 [*] Unused `noqa` directive (unused: `BLE001`)
+senex\auditor.py:589:9: PLC0415 `import` should be at the top-level of a file
+senex\auditor.py:592:13: TRY400 Use `logging.exception` instead of `logging.error`
+senex\auditor.py:594:74: COM812 [*] Trailing comma missing
+senex\auditor.py:602:67: COM812 [*] Trailing comma missing
+senex\auditor.py:626:5: N802 Function name `_events_BaseEvent` should be lowercase
+senex\auditor.py:633:5: PLC0415 `import` should be at the top-level of a file
+senex\auditor.py:638:5: ANN202 Missing return type annotation for private function `_disk_writer_dispatch`
+senex\auditor.py:646:5: PLC0415 `import` should be at the top-level of a file
+senex\auditor.py:652:13: TRY400 Use `logging.exception` instead of `logging.error`
+senex\auditor.py:668:5: PLC0415 `import` should be at the top-level of a file
+senex\auditor.py:675:5: PLC0415 `import` should be at the top-level of a file
+senex\auditor.py:683:5: PTH105 `os.replace()` should be replaced by `Path.replace()`
+senex\auditor.py:686:30: UP037 [*] Remove quotes from type annotation
+senex\auditor.py:692:5: PLC0415 `import` should be at the top-level of a file
+senex\auditor.py:694:26: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `obj`
+senex\auditor.py:694:34: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `_strip_none`
+senex\auditor.py:710:27: ARG002 Unused method argument: `file_relpath`
+senex\auditor.py:710:49: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `fetch`
+senex\auditor.py:711:9: PLC0415 `import` should be at the top-level of a file
+senex\checkpoint.py:27:7: N818 Exception name `CheckpointCorrupt` should be named with an Error suffix
+senex\checkpoint.py:41:5: PTH105 `os.replace()` should be replaced by `Path.replace()`
+senex\checkpoint.py:51:7: D101 Missing docstring in public class
+senex\checkpoint.py:55:9: PLR0913 Too many arguments in function definition (7 > 5)
+senex\checkpoint.py:55:9: D102 Missing docstring in public method
+senex\checkpoint.py:73:29: C420 [*] Unnecessary dict comprehension for iterable; use `dict.fromkeys` instead
+senex\checkpoint.py:88:9: D102 Missing docstring in public method
+senex\checkpoint.py:93:19: TRY003 Avoid specifying long messages outside the exception class
+senex\checkpoint.py:93:37: EM102 Exception must not use an f-string literal, assign to variable first
+senex\checkpoint.py:101:9: D102 Missing docstring in public method
+senex\checkpoint.py:105:39: RUF005 Consider iterable unpacking instead of concatenation
+senex\checkpoint.py:106:60: UP017 [*] Use `datetime.UTC` alias
+senex\checkpoint.py:106:86: COM812 [*] Trailing comma missing
+senex\checkpoint.py:111:9: D102 Missing docstring in public method
+senex\cli.py:18:1: I001 [*] Import block is un-sorted or un-formatted
+senex\cli.py:42:7: N818 Exception name `ValidationGateFailed` should be named with an Error suffix
+senex\cli.py:48:9: D107 Missing docstring in `__init__`
+senex\cli.py:77:74: COM812 [*] Trailing comma missing
+senex\cli.py:80:70: COM812 [*] Trailing comma missing
+senex\cli.py:109:5: D413 [*] Missing blank line after last section ("Returns")
+senex\cli.py:294:5: SIM102 Use a single `if` statement instead of nested `if` statements
+senex\cli.py:296:19: TRY003 Avoid specifying long messages outside the exception class
+senex\cli.py:297:17: EM101 Exception must not use a string literal, assign to variable first
+senex\cli.py:298:80: COM812 [*] Trailing comma missing
+senex\cli.py:302:5: PLR0911 Too many return statements (8 > 6)
+senex\cli.py:305:5: D413 [*] Missing blank line after last section ("Returns")
+senex\cli.py:328:9: PLC0415 `import` should be at the top-level of a file
+senex\cli.py:332:9: PLC0415 `import` should be at the top-level of a file
+senex\cli.py:336:9: PLC0415 `import` should be at the top-level of a file
+senex\cli.py:340:9: PLC0415 `import` should be at the top-level of a file
+senex\cli.py:344:9: PLC0415 `import` should be at the top-level of a file
+senex\cli.py:348:9: PLC0415 `import` should be at the top-level of a file
+senex\cli_aggregate.py:12:1: D413 [*] Missing blank line after last section ("Returns")
+senex\cli_aggregate.py:18:1: I001 [*] Import block is un-sorted or un-formatted
+senex\cli_aggregate.py:20:8: TC003 Move standard library import `argparse` into a type-checking block
+senex\cli_aggregate.py:49:5: PLR0911 Too many return statements (9 > 6)
+senex\cli_aggregate.py:68:45: COM812 [*] Trailing comma missing
+senex\cli_aggregate.py:74:53: COM812 [*] Trailing comma missing
+senex\cli_aggregate.py:126:48: COM812 [*] Trailing comma missing
+senex\cli_aggregate.py:137:49: PLR2004 Magic value used in comparison, consider replacing `4` with a constant variable
+senex\cli_aggregate.py:138:17: FURB110 [*] Replace ternary `if` expression with `or` operator
+senex\cli_aggregate.py:181:37: PTH201 [*] Do not pass the current directory explicitly to `Path`
+senex\cli_aggregate.py:182:39: PTH201 [*] Do not pass the current directory explicitly to `Path`
+senex\cli_aggregate.py:183:39: PTH201 [*] Do not pass the current directory explicitly to `Path`
+senex\cli_aggregate.py:184:39: PTH201 [*] Do not pass the current directory explicitly to `Path`
+senex\cli_aggregate.py:185:41: PTH201 [*] Do not pass the current directory explicitly to `Path`
+senex\cli_audit.py:13:1: I001 [*] Import block is un-sorted or un-formatted
+senex\cli_audit.py:15:8: TC003 Move standard library import `argparse` into a type-checking block
+senex\cli_audit.py:53:5: PLC0415 `import` should be at the top-level of a file
+senex\cli_audit.py:76:5: PLR0911 Too many return statements (9 > 6)
+senex\cli_audit.py:90:101: E501 Line too long (109 > 100)
+senex\cli_audit.py:94:95: COM812 [*] Trailing comma missing
+senex\cli_audit.py:123:56: COM812 [*] Trailing comma missing
+senex\cli_audit.py:146:5: PLC0415 `import` should be at the top-level of a file
+senex\cli_audit.py:208:5: PLC0415 `import` should be at the top-level of a file
+senex\cli_audit.py:210:5: PLC0415 `import` should be at the top-level of a file
+senex\cli_audit.py:224:15: SLF001 Private member accessed: `_run_docker`
+senex\cli_audit.py:225:64: COM812 [*] Trailing comma missing
+senex\cli_audit.py:227:15: SLF001 Private member accessed: `_wait_for_health`
+senex\cli_audit.py:228:55: COM812 [*] Trailing comma missing
+senex\cli_audit.py:233:51: COM812 [*] Trailing comma missing
+senex\cli_audit.py:243:80: COM812 [*] Trailing comma missing
+senex\cli_audit.py:251:50: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `_build_wizard_client`
+senex\cli_audit.py:260:9: PLC0415 `import` should be at the top-level of a file
+senex\cli_audit.py:261:9: PLC0415 `import` should be at the top-level of a file
+senex\cli_audit.py:262:9: PLC0415 `import` should be at the top-level of a file
+senex\cli_audit.py:322:5: PLR0913 Too many arguments in function definition (6 > 5)
+senex\cli_audit.py:339:5: PLC0415 `import` should be at the top-level of a file
+senex\cli_audit.py:352:17: TRY400 Use `logging.exception` instead of `logging.error`
+senex\cli_audit.py:358:17: TRY400 Use `logging.exception` instead of `logging.error`
+senex\cli_audit.py:390:5: PLR0913 Too many arguments in function definition (6 > 5)
+senex\cli_audit.py:400:5: PLC0415 `import` should be at the top-level of a file
+senex\cli_audit.py:401:5: PLC0415 `import` should be at the top-level of a file
+senex\cli_audit.py:435:70: COM812 [*] Trailing comma missing
+senex\cli_audit.py:448:13: TRY400 Use `logging.exception` instead of `logging.error`
+senex\cli_audit.py:450:78: COM812 [*] Trailing comma missing
+senex\cli_config_show.py:14:1: I001 [*] Import block is un-sorted or un-formatted
+senex\cli_config_show.py:16:8: TC003 Move standard library import `argparse` into a type-checking block
+senex\cli_config_show.py:53:68: COM812 [*] Trailing comma missing
+senex\cli_config_show.py:74:85: COM812 [*] Trailing comma missing
+senex\cli_config_show.py:123:37: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `node`
+senex\cli_config_show.py:123:71: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `_redact_strings_recursive`
+senex\cli_config_show.py:139:5: PLC0415 `import` should be at the top-level of a file
+senex\cli_config_show.py:145:23: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `node`
+senex\cli_config_show.py:145:31: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `_strip_none`
+senex\cli_doctor.py:25:1: I001 [*] Import block is un-sorted or un-formatted
+senex\cli_doctor.py:27:8: TC003 Move standard library import `argparse` into a type-checking block
+senex\cli_doctor.py:91:76: COM812 [*] Trailing comma missing
+senex\cli_doctor.py:130:5: ARG001 Unused function argument: `cfg_path`
+senex\cli_doctor.py:150:10: COM812 [*] Trailing comma missing
+senex\cli_doctor.py:161:10: COM812 [*] Trailing comma missing
+senex\cli_doctor.py:185:5: PLC0415 `import` should be at the top-level of a file
+senex\cli_doctor.py:186:5: PLC0415 `import` should be at the top-level of a file
+senex\cli_doctor.py:200:18: COM812 [*] Trailing comma missing
+senex\cli_doctor.py:206:18: COM812 [*] Trailing comma missing
+senex\cli_handlers.py:11:1: I001 [*] Import block is un-sorted or un-formatted
+senex\cli_handlers.py:13:8: TC003 Move standard library import `argparse` into a type-checking block
+senex\cli_handlers.py:31:5: PLC0415 `import` should be at the top-level of a file
+senex\cli_handlers.py:38:5: PLC0415 `import` should be at the top-level of a file
+senex\cli_handlers.py:38:5: I001 [*] Import block is un-sorted or un-formatted
+senex\cli_handlers.py:39:5: PLC0415 `import` should be at the top-level of a file
+senex\cli_handlers.py:44:85: COM812 [*] Trailing comma missing
+senex\cli_handlers.py:64:5: PLC0415 `import` should be at the top-level of a file
+senex\cli_handlers.py:71:5: PLC0415 `import` should be at the top-level of a file
+senex\cli_handlers.py:78:5: PLC0415 `import` should be at the top-level of a file
+senex\cli_handlers.py:85:5: PLC0415 `import` should be at the top-level of a file
+senex\cli_handlers.py:95:14: COM812 [*] Trailing comma missing
+senex\cli_handlers.py:99:81: COM812 [*] Trailing comma missing
+senex\cli_wizard.py:44:7: N818 Exception name `WizardCancelled` should be named with an Error suffix
+senex\cli_wizard.py:78:6: COM812 [*] Trailing comma missing
+senex\cli_wizard.py:98:15: TRY003 Avoid specifying long messages outside the exception class
+senex\cli_wizard.py:98:31: EM101 Exception must not use a string literal, assign to variable first
+senex\cli_wizard.py:101:15: TRY003 Avoid specifying long messages outside the exception class
+senex\cli_wizard.py:101:31: EM101 Exception must not use a string literal, assign to variable first
+senex\cli_wizard.py:113:6: RUF001 String contains ambiguous `‘` (LEFT SINGLE QUOTATION MARK). Did you mean ``` (GRAVE ACCENT)?
+senex\cli_wizard.py:114:6: RUF001 String contains ambiguous `’` (RIGHT SINGLE QUOTATION MARK). Did you mean ``` (GRAVE ACCENT)?
+senex\cli_wizard.py:149:15: TRY003 Avoid specifying long messages outside the exception class
+senex\cli_wizard.py:149:26: EM102 Exception must not use an f-string literal, assign to variable first
+senex\cli_wizard.py:151:15: TRY003 Avoid specifying long messages outside the exception class
+senex\cli_wizard.py:151:26: EM102 Exception must not use an f-string literal, assign to variable first
+senex\cli_wizard.py:155:5: C901 `_select_repo` is too complex (17 > 10)
+senex\cli_wizard.py:155:5: PLR0912 Too many branches (16 > 12)
+senex\cli_wizard.py:155:5: PLR0915 Too many statements (65 > 50)
+senex\cli_wizard.py:172:5: D413 [*] Missing blank line after last section ("Raises")
+senex\cli_wizard.py:175:5: PLC0415 `import` should be at the top-level of a file
+senex\cli_wizard.py:203:19: TRY003 Avoid specifying long messages outside the exception class
+senex\cli_wizard.py:203:35: EM101 Exception must not use a string literal, assign to variable first
+senex\cli_wizard.py:265:11: TRY003 Avoid specifying long messages outside the exception class
+senex\cli_wizard.py:265:27: EM101 Exception must not use a string literal, assign to variable first
+senex\cli_wizard.py:273:5: C901 `_select_model` is too complex (14 > 10)
+senex\cli_wizard.py:273:5: PLR0912 Too many branches (14 > 12)
+senex\cli_wizard.py:274:13: UP037 [*] Remove quotes from type annotation
+senex\cli_wizard.py:293:5: D413 [*] Missing blank line after last section ("Raises")
+senex\cli_wizard.py:297:5: PLC0415 `import` should be at the top-level of a file
+senex\cli_wizard.py:309:15: TRY003 Avoid specifying long messages outside the exception class
+senex\cli_wizard.py:310:13: EM102 Exception must not use an f-string literal, assign to variable first
+senex\cli_wizard.py:312:30: COM812 [*] Trailing comma missing
+senex\cli_wizard.py:316:15: TRY003 Avoid specifying long messages outside the exception class
+senex\cli_wizard.py:317:13: EM101 Exception must not use a string literal, assign to variable first
+senex\cli_wizard.py:319:52: COM812 [*] Trailing comma missing
+senex\cli_wizard.py:353:19: TRY003 Avoid specifying long messages outside the exception class
+senex\cli_wizard.py:353:35: EM101 Exception must not use a string literal, assign to variable first
+senex\cli_wizard.py:369:11: TRY003 Avoid specifying long messages outside the exception class
+senex\cli_wizard.py:369:27: EM101 Exception must not use a string literal, assign to variable first
+senex\cli_wizard.py:398:9: PLC0415 `import` should be at the top-level of a file
+senex\cli_wizard.py:402:36: PLR2004 Magic value used in comparison, consider replacing `200` with a constant variable
+senex\cli_wizard.py:412:12: BLE001 Do not catch blind exception: `Exception`
+senex\cli_wizard.py:416:49: UP037 [*] Remove quotes from type annotation
+senex\cli_wizard.py:450:5: D205 1 blank line required between summary line and description
+senex\cli_wizard.py:450:5: D209 [*] Multi-line docstring closing quotes should be on a separate line
+senex\cli_wizard.py:454:9: PLC0415 `import` should be at the top-level of a file
+senex\cli_wizard.py:458:36: PLR2004 Magic value used in comparison, consider replacing `200` with a constant variable
+senex\cli_wizard.py:466:12: BLE001 Do not catch blind exception: `Exception`
+senex\cli_wizard.py:470:5: C901 `_select_context_window` is too complex (12 > 10)
+senex\cli_wizard.py:494:5: D413 [*] Missing blank line after last section ("Raises")
+senex\cli_wizard.py:497:5: PLC0415 `import` should be at the top-level of a file
+senex\cli_wizard.py:529:101: E501 Line too long (104 > 100)
+senex\cli_wizard.py:546:19: TRY003 Avoid specifying long messages outside the exception class
+senex\cli_wizard.py:546:35: EM101 Exception must not use a string literal, assign to variable first
+senex\cli_wizard.py:557:11: TRY003 Avoid specifying long messages outside the exception class
+senex\cli_wizard.py:557:27: EM101 Exception must not use a string literal, assign to variable first
+senex\cli_wizard.py:587:5: D413 [*] Missing blank line after last section ("Raises")
+senex\cli_wizard.py:590:5: PLC0415 `import` should be at the top-level of a file
+senex\cli_wizard.py:607:19: TRY003 Avoid specifying long messages outside the exception class
+senex\cli_wizard.py:607:35: EM101 Exception must not use a string literal, assign to variable first
+senex\cli_wizard.py:620:11: TRY003 Avoid specifying long messages outside the exception class
+senex\cli_wizard.py:620:27: EM101 Exception must not use a string literal, assign to variable first
+senex\cli_wizard.py:646:5: D413 [*] Missing blank line after last section ("Raises")
+senex\cli_wizard.py:649:5: PLC0415 `import` should be at the top-level of a file
+senex\cli_wizard.py:655:15: FURB110 [*] Replace ternary `if` expression with `or` operator
+senex\cli_wizard.py:670:19: TRY003 Avoid specifying long messages outside the exception class
+senex\cli_wizard.py:670:35: EM101 Exception must not use a string literal, assign to variable first
+senex\cli_wizard.py:679:11: TRY003 Avoid specifying long messages outside the exception class
+senex\cli_wizard.py:679:27: EM101 Exception must not use a string literal, assign to variable first
+senex\cli_wizard.py:706:5: D413 [*] Missing blank line after last section ("Raises")
+senex\cli_wizard.py:709:5: PLC0415 `import` should be at the top-level of a file
+senex\cli_wizard.py:726:19: TRY003 Avoid specifying long messages outside the exception class
+senex\cli_wizard.py:726:35: EM101 Exception must not use a string literal, assign to variable first
+senex\cli_wizard.py:728:11: TRY003 Avoid specifying long messages outside the exception class
+senex\cli_wizard.py:728:27: EM101 Exception must not use a string literal, assign to variable first
+senex\cli_wizard.py:757:5: C901 `_discover_repos_on_disk` is too complex (12 > 10)
+senex\cli_wizard.py:770:5: D413 [*] Missing blank line after last section ("Notes")
+senex\cli_wizard.py:842:13: UP037 [*] Remove quotes from type annotation
+senex\cli_wizard.py:846:6: UP037 [*] Remove quotes from type annotation
+senex\cli_wizard.py:861:5: D413 [*] Missing blank line after last section ("Raises")
+senex\cli_wizard.py:866:5: PLC0415 `import` should be at the top-level of a file
+senex\cli_wizard.py:866:5: I001 [*] Import block is un-sorted or un-formatted
+senex\cli_wizard.py:867:5: PLC0415 `import` should be at the top-level of a file
+senex\cli_wizard.py:869:5: PLC0415 `import` should be at the top-level of a file
+senex\cli_wizard.py:929:19: TRY003 Avoid specifying long messages outside the exception class
+senex\cli_wizard.py:929:31: EM102 Exception must not use an f-string literal, assign to variable first
+senex\cli_wizard.py:964:19: TRY003 Avoid specifying long messages outside the exception class
+senex\cli_wizard.py:964:35: EM101 Exception must not use a string literal, assign to variable first
+senex\cli_wizard.py:967:15: TRY003 Avoid specifying long messages outside the exception class
+senex\cli_wizard.py:967:31: EM101 Exception must not use a string literal, assign to variable first
+senex\cli_wizard.py:1012:11: RUF022 [*] `__all__` is not sorted
+senex\compaction.py:1:1: D301 Use `r"""` if any backslashes in a docstring
+senex\compaction.py:39:29: TC003 Move standard library import `collections.abc.Iterable` into a type-checking block
+senex\compaction.py:40:21: TC003 Move standard library import `pathlib.Path` into a type-checking block
+senex\compaction.py:45:26: TC001 Move application import `senex.config.CompactionCfg` into a type-checking block
+senex\compaction.py:53:35: TC001 Move application import `senex.secret_redactor.SecretRedactor` into a type-checking block
+senex\compaction.py:104:7: N818 Exception name `CompactionFailed` should be named with an Error suffix
+senex\compaction.py:107:9: D107 Missing docstring in `__init__`
+senex\compaction.py:119:7: N818 Exception name `CompactionLoopExceeded` should be named with an Error suffix
+senex\compaction.py:122:9: D107 Missing docstring in `__init__`
+senex\compaction.py:128:69: COM812 [*] Trailing comma missing
+senex\compaction.py:132:7: N818 Exception name `ContextOverflow` should be named with an Error suffix
+senex\compaction.py:133:5: D205 1 blank line required between summary line and description
+senex\compaction.py:139:9: D107 Missing docstring in `__init__`
+senex\compaction.py:144:86: COM812 [*] Trailing comma missing
+senex\compaction.py:154:68: COM812 [*] Trailing comma missing
+senex\compaction.py:192:18: COM812 [*] Trailing comma missing
+senex\compaction.py:256:9: PLC0415 `import` should be at the top-level of a file
+senex\compaction.py:259:19: TRY003 Avoid specifying long messages outside the exception class
+senex\compaction.py:259:30: EM101 Exception must not use a string literal, assign to variable first
+senex\compaction.py:278:9: PLR0913 Too many arguments in function definition (9 > 5)
+senex\compaction.py:278:9: D107 Missing docstring in `__init__`
+senex\compaction.py:280:17: UP037 [*] Remove quotes from type annotation
+senex\compaction.py:308:9: D102 Missing docstring in public method
+senex\compaction.py:312:9: D102 Missing docstring in public method
+senex\compaction.py:316:66: COM812 [*] Trailing comma missing
+senex\compaction.py:328:81: COM812 [*] Trailing comma missing
+senex\compaction.py:332:66: COM812 [*] Trailing comma missing
+senex\compaction.py:365:14: COM812 [*] Trailing comma missing
+senex\compaction.py:381:18: COM812 [*] Trailing comma missing
+senex\compaction.py:391:18: COM812 [*] Trailing comma missing
+senex\compaction.py:408:14: COM812 [*] Trailing comma missing
+senex\compaction.py:447:70: COM812 [*] Trailing comma missing
+senex\compaction.py:453:61: COM812 [*] Trailing comma missing
+senex\compaction.py:473:63: COM812 [*] Trailing comma missing
+senex\compaction.py:499:15: UP037 [*] Remove quotes from type annotation
+senex\compaction.py:500:28: UP017 [*] Use `datetime.UTC` alias
+senex\config.py:16:7: N818 Exception name `UnknownConfigKey` should be named with an Error suffix
+senex\config.py:24:7: D101 Missing docstring in public class
+senex\config.py:31:7: D101 Missing docstring in public class
+senex\config.py:38:7: D101 Missing docstring in public class
+senex\config.py:48:10: COM812 [*] Trailing comma missing
+senex\config.py:54:10: COM812 [*] Trailing comma missing
+senex\config.py:65:7: D101 Missing docstring in public class
+senex\config.py:71:7: D101 Missing docstring in public class
+senex\config.py:85:7: D101 Missing docstring in public class
+senex\config.py:93:7: D101 Missing docstring in public class
+senex\config.py:98:7: D101 Missing docstring in public class
+senex\config.py:103:7: D101 Missing docstring in public class
+senex\config.py:112:7: D101 Missing docstring in public class
+senex\config.py:142:7: D101 Missing docstring in public class
+senex\config.py:150:7: D101 Missing docstring in public class
+senex\config.py:168:7: D101 Missing docstring in public class
+senex\config.py:226:7: D101 Missing docstring in public class
+senex\config.py:236:7: D101 Missing docstring in public class
+senex\config.py:271:5: D413 [*] Missing blank line after last section ("Raises")
+senex\config.py:288:52: COM812 [*] Trailing comma missing
+senex\config.py:293:23: TRY003 Avoid specifying long messages outside the exception class
+senex\config.py:294:21: EM102 Exception must not use an f-string literal, assign to variable first
+senex\config.py:295:46: COM812 [*] Trailing comma missing
+senex\cross_cutting.py:24:26: TC001 Move application import `senex.config.CrosscutCfg` into a type-checking block
+senex\cross_cutting.py:26:30: TC001 Move application import `senex.llm_client.LLMClient` into a type-checking block
+senex\cross_cutting.py:92:9: D107 Missing docstring in `__init__`
+senex\cross_cutting.py:113:9: D413 [*] Missing blank line after last section ("Returns")
+senex\cross_cutting.py:118:80: COM812 [*] Trailing comma missing
+senex\cross_cutting.py:143:14: COM812 [*] Trailing comma missing
+senex\cross_cutting.py:162:31: PLR2004 Magic value used in comparison, consider replacing `2` with a constant variable
+senex\cross_cutting.py:179:31: PLR2004 Magic value used in comparison, consider replacing `2` with a constant variable
+senex\cross_cutting.py:192:13: TRY004 Prefer `TypeError` exception for invalid type
+senex\cross_cutting.py:192:19: TRY003 Avoid specifying long messages outside the exception class
+senex\cross_cutting.py:192:30: EM101 Exception must not use a string literal, assign to variable first
+senex\cross_cutting.py:195:13: TRY004 Prefer `TypeError` exception for invalid type
+senex\cross_cutting.py:195:19: TRY003 Avoid specifying long messages outside the exception class
+senex\cross_cutting.py:195:30: EM101 Exception must not use a string literal, assign to variable first
+senex\cross_cutting.py:201:13: TRY004 Prefer `TypeError` exception for invalid type
+senex\cross_cutting.py:201:19: TRY003 Avoid specifying long messages outside the exception class
+senex\cross_cutting.py:201:30: EM101 Exception must not use a string literal, assign to variable first
+senex\cross_cutting.py:218:18: COM812 [*] Trailing comma missing
+senex\cross_cutting.py:224:37: UP017 [*] Use `datetime.UTC` alias
+senex\cross_cutting.py:228:5: D205 1 blank line required between summary line and description
+senex\cross_cutting.py:247:11: RUF022 [*] `__all__` is not sorted
+senex\error_artifacts.py:17:21: TC003 Move standard library import `pathlib.Path` into a type-checking block
+senex\error_artifacts.py:134:11: RUF022 [*] `__all__` is not sorted
+senex\events.py:9:29: TC003 Move standard library import `collections.abc.Awaitable` into a type-checking block
+senex\events.py:9:40: TC003 Move standard library import `collections.abc.Callable` into a type-checking block
+senex\events.py:10:22: TC003 Move standard library import `datetime.datetime` into a type-checking block
+senex\events.py:19:7: N818 Exception name `UnknownEventType` should be named with an Error suffix
+senex\events.py:27:7: D101 Missing docstring in public class
+senex\events.py:43:23: TRY003 Avoid specifying long messages outside the exception class
+senex\events.py:43:40: EM102 Exception must not use an f-string literal, assign to variable first
+senex\events.py:47:7: D101 Missing docstring in public class
+senex\events.py:67:5: D204 [*] 1 blank line required after class docstring
+senex\events.py:74:5: D204 [*] 1 blank line required after class docstring
+senex\events.py:79:7: D101 Missing docstring in public class
+senex\events.py:85:7: D101 Missing docstring in public class
+senex\events.py:92:7: D101 Missing docstring in public class
+senex\events.py:99:7: D101 Missing docstring in public class
+senex\events.py:106:7: D101 Missing docstring in public class
+senex\events.py:113:5: D204 [*] 1 blank line required after class docstring
+senex\events.py:113:5: D205 1 blank line required between summary line and description
+senex\events.py:113:5: D209 [*] Multi-line docstring closing quotes should be on a separate line
+senex\events.py:121:5: D204 [*] 1 blank line required after class docstring
+senex\events.py:121:5: D205 1 blank line required between summary line and description
+senex\events.py:121:5: D209 [*] Multi-line docstring closing quotes should be on a separate line
+senex\events.py:128:7: D101 Missing docstring in public class
+senex\events.py:137:7: D101 Missing docstring in public class
+senex\events.py:143:7: D101 Missing docstring in public class
+senex\events.py:148:7: D101 Missing docstring in public class
+senex\events.py:155:7: D101 Missing docstring in public class
+senex\events.py:162:7: D101 Missing docstring in public class
+senex\events.py:167:7: D101 Missing docstring in public class
+senex\events.py:174:7: D101 Missing docstring in public class
+senex\events.py:182:5: D204 [*] 1 blank line required after class docstring
+senex\events.py:182:5: D205 1 blank line required between summary line and description
+senex\events.py:182:5: D209 [*] Multi-line docstring closing quotes should be on a separate line
+senex\events.py:189:7: D101 Missing docstring in public class
+senex\events.py:197:7: D101 Missing docstring in public class
+senex\events.py:205:7: D101 Missing docstring in public class
+senex\events.py:213:7: D101 Missing docstring in public class
+senex\events.py:223:7: D101 Missing docstring in public class
+senex\events.py:233:7: D101 Missing docstring in public class
+senex\events.py:239:7: D101 Missing docstring in public class
+senex\events.py:246:7: D101 Missing docstring in public class
+senex\events.py:253:7: D101 Missing docstring in public class
+senex\events.py:259:7: D101 Missing docstring in public class
+senex\events.py:263:7: D101 Missing docstring in public class
+senex\events.py:269:5: D204 [*] 1 blank line required after class docstring
+senex\events.py:274:5: D204 [*] 1 blank line required after class docstring
+senex\events.py:280:7: D101 Missing docstring in public class
+senex\events.py:287:7: D101 Missing docstring in public class
+senex\events.py:293:7: D101 Missing docstring in public class
+senex\events.py:298:7: D101 Missing docstring in public class
+senex\events.py:305:7: D101 Missing docstring in public class
+senex\events.py:349:45: COM812 [*] Trailing comma missing
+senex\events.py:356:7: D101 Missing docstring in public class
+senex\events.py:361:7: D101 Missing docstring in public class
+senex\events.py:367:7: D101 Missing docstring in public class
+senex\events.py:374:7: D101 Missing docstring in public class
+senex\events.py:381:7: D101 Missing docstring in public class
+senex\events.py:388:7: D101 Missing docstring in public class
+senex\events.py:394:7: D101 Missing docstring in public class
+senex\events.py:421:7: D101 Missing docstring in public class
+senex\events.py:430:9: D107 Missing docstring in `__init__`
+senex\events.py:434:9: D102 Missing docstring in public method
+senex\events.py:435:9: SLF001 Private member accessed: `_cancel_local`
+senex\events.py:444:9: D107 Missing docstring in `__init__`
+senex\events.py:448:92: COM812 [*] Trailing comma missing
+senex\events.py:453:9: D102 Missing docstring in public method
+senex\events.py:461:9: ARG002 Unused method argument: `name`
+senex\events.py:464:9: ARG002 Unused method argument: `capacity`
+senex\events.py:485:15: D102 Missing docstring in public method
+senex\events.py:497:71: COM812 [*] Trailing comma missing
+senex\events.py:515:21: SIM105 Use `contextlib.suppress(asyncio.QueueEmpty)` instead of `try`-`except`-`pass`
+senex\events.py:533:9: D107 Missing docstring in `__init__`
+senex\events.py:537:9: D102 Missing docstring in public method
+senex\events.py:542:15: D102 Missing docstring in public method
+senex\findings_aggregator.py:34:7: N818 Exception name `FindingsValidationFailed` should be named with an Error suffix
+senex\findings_aggregator.py:38:7: N818 Exception name `AggregatorInputMissing` should be named with an Error suffix
+senex\findings_aggregator.py:50:9: D107 Missing docstring in `__init__`
+senex\findings_aggregator.py:70:9: D413 [*] Missing blank line after last section ("Raises")
+senex\findings_aggregator.py:74:16: ASYNC240 Async functions should not use pathlib.Path methods, use trio.Path or anyio.path
+senex\findings_aggregator.py:75:19: TRY003 Avoid specifying long messages outside the exception class
+senex\findings_aggregator.py:75:42: EM102 Exception must not use an f-string literal, assign to variable first
+senex\findings_aggregator.py:131:63: COM812 [*] Trailing comma missing
+senex\findings_aggregator.py:154:17: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+senex\findings_aggregator.py:154:23: TRY003 Avoid specifying long messages outside the exception class
+senex\findings_aggregator.py:155:21: EM102 Exception must not use an f-string literal, assign to variable first
+senex\findings_aggregator.py:155:62: COM812 [*] Trailing comma missing
+senex\findings_aggregator.py:162:22: COM812 [*] Trailing comma missing
+senex\findings_aggregator.py:167:17: TRY400 Use `logging.exception` instead of `logging.error`
+senex\findings_partial.py:16:21: TC003 Move standard library import `pathlib.Path` into a type-checking block
+senex\findings_partial.py:17:19: TC003 Move standard library import `types.TracebackType` into a type-checking block
+senex\findings_partial.py:20:33: TC001 Move application import `senex.render_models.FindingRecord` into a type-checking block
+senex\findings_partial.py:50:5: D301 Use `r"""` if any backslashes in a docstring
+senex\findings_partial.py:63:9: D107 Missing docstring in `__init__`
+senex\findings_partial.py:68:38: SIM115 Use a context manager for opening files
+senex\findings_partial.py:68:38: PTH123 `open()` should be replaced by `Path.open()`
+senex\findings_partial.py:74:19: TRY003 Avoid specifying long messages outside the exception class
+senex\findings_partial.py:74:32: EM101 Exception must not use a string literal, assign to variable first
+senex\findings_partial.py:93:9: PYI034 `__enter__` methods in classes like `FindingsPartialWriter` usually return `self` at runtime
+senex\findings_partial.py:93:9: D105 Missing docstring in magic method
+senex\findings_partial.py:96:9: D105 Missing docstring in magic method
+senex\graph_awareness.py:1:1: D301 Use `r"""` if any backslashes in a docstring
+senex\graph_awareness.py:40:7: N818 Exception name `GitNexusUnavailable` should be named with an Error suffix
+senex\graph_awareness.py:44:7: N818 Exception name `RelpathRejected` should be named with an Error suffix
+senex\graph_awareness.py:48:7: N818 Exception name `GitNexusSubprocessFailed` should be named with an Error suffix
+senex\graph_awareness.py:81:7: D101 Missing docstring in public class
+senex\graph_awareness.py:82:15: D102 Missing docstring in public method
+senex\graph_awareness.py:99:9: D107 Missing docstring in `__init__`
+senex\graph_awareness.py:131:12: PIE810 Call `startswith` once with a `tuple`
+senex\graph_awareness.py:135:9: SIM103 Return the condition `not (len(relpath) >= 2 and relpath[1] == ":")` directly
+senex\graph_awareness.py:135:28: PLR2004 Magic value used in comparison, consider replacing `2` with a constant variable
+senex\graph_awareness.py:141:43: COM812 [*] Trailing comma missing
+senex\graph_awareness.py:149:9: D413 [*] Missing blank line after last section ("Raises")
+senex\graph_awareness.py:155:37: SIM112 Use capitalized environment variable `PROGRAMFILES` instead of `ProgramFiles`
+senex\graph_awareness.py:156:37: SIM112 Use capitalized environment variable `PROGRAMFILES(X86)` instead of `ProgramFiles(x86)`
+senex\graph_awareness.py:156:101: E501 Line too long (108 > 100)
+senex\graph_awareness.py:165:19: TRY003 Avoid specifying long messages outside the exception class
+senex\graph_awareness.py:165:39: EM101 Exception must not use a string literal, assign to variable first
+senex\graph_awareness.py:180:65: COM812 [*] Trailing comma missing
+senex\graph_awareness.py:194:18: COM812 [*] Trailing comma missing
+senex\graph_awareness.py:207:39: COM812 [*] Trailing comma missing
+senex\graph_awareness.py:211:54: COM812 [*] Trailing comma missing
+senex\graph_awareness.py:213:16: C416 Unnecessary dict comprehension (rewrite using `dict()`)
+senex\graph_awareness.py:213:40: B905 `zip()` without an explicit `strict=` parameter
+senex\graph_awareness.py:239:58: COM812 [*] Trailing comma missing
+senex\graph_awareness.py:241:16: UP041 [*] Replace aliased errors with `TimeoutError`
+senex\graph_awareness.py:244:19: TRY003 Avoid specifying long messages outside the exception class
+senex\graph_awareness.py:245:17: EM102 Exception must not use an f-string literal, assign to variable first
+senex\graph_awareness.py:245:50: COM812 [*] Trailing comma missing
+senex\graph_awareness.py:249:19: TRY003 Avoid specifying long messages outside the exception class
+senex\graph_awareness.py:250:17: EM102 Exception must not use an f-string literal, assign to variable first
+senex\graph_awareness.py:251:40: COM812 [*] Trailing comma missing
+senex\graph_awareness.py:256:19: TRY003 Avoid specifying long messages outside the exception class
+senex\graph_awareness.py:257:17: EM102 Exception must not use an f-string literal, assign to variable first
+senex\graph_awareness.py:257:45: COM812 [*] Trailing comma missing
+senex\graph_awareness.py:314:75: COM812 [*] Trailing comma missing
+senex\graph_awareness.py:326:45: COM812 [*] Trailing comma missing
+senex\graph_awareness.py:330:36: UP017 [*] Use `datetime.UTC` alias
+senex\graph_awareness.py:335:14: COM812 [*] Trailing comma missing
+senex\handoff.py:13:21: TC003 Move standard library import `pathlib.Path` into a type-checking block
+senex\handoff.py:16:33: TC001 Move application import `senex.render_models.FindingRecord` into a type-checking block
+senex\handoff.py:16:48: TC001 Move application import `senex.render_models.RunMetadata` into a type-checking block
+senex\handoff.py:22:7: N818 Exception name `HandoffPolicyViolation` should be named with an Error suffix
+senex\handoff.py:48:5: D413 [*] Missing blank line after last section ("Raises")
+senex\handoff.py:61:35: PLR2004 Magic value used in comparison, consider replacing `8` with a constant variable
+senex\handoff.py:62:23: TRY003 Avoid specifying long messages outside the exception class
+senex\handoff.py:63:21: EM102 Exception must not use an f-string literal, assign to variable first
+senex\handoff.py:65:40: COM812 [*] Trailing comma missing
+senex\handoff.py:97:48: COM812 [*] Trailing comma missing
+senex\lens.py:28:7: N818 Exception name `LensNotFound` should be named with an Error suffix
+senex\lens.py:75:9: D413 [*] Missing blank line after last section ("Raises")
+senex\lens.py:83:19: TRY003 Avoid specifying long messages outside the exception class
+senex\lens.py:83:32: EM102 Exception must not use an f-string literal, assign to variable first
+senex\lens.py:104:14: COM812 [*] Trailing comma missing
+senex\lens.py:155:9: D413 [*] Missing blank line after last section ("Raises")
+senex\lens.py:172:19: TRY003 Avoid specifying long messages outside the exception class
+senex\lens.py:173:17: EM102 Exception must not use an f-string literal, assign to variable first
+senex\lens.py:174:80: COM812 [*] Trailing comma missing
+senex\lifecycle_cli.py:12:8: TC003 Move standard library import `argparse` into a type-checking block
+senex\lifecycle_cli.py:34:9: PLC0415 `import` should be at the top-level of a file
+senex\lifecycle_cli.py:48:9: TRY300 Consider moving this statement to an `else` block
+senex\lifecycle_cli.py:71:11: C901 `cli_lifecycle_status` is too complex (11 > 10)
+senex\lifecycle_cli.py:72:53: COM812 [*] Trailing comma missing
+senex\lifecycle_cli.py:96:13: PERF401 Use `list.extend` to create a transformed list
+senex\lifecycle_cli.py:142:9: PERF401 Use `list.extend` to create a transformed list
+senex\lifecycle_cli.py:144:52: COM812 [*] Trailing comma missing
+senex\lifecycle_cli.py:152:42: COM812 [*] Trailing comma missing
+senex\lifecycle_cli.py:155:9: PERF401 Use `list.extend` to create a transformed list
+senex\lifecycle_cli.py:159:56: COM812 [*] Trailing comma missing
+senex\lifecycle_cli.py:211:74: COM812 [*] Trailing comma missing
+senex\lifecycle_cli.py:217:52: COM812 [*] Trailing comma missing
+senex\llm_client.py:54:9: D413 [*] Missing blank line after last section ("Returns")
+senex\lmstudio_client.py:28:26: TC001 Move application import `senex.config.LmStudioCfg` into a type-checking block
+senex\lmstudio_client.py:47:35: TC001 Move application import `senex.secret_redactor.SecretRedactor` into a type-checking block
+senex\lmstudio_client.py:95:7: D101 Missing docstring in public class
+senex\lmstudio_client.py:100:7: D101 Missing docstring in public class
+senex\lmstudio_client.py:106:7: D101 Missing docstring in public class
+senex\lmstudio_client.py:146:7: D101 Missing docstring in public class
+senex\lmstudio_client.py:153:7: D101 Missing docstring in public class
+senex\lmstudio_client.py:216:95: COM812 [*] Trailing comma missing
+senex\lmstudio_client.py:239:87: COM812 [*] Trailing comma missing
+senex\lmstudio_client.py:257:9: D107 Missing docstring in `__init__`
+senex\lmstudio_client.py:296:9: ARG002 Unused method argument: `task`
+senex\lmstudio_client.py:316:19: TRY003 Avoid specifying long messages outside the exception class
+senex\lmstudio_client.py:317:17: EM102 Exception must not use an f-string literal, assign to variable first
+senex\lmstudio_client.py:318:62: COM812 [*] Trailing comma missing
+senex\lmstudio_client.py:346:72: COM812 [*] Trailing comma missing
+senex\lmstudio_client.py:357:16: PLR2004 Magic value used in comparison, consider replacing `400` with a constant variable
+senex\lmstudio_client.py:357:50: PLR2004 Magic value used in comparison, consider replacing `500` with a constant variable
+senex\lmstudio_client.py:358:23: TRY003 Avoid specifying long messages outside the exception class
+senex\lmstudio_client.py:359:21: EM102 Exception must not use an f-string literal, assign to variable first
+senex\lmstudio_client.py:359:99: COM812 [*] Trailing comma missing
+senex\lmstudio_client.py:382:19: TRY003 Avoid specifying long messages outside the exception class
+senex\lmstudio_client.py:382:37: EM102 Exception must not use an f-string literal, assign to variable first
+senex\lmstudio_client.py:384:19: TRY003 Avoid specifying long messages outside the exception class
+senex\lmstudio_client.py:384:37: EM102 Exception must not use an f-string literal, assign to variable first
+senex\lmstudio_client.py:385:32: PLR2004 Magic value used in comparison, consider replacing `200` with a constant variable
+senex\lmstudio_client.py:386:19: TRY003 Avoid specifying long messages outside the exception class
+senex\lmstudio_client.py:386:37: EM102 Exception must not use an f-string literal, assign to variable first
+senex\lmstudio_client.py:390:13: PERF401 Use a list comprehension to create a transformed list
+senex\lmstudio_client.py:396:18: COM812 [*] Trailing comma missing
+senex\lmstudio_client.py:430:19: TRY003 Avoid specifying long messages outside the exception class
+senex\lmstudio_client.py:430:37: EM102 Exception must not use an f-string literal, assign to variable first
+senex\lmstudio_client.py:432:32: PLR2004 Magic value used in comparison, consider replacing `200` with a constant variable
+senex\lmstudio_client.py:436:34: PLR2004 Magic value used in comparison, consider replacing `400` with a constant variable
+senex\lmstudio_client.py:439:21: COM812 [*] Trailing comma missing
+senex\lmstudio_client.py:494:18: FURB110 [*] Replace ternary `if` expression with `or` operator
+senex\lmstudio_client.py:539:16: PLR2004 Magic value used in comparison, consider replacing `400` with a constant variable
+senex\lmstudio_client.py:539:46: PLR2004 Magic value used in comparison, consider replacing `500` with a constant variable
+senex\lmstudio_client.py:541:16: PLR2004 Magic value used in comparison, consider replacing `500` with a constant variable
+senex\lmstudio_client.py:541:46: PLR2004 Magic value used in comparison, consider replacing `600` with a constant variable
+senex\lmstudio_client.py:551:9: S101 Use of `assert` detected
+senex\lmstudio_client.py:555:66: COM812 [*] Trailing comma missing
+senex\lmstudio_client.py:564:37: PLR2004 Magic value used in comparison, consider replacing `200` with a constant variable
+senex\lmstudio_client.py:569:15: TRY003 Avoid specifying long messages outside the exception class
+senex\lmstudio_client.py:570:13: EM102 Exception must not use an f-string literal, assign to variable first
+senex\lmstudio_client.py:570:68: COM812 [*] Trailing comma missing
+senex\lmstudio_client.py:576:59: COM812 [*] Trailing comma missing
+senex\lmstudio_client.py:591:20: PLR2004 Magic value used in comparison, consider replacing `400` with a constant variable
+senex\lmstudio_client.py:591:52: PLR2004 Magic value used in comparison, consider replacing `500` with a constant variable
+senex\lmstudio_client.py:597:13: S101 Use of `assert` detected
+senex\lmstudio_client.py:599:9: S101 Use of `assert` detected
+senex\lmstudio_client.py:602:15: C901 `_do_stream` is too complex (14 > 10)
+senex\lmstudio_client.py:602:15: PLR0912 Too many branches (14 > 12)
+senex\lmstudio_client.py:602:15: PLR0915 Too many statements (72 > 50)
+senex\lmstudio_client.py:603:59: COM812 [*] Trailing comma missing
+senex\lmstudio_client.py:636:33: PLR2004 Magic value used in comparison, consider replacing `400` with a constant variable
+senex\lmstudio_client.py:669:24: RUF019 [*] Unnecessary key check before dictionary access
+senex\lmstudio_client.py:672:67: COM812 [*] Trailing comma missing
+senex\lmstudio_client.py:699:22: COM812 [*] Trailing comma missing
+senex\lmstudio_client.py:718:18: COM812 [*] Trailing comma missing
+senex\lmstudio_client.py:732:18: COM812 [*] Trailing comma missing
+senex\lmstudio_client.py:773:15: PLR0913 Too many arguments in function definition (11 > 5)
+senex\lmstudio_client.py:794:9: D205 1 blank line required between summary line and description
+senex\lmstudio_client.py:813:82: COM812 [*] Trailing comma missing
+senex\lmstudio_client.py:827:22: COM812 [*] Trailing comma missing
+senex\lmstudio_client.py:843:22: COM812 [*] Trailing comma missing
+senex\lmstudio_client.py:848:80: COM812 [*] Trailing comma missing
+senex\lmstudio_client.py:855:80: COM812 [*] Trailing comma missing
+senex\lmstudio_client.py:869:22: COM812 [*] Trailing comma missing
+senex\lmstudio_client.py:909:82: COM812 [*] Trailing comma missing
+senex\lmstudio_client.py:914:82: COM812 [*] Trailing comma missing
+senex\lmstudio_client.py:917:42: PLR2004 Magic value used in comparison, consider replacing `400` with a constant variable
+senex\lmstudio_client.py:922:90: COM812 [*] Trailing comma missing
+senex\lmstudio_client.py:925:24: PLR2004 Magic value used in comparison, consider replacing `400` with a constant variable
+senex\lmstudio_client.py:925:57: PLR2004 Magic value used in comparison, consider replacing `500` with a constant variable
+senex\lmstudio_client.py:926:31: TRY003 Avoid specifying long messages outside the exception class
+senex\lmstudio_client.py:927:29: EM102 Exception must not use an f-string literal, assign to variable first
+senex\lmstudio_client.py:927:78: COM812 [*] Trailing comma missing
+senex\lmstudio_client.py:971:70: COM812 [*] Trailing comma missing
+senex\lmstudio_client.py:984:62: COM812 [*] Trailing comma missing
+senex\lmstudio_client.py:1006:19: TRY003 Avoid specifying long messages outside the exception class
+senex\lmstudio_client.py:1007:17: EM102 Exception must not use an f-string literal, assign to variable first
+senex\lmstudio_client.py:1007:74: COM812 [*] Trailing comma missing
+senex\lmstudio_client.py:1049:19: TRY003 Avoid specifying long messages outside the exception class
+senex\lmstudio_client.py:1049:37: EM102 Exception must not use an f-string literal, assign to variable first
+senex\lmstudio_client.py:1062:18: COM812 [*] Trailing comma missing
+senex\lmstudio_client.py:1064:19: TRY003 Avoid specifying long messages outside the exception class
+senex\lmstudio_client.py:1065:17: EM102 Exception must not use an f-string literal, assign to variable first
+senex\lmstudio_client.py:1065:75: COM812 [*] Trailing comma missing
+senex\lmstudio_client.py:1111:57: COM812 [*] Trailing comma missing
+senex\lmstudio_client.py:1128:5: C901 `_sanitize_schema_for_lmstudio` is too complex (12 > 10)
+senex\lmstudio_client.py:1153:5: PLC0415 `import` should be at the top-level of a file
+senex\lmstudio_client.py:1166:21: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `node`
+senex\lmstudio_client.py:1166:29: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `_walk`
+senex\lmstudio_client.py:1170:17: SIM102 Use a single `if` statement instead of nested `if` statements
+senex\lmstudio_client.py:1195:23: TRY003 Avoid specifying long messages outside the exception class
+senex\lmstudio_client.py:1195:34: EM102 Exception must not use an f-string literal, assign to variable first
+senex\lmstudio_client.py:1197:15: TRY003 Avoid specifying long messages outside the exception class
+senex\lmstudio_client.py:1198:13: EM102 Exception must not use an f-string literal, assign to variable first
+senex\lmstudio_client.py:1198:74: COM812 [*] Trailing comma missing
+senex\lmstudio_client.py:1203:65: COM812 [*] Trailing comma missing
+senex\lmstudio_client.py:1236:13: PERF401 Use a list comprehension to create a transformed list
+senex\lmstudio_client.py:1236:24: C416 Unnecessary dict comprehension (rewrite using `dict()`)
+senex\lmstudio_client.py:1248:15: UP037 [*] Remove quotes from type annotation
+senex\lmstudio_client.py:1249:5: PLC0415 `import` should be at the top-level of a file
+senex\lmstudio_client.py:1251:28: UP017 [*] Use `datetime.UTC` alias
+senex\lmstudio_client.py:1263:22: TC003 Move standard library import `datetime.datetime` into a type-checking block
+senex\lmstudio_errors.py:19:7: N818 Exception name `LMSConnectionLost` should be named with an Error suffix
+senex\lmstudio_errors.py:30:7: N818 Exception name `LMSResponseSchemaInvalid` should be named with an Error suffix
+senex\lmstudio_errors.py:36:7: N818 Exception name `LMSResponseInvalidJSON` should be named with an Error suffix
+senex\lmstudio_errors.py:42:7: N818 Exception name `TokenBudgetExceeded` should be named with an Error suffix
+senex\lmstudio_errors.py:48:7: N818 Exception name `SchemaNegotiationFailed` should be named with an Error suffix
+senex\lmstudio_errors.py:54:7: N818 Exception name `FingerprintChanged` should be named with an Error suffix
+senex\lmstudio_errors.py:60:7: N818 Exception name `ThinkingTokensExceeded` should be named with an Error suffix
+senex\lmstudio_lifecycle.py:42:7: N818 Exception name `LifecycleBackendUnavailable` should be named with an Error suffix
+senex\lmstudio_lifecycle.py:46:7: N818 Exception name `ModelLoadTimeout` should be named with an Error suffix
+senex\lmstudio_lifecycle.py:50:7: N818 Exception name `ModelLoadFailed` should be named with an Error suffix
+senex\lmstudio_lifecycle.py:54:7: N818 Exception name `ModelNotLoaded` should be named with an Error suffix
+senex\lmstudio_lifecycle.py:58:7: N818 Exception name `InvalidModelId` should be named with an Error suffix
+senex\lmstudio_lifecycle.py:62:7: N818 Exception name `FingerprintMismatch` should be named with an Error suffix
+senex\lmstudio_lifecycle.py:66:7: N818 Exception name `ResumedRunCannotOwnLoad` should be named with an Error suffix
+senex\lmstudio_lifecycle.py:87:15: TRY003 Avoid specifying long messages outside the exception class
+senex\lmstudio_lifecycle.py:88:13: EM102 Exception must not use an f-string literal, assign to variable first
+senex\lmstudio_lifecycle.py:88:79: COM812 [*] Trailing comma missing
+senex\lmstudio_lifecycle.py:91:15: TRY003 Avoid specifying long messages outside the exception class
+senex\lmstudio_lifecycle.py:92:13: EM102 Exception must not use an f-string literal, assign to variable first
+senex\lmstudio_lifecycle.py:92:75: COM812 [*] Trailing comma missing
+senex\lmstudio_lifecycle.py:95:15: TRY003 Avoid specifying long messages outside the exception class
+senex\lmstudio_lifecycle.py:96:13: EM102 Exception must not use an f-string literal, assign to variable first
+senex\lmstudio_lifecycle.py:96:75: COM812 [*] Trailing comma missing
+senex\lmstudio_lifecycle.py:101:15: TRY003 Avoid specifying long messages outside the exception class
+senex\lmstudio_lifecycle.py:102:13: EM102 Exception must not use an f-string literal, assign to variable first
+senex\lmstudio_lifecycle.py:102:78: COM812 [*] Trailing comma missing
+senex\lmstudio_lifecycle.py:113:68: COM812 [*] Trailing comma missing
+senex\lmstudio_lifecycle.py:137:7: D101 Missing docstring in public class
+senex\lmstudio_lifecycle.py:138:15: D102 Missing docstring in public method
+senex\lmstudio_lifecycle.py:139:15: D102 Missing docstring in public method
+senex\lmstudio_lifecycle.py:139:41: ASYNC109 Async function definition with a `timeout` parameter
+senex\lmstudio_lifecycle.py:140:15: D102 Missing docstring in public method
+senex\lmstudio_lifecycle.py:141:15: D102 Missing docstring in public method
+senex\lmstudio_lifecycle.py:152:9: D107 Missing docstring in `__init__`
+senex\lmstudio_lifecycle.py:152:29: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `sdk`
+senex\lmstudio_lifecycle.py:157:32: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `record`
+senex\lmstudio_lifecycle.py:182:15: D102 Missing docstring in public method
+senex\lmstudio_lifecycle.py:191:15: D102 Missing docstring in public method
+senex\lmstudio_lifecycle.py:191:41: ASYNC109 Async function definition with a `timeout` parameter
+senex\lmstudio_lifecycle.py:191:41: ARG002 Unused method argument: `timeout`
+senex\lmstudio_lifecycle.py:196:15: D102 Missing docstring in public method
+senex\lmstudio_lifecycle.py:205:15: D102 Missing docstring in public method
+senex\lmstudio_lifecycle.py:223:36: ASYNC109 Async function definition with a `timeout` parameter
+senex\lmstudio_lifecycle.py:294:15: D102 Missing docstring in public method
+senex\lmstudio_lifecycle.py:310:15: D102 Missing docstring in public method
+senex\lmstudio_lifecycle.py:310:41: ASYNC109 Async function definition with a `timeout` parameter
+senex\lmstudio_lifecycle.py:314:19: TRY003 Avoid specifying long messages outside the exception class
+senex\lmstudio_lifecycle.py:315:17: EM102 Exception must not use an f-string literal, assign to variable first
+senex\lmstudio_lifecycle.py:316:55: COM812 [*] Trailing comma missing
+senex\lmstudio_lifecycle.py:334:15: D102 Missing docstring in public method
+senex\lmstudio_lifecycle.py:338:19: TRY003 Avoid specifying long messages outside the exception class
+senex\lmstudio_lifecycle.py:339:17: EM102 Exception must not use an f-string literal, assign to variable first
+senex\lmstudio_lifecycle.py:340:55: COM812 [*] Trailing comma missing
+senex\lmstudio_lifecycle.py:343:15: D102 Missing docstring in public method
+senex\lmstudio_lifecycle.py:384:9: PLR0913 Too many arguments in function definition (8 > 5)
+senex\lmstudio_lifecycle.py:384:9: D107 Missing docstring in `__init__`
+senex\lmstudio_lifecycle.py:414:19: TRY003 Avoid specifying long messages outside the exception class
+senex\lmstudio_lifecycle.py:414:35: EM101 Exception must not use a string literal, assign to variable first
+senex\lmstudio_lifecycle.py:424:46: ASYNC109 Async function definition with a `timeout` parameter
+senex\lmstudio_lifecycle.py:433:13: RUF059 Unpacked variable `stdout` is never used
+senex\lmstudio_lifecycle.py:434:52: COM812 [*] Trailing comma missing
+senex\lmstudio_lifecycle.py:436:16: UP041 [*] Replace aliased errors with `TimeoutError`
+senex\lmstudio_lifecycle.py:439:19: TRY003 Avoid specifying long messages outside the exception class
+senex\lmstudio_lifecycle.py:440:17: EM102 Exception must not use an f-string literal, assign to variable first
+senex\lmstudio_lifecycle.py:440:70: COM812 [*] Trailing comma missing
+senex\lmstudio_lifecycle.py:444:19: TRY003 Avoid specifying long messages outside the exception class
+senex\lmstudio_lifecycle.py:445:17: EM102 Exception must not use an f-string literal, assign to variable first
+senex\lmstudio_lifecycle.py:445:80: COM812 [*] Trailing comma missing
+senex\lmstudio_lifecycle.py:448:38: ASYNC109 Async function definition with a `timeout` parameter
+senex\lmstudio_lifecycle.py:450:9: PLC0415 `import` should be at the top-level of a file
+senex\lmstudio_lifecycle.py:458:44: PLR2004 Magic value used in comparison, consider replacing `200` with a constant variable
+senex\lmstudio_lifecycle.py:464:15: TRY003 Avoid specifying long messages outside the exception class
+senex\lmstudio_lifecycle.py:465:13: EM102 Exception must not use an f-string literal, assign to variable first
+senex\lmstudio_lifecycle.py:466:61: COM812 [*] Trailing comma missing
+senex\lmstudio_lifecycle.py:470:9: PLC0415 `import` should be at the top-level of a file
+senex\lmstudio_lifecycle.py:480:15: D102 Missing docstring in public method
+senex\lmstudio_lifecycle.py:484:16: BLE001 Do not catch blind exception: `Exception`
+senex\lmstudio_lifecycle.py:488:15: D102 Missing docstring in public method
+senex\lmstudio_lifecycle.py:488:41: ASYNC109 Async function definition with a `timeout` parameter
+senex\lmstudio_lifecycle.py:504:19: TRY003 Avoid specifying long messages outside the exception class
+senex\lmstudio_lifecycle.py:505:17: EM102 Exception must not use an f-string literal, assign to variable first
+senex\lmstudio_lifecycle.py:508:76: COM812 [*] Trailing comma missing
+senex\lmstudio_lifecycle.py:519:15: D102 Missing docstring in public method
+senex\lmstudio_lifecycle.py:527:15: D102 Missing docstring in public method
+senex\lmstudio_lifecycle.py:541:18: COM812 [*] Trailing comma missing
+senex\lmstudio_lifecycle.py:550:15: C901 `select` is too complex (11 > 10)
+senex\lmstudio_lifecycle.py:555:21: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `sglang_cfg`
+senex\lmstudio_lifecycle.py:572:76: COM812 [*] Trailing comma missing
+senex\lmstudio_lifecycle.py:584:23: SLF001 Private member accessed: `_list_models`
+senex\lmstudio_lifecycle.py:585:13: S110 `try`-`except`-`pass` detected, consider logging the exception
+senex\lmstudio_lifecycle.py:585:20: BLE001 Do not catch blind exception: `Exception`
+senex\lmstudio_lifecycle.py:591:13: PLC0415 `import` should be at the top-level of a file
+senex\lmstudio_lifecycle.py:597:17: S110 `try`-`except`-`pass` detected, consider logging the exception
+senex\lmstudio_lifecycle.py:597:24: BLE001 Do not catch blind exception: `Exception`
+senex\lmstudio_lifecycle.py:607:15: TRY003 Avoid specifying long messages outside the exception class
+senex\lmstudio_lifecycle.py:608:13: EM101 Exception must not use a string literal, assign to variable first
+senex\lmstudio_lifecycle.py:609:82: COM812 [*] Trailing comma missing
+senex\lmstudio_lifecycle.py:617:28: UP017 [*] Use `datetime.UTC` alias
+senex\lmstudio_lifecycle.py:625:56: COM812 [*] Trailing comma missing
+senex\lmstudio_lifecycle.py:636:15: TRY003 Avoid specifying long messages outside the exception class
+senex\lmstudio_lifecycle.py:637:13: EM101 Exception must not use a string literal, assign to variable first
+senex\lmstudio_lifecycle.py:637:85: COM812 [*] Trailing comma missing
+senex\lmstudio_lifecycle.py:664:50: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `config`
+senex\lmstudio_lifecycle.py:716:9: D107 Missing docstring in `__init__`
+senex\lmstudio_lifecycle.py:719:14: UP037 [*] Remove quotes from type annotation
+senex\lmstudio_lifecycle.py:719:14: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `bus`
+senex\lmstudio_lifecycle.py:720:17: UP037 [*] Remove quotes from type annotation
+senex\lmstudio_lifecycle.py:721:19: UP037 [*] Remove quotes from type annotation
+senex\lmstudio_lifecycle.py:736:61: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `**fields`
+senex\lmstudio_lifecycle.py:738:9: PLC0415 `import` should be at the top-level of a file
+senex\lmstudio_lifecycle.py:741:40: UP017 [*] Use `datetime.UTC` alias
+senex\lmstudio_lifecycle.py:764:18: UP037 [*] Remove quotes from type annotation
+senex\lmstudio_lifecycle.py:771:101: E501 Line too long (101 > 100)
+senex\lmstudio_lifecycle.py:773:101: E501 Line too long (108 > 100)
+senex\lmstudio_lifecycle.py:797:23: TRY003 Avoid specifying long messages outside the exception class
+senex\lmstudio_lifecycle.py:798:21: EM102 Exception must not use an f-string literal, assign to variable first
+senex\lmstudio_lifecycle.py:798:82: COM812 [*] Trailing comma missing
+senex\lmstudio_lifecycle.py:808:42: UP017 [*] Use `datetime.UTC` alias
+senex\lmstudio_lifecycle.py:818:20: UP041 [*] Replace aliased errors with `TimeoutError`
+senex\lmstudio_lifecycle.py:828:60: COM812 [*] Trailing comma missing
+senex\lmstudio_lifecycle.py:854:84: COM812 [*] Trailing comma missing
+senex\lmstudio_lifecycle.py:871:41: UP017 [*] Use `datetime.UTC` alias
+senex\lmstudio_lifecycle.py:880:59: FBT003 Boolean positional value in function call
+senex\lmstudio_lifecycle.py:880:63: COM812 [*] Trailing comma missing
+senex\lmstudio_lifecycle.py:893:75: FBT003 Boolean positional value in function call
+senex\lmstudio_lifecycle.py:907:18: UP037 [*] Remove quotes from type annotation
+senex\lmstudio_lifecycle.py:952:63: FBT003 Boolean positional value in function call
+senex\lmstudio_lifecycle.py:952:68: COM812 [*] Trailing comma missing
+senex\lmstudio_lifecycle.py:984:15: PLR0913 Too many arguments in function definition (6 > 5)
+senex\lmstudio_lifecycle.py:988:18: UP037 [*] Remove quotes from type annotation
+senex\lmstudio_lifecycle.py:1013:20: BLE001 Do not catch blind exception: `Exception`
+senex\lmstudio_lifecycle.py:1062:38: UP017 [*] Use `datetime.UTC` alias
+senex\lmstudio_lifecycle.py:1065:16: BLE001 Do not catch blind exception: `Exception`
+senex\lmstudio_lifecycle.py:1074:37: UP017 [*] Use `datetime.UTC` alias
+senex\lmstudio_lifecycle.py:1086:18: UP037 [*] Remove quotes from type annotation
+senex\lmstudio_lifecycle.py:1107:23: TRY003 Avoid specifying long messages outside the exception class
+senex\lmstudio_lifecycle.py:1108:21: EM102 Exception must not use an f-string literal, assign to variable first
+senex\lmstudio_lifecycle.py:1108:82: COM812 [*] Trailing comma missing
+senex\lmstudio_lifecycle.py:1119:42: UP017 [*] Use `datetime.UTC` alias
+senex\lmstudio_lifecycle.py:1123:76: COM812 [*] Trailing comma missing
+senex\lmstudio_lifecycle.py:1127:20: UP041 [*] Replace aliased errors with `TimeoutError`
+senex\lmstudio_lifecycle.py:1135:23: TRY003 Avoid specifying long messages outside the exception class
+senex\lmstudio_lifecycle.py:1136:21: EM102 Exception must not use an f-string literal, assign to variable first
+senex\lmstudio_lifecycle.py:1137:60: COM812 [*] Trailing comma missing
+senex\lmstudio_lifecycle.py:1147:23: TRY003 Avoid specifying long messages outside the exception class
+senex\lmstudio_lifecycle.py:1148:21: EM102 Exception must not use an f-string literal, assign to variable first
+senex\lmstudio_lifecycle.py:1148:84: COM812 [*] Trailing comma missing
+senex\lmstudio_lifecycle.py:1150:41: UP017 [*] Use `datetime.UTC` alias
+senex\lmstudio_lifecycle.py:1165:23: TRY003 Avoid specifying long messages outside the exception class
+senex\lmstudio_lifecycle.py:1166:21: EM102 Exception must not use an f-string literal, assign to variable first
+senex\lmstudio_lifecycle.py:1167:53: COM812 [*] Trailing comma missing
+senex\lmstudio_lifecycle.py:1181:75: FBT003 Boolean positional value in function call
+senex\memory.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+senex\memory.py:5:21: TC003 Move standard library import `pathlib.Path` into a type-checking block
+senex\memory.py:30:9: D107 Missing docstring in `__init__`
+senex\memory.py:52:13: PLW2901 `for` loop variable `raw` overwritten by assignment target
+senex\memory.py:69:89: COM812 [*] Trailing comma missing
+senex\phases\__init__.py:9:1: I001 [*] Import block is un-sorted or un-formatted
+senex\phases\aggregate.py:16:21: TC003 Move standard library import `pathlib.Path` into a type-checking block
+senex\phases\aggregate.py:45:28: UP017 [*] Use `datetime.UTC` alias
+senex\phases\aggregate.py:53:9: D107 Missing docstring in `__init__`
+senex\phases\aggregate.py:63:15: D102 Missing docstring in public method
+senex\phases\aggregate.py:63:32: ARG002 Unused method argument: `audit_dir`
+senex\phases\aggregate.py:63:52: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `read_state`
+senex\phases\aggregate.py:66:15: D102 Missing docstring in public method
+senex\phases\aggregate.py:68:16: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `state`
+senex\phases\aggregate.py:69:15: UP037 [*] Remove quotes from type annotation
+senex\phases\aggregate.py:70:17: UP037 [*] Remove quotes from type annotation
+senex\phases\aggregate.py:72:22: UP037 [*] Remove quotes from type annotation
+senex\phases\aggregate.py:81:59: COM812 [*] Trailing comma missing
+senex\phases\aggregate.py:114:35: RUF100 [*] Unused `noqa` directive (unused: `BLE001`)
+senex\phases\aggregate.py:115:19: TRY003 Avoid specifying long messages outside the exception class
+senex\phases\aggregate.py:116:17: EM102 Exception must not use an f-string literal, assign to variable first
+senex\phases\aggregate.py:116:62: COM812 [*] Trailing comma missing
+senex\phases\aggregate.py:125:14: COM812 [*] Trailing comma missing
+senex\phases\aggregate.py:133:15: D102 Missing docstring in public method
+senex\phases\aggregate.py:133:33: ARG002 Unused method argument: `audit_dir`
+senex\phases\aggregate.py:133:50: ARG002 Unused method argument: `state`
+senex\phases\aggregate.py:133:57: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `state`
+senex\phases\aggregate.py:156:22: COM812 [*] Trailing comma missing
+senex\phases\base.py:16:21: TC003 Move standard library import `pathlib.Path` into a type-checking block
+senex\phases\base.py:42:52: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `read_state`
+senex\phases\base.py:48:16: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `state`
+senex\phases\base.py:49:15: UP037 [*] Remove quotes from type annotation
+senex\phases\base.py:50:17: UP037 [*] Remove quotes from type annotation
+senex\phases\base.py:51:14: UP037 [*] Remove quotes from type annotation
+senex\phases\base.py:52:22: UP037 [*] Remove quotes from type annotation
+senex\phases\base.py:53:10: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `do_work`
+senex\phases\base.py:57:57: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `state`
+senex\phases\base.py:67:7: N818 Exception name `PreflightFailure` should be named with an Error suffix
+senex\phases\base.py:75:9: D107 Missing docstring in `__init__`
+senex\phases\base.py:82:7: N818 Exception name `PhaseAborted` should be named with an Error suffix
+senex\phases\base.py:83:5: D205 1 blank line required between summary line and description
+senex\phases\base.py:90:7: N818 Exception name `ResumeIncompatible` should be named with an Error suffix
+senex\phases\base.py:91:5: D205 1 blank line required between summary line and description
+senex\phases\base.py:100:9: D107 Missing docstring in `__init__`
+senex\phases\base.py:105:7: N818 Exception name `RenderFatal` should be named with an Error suffix
+senex\phases\base.py:106:5: D205 1 blank line required between summary line and description
+senex\phases\base.py:113:7: N818 Exception name `AggregateFailed` should be named with an Error suffix
+senex\phases\base.py:121:9: D107 Missing docstring in `__init__`
+senex\phases\crosscut.py:15:21: TC003 Move standard library import `pathlib.Path` into a type-checking block
+senex\phases\crosscut.py:20:26: TC001 Move application import `senex.events.EventBus` into a type-checking block
+senex\phases\crosscut.py:37:9: D107 Missing docstring in `__init__`
+senex\phases\crosscut.py:40:17: UP037 [*] Remove quotes from type annotation
+senex\phases\crosscut.py:47:15: D102 Missing docstring in public method
+senex\phases\crosscut.py:47:32: ARG002 Unused method argument: `audit_dir`
+senex\phases\crosscut.py:47:52: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `read_state`
+senex\phases\crosscut.py:50:15: D102 Missing docstring in public method
+senex\phases\crosscut.py:52:16: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `state`
+senex\phases\crosscut.py:53:15: UP037 [*] Remove quotes from type annotation
+senex\phases\crosscut.py:54:17: UP037 [*] Remove quotes from type annotation
+senex\phases\crosscut.py:56:22: UP037 [*] Remove quotes from type annotation
+senex\phases\crosscut.py:71:15: D102 Missing docstring in public method
+senex\phases\crosscut.py:71:33: ARG002 Unused method argument: `audit_dir`
+senex\phases\crosscut.py:71:50: ARG002 Unused method argument: `state`
+senex\phases\crosscut.py:71:57: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `state`
+senex\phases\crosscut.py:86:13: PLW2901 `for` loop variable `line` overwritten by assignment target
+senex\phases\crosscut.py:100:22: COM812 [*] Trailing comma missing
+senex\phases\discovery.py:16:21: TC003 Move standard library import `pathlib.Path` into a type-checking block
+senex\phases\discovery.py:29:28: UP017 [*] Use `datetime.UTC` alias
+senex\phases\discovery.py:41:9: D107 Missing docstring in `__init__`
+senex\phases\discovery.py:45:15: D102 Missing docstring in public method
+senex\phases\discovery.py:55:15: D102 Missing docstring in public method
+senex\phases\discovery.py:57:16: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `state`
+senex\phases\discovery.py:58:15: UP037 [*] Remove quotes from type annotation
+senex\phases\discovery.py:59:17: UP037 [*] Remove quotes from type annotation
+senex\phases\discovery.py:61:22: UP037 [*] Remove quotes from type annotation
+senex\phases\discovery.py:66:81: COM812 [*] Trailing comma missing
+senex\phases\discovery.py:97:14: COM812 [*] Trailing comma missing
+senex\phases\discovery.py:105:15: D102 Missing docstring in public method
+senex\phases\discovery.py:106:9: PLC0415 `import` should be at the top-level of a file
+senex\phases\file_audit.py:31:1: I001 [*] Import block is un-sorted or un-formatted
+senex\phases\file_audit.py:39:21: TC003 Move standard library import `pathlib.Path` into a type-checking block
+senex\phases\file_audit.py:101:28: UP017 [*] Use `datetime.UTC` alias
+senex\phases\file_audit.py:124:30: UP037 [*] Remove quotes from type annotation
+senex\phases\file_audit.py:128:9: TRY004 Prefer `TypeError` exception for invalid type
+senex\phases\file_audit.py:128:15: TRY003 Avoid specifying long messages outside the exception class
+senex\phases\file_audit.py:128:28: EM102 Exception must not use an f-string literal, assign to variable first
+senex\phases\file_audit.py:132:44: UP037 [*] Remove quotes from type annotation
+senex\phases\file_audit.py:149:9: PLR0913 Too many arguments in function definition (14 > 5)
+senex\phases\file_audit.py:149:9: D107 Missing docstring in `__init__`
+senex\phases\file_audit.py:157:17: UP037 [*] Remove quotes from type annotation
+senex\phases\file_audit.py:158:28: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `compactor_factory`
+senex\phases\file_audit.py:159:25: UP037 [*] Remove quotes from type annotation
+senex\phases\file_audit.py:162:24: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `tool_registry`
+senex\phases\file_audit.py:183:15: D102 Missing docstring in public method
+senex\phases\file_audit.py:183:32: ARG002 Unused method argument: `audit_dir`
+senex\phases\file_audit.py:183:52: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `read_state`
+senex\phases\file_audit.py:186:15: D102 Missing docstring in public method
+senex\phases\file_audit.py:186:33: ARG002 Unused method argument: `audit_dir`
+senex\phases\file_audit.py:186:50: ARG002 Unused method argument: `state`
+senex\phases\file_audit.py:186:57: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `state`
+senex\phases\file_audit.py:191:15: C901 `do_work` is too complex (13 > 10)
+senex\phases\file_audit.py:191:15: PLR0912 Too many branches (13 > 12)
+senex\phases\file_audit.py:191:15: D102 Missing docstring in public method
+senex\phases\file_audit.py:193:16: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `state`
+senex\phases\file_audit.py:194:15: UP037 [*] Remove quotes from type annotation
+senex\phases\file_audit.py:195:17: UP037 [*] Remove quotes from type annotation
+senex\phases\file_audit.py:197:22: UP037 [*] Remove quotes from type annotation
+senex\phases\file_audit.py:253:18: COM812 [*] Trailing comma missing
+senex\phases\file_audit.py:270:23: TRY003 Avoid specifying long messages outside the exception class
+senex\phases\file_audit.py:270:35: EM102 Exception must not use an f-string literal, assign to variable first
+senex\phases\file_audit.py:294:15: C901 `_audit_one` is too complex (21 > 10)
+senex\phases\file_audit.py:294:15: PLR0913 Too many arguments in function definition (7 > 5)
+senex\phases\file_audit.py:294:15: PLR0911 Too many return statements (10 > 6)
+senex\phases\file_audit.py:294:15: PLR0912 Too many branches (20 > 12)
+senex\phases\file_audit.py:294:15: PLR0915 Too many statements (90 > 50)
+senex\phases\file_audit.py:300:15: UP037 [*] Remove quotes from type annotation
+senex\phases\file_audit.py:301:17: UP037 [*] Remove quotes from type annotation
+senex\phases\file_audit.py:312:22: ASYNC240 Async functions should not use pathlib.Path methods, use trio.Path or anyio.path
+senex\phases\file_audit.py:322:18: COM812 [*] Trailing comma missing
+senex\phases\file_audit.py:347:14: COM812 [*] Trailing comma missing
+senex\phases\file_audit.py:369:14: COM812 [*] Trailing comma missing
+senex\phases\file_audit.py:400:22: COM812 [*] Trailing comma missing
+senex\phases\file_audit.py:407:78: COM812 [*] Trailing comma missing
+senex\phases\file_audit.py:421:18: COM812 [*] Trailing comma missing
+senex\phases\file_audit.py:437:29: SLF001 Private member accessed: `_redactor`
+senex\phases\file_audit.py:439:53: COM812 [*] Trailing comma missing
+senex\phases\file_audit.py:475:18: COM812 [*] Trailing comma missing
+senex\phases\file_audit.py:494:18: COM812 [*] Trailing comma missing
+senex\phases\file_audit.py:535:22: COM812 [*] Trailing comma missing
+senex\phases\file_audit.py:559:18: COM812 [*] Trailing comma missing
+senex\phases\file_audit.py:584:58: COM812 [*] Trailing comma missing
+senex\phases\file_audit.py:609:18: COM812 [*] Trailing comma missing
+senex\phases\file_audit.py:629:18: COM812 [*] Trailing comma missing
+senex\phases\file_audit.py:636:59: COM812 [*] Trailing comma missing
+senex\phases\file_audit.py:647:14: COM812 [*] Trailing comma missing
+senex\phases\file_audit.py:659:9: PLC0415 `import` should be at the top-level of a file
+senex\phases\file_audit.py:667:72: COM812 [*] Trailing comma missing
+senex\phases\file_audit.py:676:19: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `response`
+senex\phases\file_audit.py:677:15: UP037 [*] Remove quotes from type annotation
+senex\phases\file_audit.py:678:17: UP037 [*] Remove quotes from type annotation
+senex\phases\file_audit.py:768:64: COM812 [*] Trailing comma missing
+senex\phases\file_audit.py:790:9: PLC0415 `import` should be at the top-level of a file
+senex\phases\preflight.py:45:44: RUF100 [*] Unused `noqa` directive (unused: `E402`)
+senex\phases\preflight.py:72:12: S105 Possible hardcoded password assigned to: "PASS"
+senex\phases\preflight.py:157:5: PLR0911 Too many return statements (8 > 6)
+senex\phases\preflight.py:158:48: COM812 [*] Trailing comma missing
+senex\phases\preflight.py:200:45: COM812 [*] Trailing comma missing
+senex\phases\preflight.py:202:5: D401 First line of docstring should be in imperative mood: "Required language anchor files exist (warn-only per spec §8.1)."
+senex\phases\preflight.py:216:5: D401 First line of docstring should be in imperative mood: "Sampling values within valid ranges (spec §8.1)."
+senex\phases\preflight.py:224:36: PLR2004 Magic value used in comparison, consider replacing `2.0` with a constant variable
+senex\phases\preflight.py:228:28: PLR2004 Magic value used in comparison, consider replacing `200` with a constant variable
+senex\phases\preflight.py:232:39: PLR2004 Magic value used in comparison, consider replacing `2.0` with a constant variable
+senex\phases\preflight.py:255:13: PLC0415 `import` should be at the top-level of a file
+senex\phases\preflight.py:259:54: PLR2004 Magic value used in comparison, consider replacing `200` with a constant variable
+senex\phases\preflight.py:260:16: BLE001 Do not catch blind exception: `Exception`
+senex\phases\preflight.py:276:86: COM812 [*] Trailing comma missing
+senex\phases\preflight.py:280:77: COM812 [*] Trailing comma missing
+senex\phases\preflight.py:297:5: SIM108 Use ternary operator `target = Path(raw) if raw else Path.home() / ".senex" / "locks"` instead of `if`-`else`-block
+senex\phases\preflight.py:305:51: COM812 [*] Trailing comma missing
+senex\phases\preflight.py:330:39: UP037 [*] Remove quotes from type annotation
+senex\phases\preflight.py:332:11: SLF001 Private member accessed: `_config`
+senex\phases\preflight.py:343:82: COM812 [*] Trailing comma missing
+senex\phases\preflight.py:351:13: UP037 [*] Remove quotes from type annotation
+senex\phases\preflight.py:351:50: COM812 [*] Trailing comma missing
+senex\phases\preflight.py:376:13: UP037 [*] Remove quotes from type annotation
+senex\phases\preflight.py:376:50: COM812 [*] Trailing comma missing
+senex\phases\preflight.py:386:42: COM812 [*] Trailing comma missing
+senex\phases\preflight.py:392:13: UP037 [*] Remove quotes from type annotation
+senex\phases\preflight.py:392:50: COM812 [*] Trailing comma missing
+senex\phases\preflight.py:439:9: D107 Missing docstring in `__init__`
+senex\phases\preflight.py:441:17: UP037 [*] Remove quotes from type annotation
+senex\phases\preflight.py:449:15: D102 Missing docstring in public method
+senex\phases\preflight.py:449:32: ARG002 Unused method argument: `audit_dir`
+senex\phases\preflight.py:449:52: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `read_state`
+senex\phases\preflight.py:453:15: D102 Missing docstring in public method
+senex\phases\preflight.py:453:57: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `state`
+senex\phases\preflight.py:460:9: PLC0415 `import` should be at the top-level of a file
+senex\phases\preflight.py:462:9: PLC0415 `import` should be at the top-level of a file
+senex\phases\preflight.py:468:15: D102 Missing docstring in public method
+senex\phases\preflight.py:470:16: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `state`
+senex\phases\preflight.py:471:9: ARG002 Unused method argument: `lens`
+senex\phases\preflight.py:471:15: UP037 [*] Remove quotes from type annotation
+senex\phases\preflight.py:474:22: UP037 [*] Remove quotes from type annotation
+senex\phases\preflight.py:496:71: COM812 [*] Trailing comma missing
+senex\phases\preflight.py:532:13: S101 Use of `assert` detected
+senex\phases\preflight.py:542:13: PLC0415 `import` should be at the top-level of a file
+senex\phases\preflight.py:546:40: UP017 [*] Use `datetime.UTC` alias
+senex\phases\preflight.py:550:18: COM812 [*] Trailing comma missing
+senex\prompts\__init__.py:1:1: D104 Missing docstring in public package
+senex\prompts\_anchor_loader.py:29:7: N818 Exception name `PromptTemplateUnsubstituted` should be named with an Error suffix
+senex\prompts\_anchor_loader.py:49:5: D413 [*] Missing blank line after last section ("Returns")
+senex\prompts\_anchor_loader.py:89:5: D413 [*] Missing blank line after last section ("Raises")
+senex\prompts\_anchor_loader.py:103:15: TRY003 Avoid specifying long messages outside the exception class
+senex\prompts\_anchor_loader.py:104:13: EM102 Exception must not use an f-string literal, assign to variable first
+senex\prompts\_anchor_loader.py:104:56: COM812 [*] Trailing comma missing
+senex\prompts\_anchor_loader.py:107:21: B905 `zip()` without an explicit `strict=` parameter
+senex\render_models.py:133:11: RUF022 [*] `__all__` is not sorted
+senex\renderer.py:1:1: D301 Use `r"""` if any backslashes in a docstring
+senex\renderer.py:20:21: TC003 Move standard library import `pathlib.Path` into a type-checking block
+senex\renderer.py:24:5: TC001 Move application import `senex.render_models.ErroredRecord` into a type-checking block
+senex\renderer.py:25:5: TC001 Move application import `senex.render_models.FileMetadata` into a type-checking block
+senex\renderer.py:26:5: TC001 Move application import `senex.render_models.FindingRecord` into a type-checking block
+senex\renderer.py:27:5: TC001 Move application import `senex.render_models.RunMetadata` into a type-checking block
+senex\renderer.py:28:5: TC001 Move application import `senex.render_models.SkippedRecord` into a type-checking block
+senex\renderer.py:29:5: TC001 Move application import `senex.render_models.Theme` into a type-checking block
+senex\renderer.py:31:35: TC001 Move application import `senex.secret_redactor.SecretRedactor` into a type-checking block
+senex\renderer.py:39:5: D205 1 blank line required between summary line and description
+senex\renderer.py:50:5: D301 Use `r"""` if any backslashes in a docstring
+senex\renderer.py:57:5: D413 [*] Missing blank line after last section ("Examples")
+senex\renderer.py:93:9: D107 Missing docstring in `__init__`
+senex\renderer.py:113:9: D413 [*] Missing blank line after last section ("Raises")
+senex\renderer.py:121:19: TRY003 Avoid specifying long messages outside the exception class
+senex\renderer.py:121:31: EM102 Exception must not use an f-string literal, assign to variable first
+senex\renderer.py:124:9: C901 `_render_file_body` is too complex (11 > 10)
+senex\renderer.py:124:9: PLR0915 Too many statements (69 > 50)
+senex\renderer.py:125:59: COM812 [*] Trailing comma missing
+senex\renderer.py:134:70: COM812 [*] Trailing comma missing
+senex\renderer.py:142:64: COM812 [*] Trailing comma missing
+senex\renderer.py:152:85: COM812 [*] Trailing comma missing
+senex\renderer.py:157:85: COM812 [*] Trailing comma missing
+senex\renderer.py:239:56: COM812 [*] Trailing comma missing
+senex\renderer.py:267:65: COM812 [*] Trailing comma missing
+senex\renderer.py:270:19: TRY003 Avoid specifying long messages outside the exception class
+senex\renderer.py:270:31: EM102 Exception must not use an f-string literal, assign to variable first
+senex\renderer.py:273:9: C901 `_render_combined_body` is too complex (14 > 10)
+senex\renderer.py:273:9: PLR0912 Too many branches (17 > 12)
+senex\renderer.py:273:9: PLR0915 Too many statements (66 > 50)
+senex\renderer.py:286:82: COM812 [*] Trailing comma missing
+senex\renderer.py:289:77: COM812 [*] Trailing comma missing
+senex\renderer.py:292:86: COM812 [*] Trailing comma missing
+senex\renderer.py:299:18: C420 [*] Unnecessary dict comprehension for iterable; use `dict.fromkeys` instead
+senex\renderer.py:323:40: COM812 [*] Trailing comma missing
+senex\renderer.py:350:47: COM812 [*] Trailing comma missing
+senex\renderer.py:358:17: PERF401 Use `list.extend` to create a transformed list
+senex\renderer.py:367:17: PERF401 Use `list.extend` to create a transformed list
+senex\renderer.py:376:17: PERF401 Use `list.extend` to create a transformed list
+senex\renderer.py:390:41: COM812 [*] Trailing comma missing
+senex\renderer.py:398:59: COM812 [*] Trailing comma missing
+senex\renderer.py:404:9: PLC0415 `import` should be at the top-level of a file
+senex\renderer.py:413:11: RUF022 [*] `__all__` is not sorted
+senex\runlock.py:31:7: N818 Exception name `RunLockCorrupt` should be named with an Error suffix
+senex\runlock.py:90:9: PLC0415 `import` should be at the top-level of a file
+senex\runlock.py:90:27: PLW0406 Module `senex.runlock` imports itself
+senex\runlock.py:92:18: SLF001 Private member accessed: `_WIN_KERNEL32`
+senex\runlock.py:93:49: FBT003 Boolean positional value in function call
+senex\runlock.py:93:59: COM812 [*] Trailing comma missing
+senex\runlock.py:97:9: SLF001 Private member accessed: `_WIN_KERNEL32`
+senex\runlock.py:122:5: PTH105 `os.replace()` should be replaced by `Path.replace()`
+senex\runlock.py:142:9: PTH105 `os.replace()` should be replaced by `Path.replace()`
+senex\runlock.py:185:9: FBT001 Boolean-typed positional argument in function definition
+senex\runlock.py:205:51: UP017 [*] Use `datetime.UTC` alias
+senex\runlock.py:207:18: COM812 [*] Trailing comma missing
+senex\runlock.py:232:23: TRY003 Avoid specifying long messages outside the exception class
+senex\runlock.py:232:38: EM102 Exception must not use an f-string literal, assign to variable first
+senex\runlock.py:237:23: TRY003 Avoid specifying long messages outside the exception class
+senex\runlock.py:238:21: EM102 Exception must not use an f-string literal, assign to variable first
+senex\runlock.py:238:74: COM812 [*] Trailing comma missing
+senex\secret_redactor.py:46:9: D107 Missing docstring in `__init__`
+senex\secret_redactor.py:53:9: D102 Missing docstring in public method
+senex\secret_redactor.py:62:69: COM812 [*] Trailing comma missing
+senex\secret_redactor.py:70:9: D413 [*] Missing blank line after last section ("Returns")
+senex\secret_redactor.py:78:28: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `node`
+senex\skills.py:7:21: TC003 Move standard library import `pathlib.Path` into a type-checking block
+senex\skills.py:9:35: TC001 Move application import `senex.graph_awareness.GraphContext` into a type-checking block
+senex\skills.py:48:13: SIM102 Use a single `if` statement instead of nested `if` statements
+senex\skills.py:54:81: COM812 [*] Trailing comma missing
+senex\subscribers\base.py:11:26: TC001 Move application import `senex.events.BaseEvent` into a type-checking block
+senex\subscribers\base.py:14:7: N818 Exception name `SubscriberQueueFull` should be named with an Error suffix
+senex\subscribers\base.py:15:5: D205 1 blank line required between summary line and description
+senex\subscribers\base.py:22:5: D205 1 blank line required between summary line and description
+senex\subscribers\disk_writer.py:19:21: TC003 Move standard library import `pathlib.Path` into a type-checking block
+senex\subscribers\disk_writer.py:22:26: TC001 Move application import `senex.events.BaseEvent` into a type-checking block
+senex\subscribers\disk_writer.py:33:5: D413 [*] Missing blank line after last section ("Attributes")
+senex\subscribers\disk_writer.py:45:9: D107 Missing docstring in `__init__`
+senex\subscribers\disk_writer.py:50:38: PTH123 `open()` should be replaced by `Path.open()`
+senex\subscribers\disk_writer.py:51:42: COM812 [*] Trailing comma missing
+senex\subscribers\disk_writer.py:57:19: TRY003 Avoid specifying long messages outside the exception class
+senex\subscribers\disk_writer.py:58:17: EM101 Exception must not use a string literal, assign to variable first
+senex\subscribers\disk_writer.py:58:64: COM812 [*] Trailing comma missing
+senex\subscribers\disk_writer.py:67:19: TRY003 Avoid specifying long messages outside the exception class
+senex\subscribers\disk_writer.py:68:17: EM101 Exception must not use a string literal, assign to variable first
+senex\subscribers\disk_writer.py:68:73: COM812 [*] Trailing comma missing
+senex\subscribers\disk_writer.py:83:33: RUF100 [*] Unused `noqa` directive (unused: `BLE001`)
+senex\subscribers\disk_writer.py:84:13: TRY400 Use `logging.exception` instead of `logging.error`
+senex\subscribers\headless_subscriber.py:63:9: D107 Missing docstring in `__init__`
+senex\subscribers\headless_subscriber.py:69:15: D102 Missing docstring in public method
+senex\subscribers\headless_subscriber.py:79:9: PLR0911 Too many return statements (9 > 6)
+senex\subscribers\headless_subscriber.py:149:15: D102 Missing docstring in public method
+senex\subscribers\metrics.py:30:81: COM812 [*] Trailing comma missing
+senex\subscribers\metrics.py:49:9: D107 Missing docstring in `__init__`
+senex\subscribers\metrics.py:57:15: D102 Missing docstring in public method
+senex\subscribers\metrics.py:80:15: D102 Missing docstring in public method
+senex\subscribers\tui_subscriber.py:49:9: D107 Missing docstring in `__init__`
+senex\subscribers\tui_subscriber.py:51:19: TRY003 Avoid specifying long messages outside the exception class
+senex\subscribers\tui_subscriber.py:51:30: EM101 Exception must not use a string literal, assign to variable first
+senex\subscribers\tui_subscriber.py:62:9: D102 Missing docstring in public method
+senex\subscribers\tui_subscriber.py:124:21: TRY400 Use `logging.exception` instead of `logging.error`
+senex\subscribers\tui_subscriber.py:148:13: SIM105 Use `contextlib.suppress(asyncio.CancelledError)` instead of `try`-`except`-`pass`
+senex\tools\__init__.py:54:5: PLC0415 `import` should be at the top-level of a file
+senex\tools\context.py:19:35: TC001 Move application import `senex.secret_redactor.SecretRedactor` into a type-checking block
+senex\tools\context.py:26:5: D413 [*] Missing blank line after last section ("Attributes")
+senex\tools\context.py:48:9: D105 Missing docstring in magic method
+senex\tools\exceptions.py:37:7: N818 Exception name `ToolInputInvalid` should be named with an Error suffix
+senex\tools\exceptions.py:43:7: N818 Exception name `PathOutsideRepo` should be named with an Error suffix
+senex\tools\exceptions.py:49:7: N818 Exception name `SymlinkRefused` should be named with an Error suffix
+senex\tools\exceptions.py:55:7: N818 Exception name `RegexTooComplex` should be named with an Error suffix
+senex\tools\exceptions.py:61:7: N818 Exception name `RegexTimeoutExceeded` should be named with an Error suffix
+senex\tools\exceptions.py:67:7: N818 Exception name `ToolDispatchFailed` should be named with an Error suffix
+senex\tools\exceptions.py:73:7: N818 Exception name `ToolUnavailable` should be named with an Error suffix
+senex\tools\exceptions.py:79:7: N818 Exception name `ToolBudgetExhausted` should be named with an Error suffix
+senex\tools\gitnexus_context.py:26:22: TC001 Move application import `.context.ToolContext` into a type-checking block
+senex\tools\gitnexus_context.py:28:23: TC001 Move application import `.registry.ToolRegistry` into a type-checking block
+senex\tools\gitnexus_context.py:42:7: D101 Missing docstring in public class
+senex\tools\gitnexus_context.py:49:9: D102 Missing docstring in public method
+senex\tools\gitnexus_context.py:53:19: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\gitnexus_context.py:54:17: EM101 Exception must not use a string literal, assign to variable first
+senex\tools\gitnexus_context.py:54:57: COM812 [*] Trailing comma missing
+senex\tools\gitnexus_context.py:58:19: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\gitnexus_context.py:58:30: EM101 Exception must not use a string literal, assign to variable first
+senex\tools\gitnexus_context.py:62:7: D101 Missing docstring in public class
+senex\tools\gitnexus_context.py:104:48: COM812 [*] Trailing comma missing
+senex\tools\gitnexus_context.py:128:65: COM812 [*] Trailing comma missing
+senex\tools\gitnexus_context.py:130:12: UP041 [*] Replace aliased errors with `TimeoutError`
+senex\tools\gitnexus_context.py:138:63: COM812 [*] Trailing comma missing
+senex\tools\gitnexus_context.py:144:15: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\gitnexus_context.py:144:34: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tools\gitnexus_context.py:150:31: RUF100 [*] Unused `noqa` directive (unused: `BLE001`)
+senex\tools\gitnexus_context.py:151:15: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\gitnexus_context.py:151:34: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tools\gitnexus_impact.py:26:22: TC001 Move application import `.context.ToolContext` into a type-checking block
+senex\tools\gitnexus_impact.py:28:23: TC001 Move application import `.registry.ToolRegistry` into a type-checking block
+senex\tools\gitnexus_impact.py:40:7: D101 Missing docstring in public class
+senex\tools\gitnexus_impact.py:47:7: D101 Missing docstring in public class
+senex\tools\gitnexus_impact.py:54:7: D101 Missing docstring in public class
+senex\tools\gitnexus_impact.py:63:47: COM812 [*] Trailing comma missing
+senex\tools\gitnexus_impact.py:85:65: COM812 [*] Trailing comma missing
+senex\tools\gitnexus_impact.py:87:12: UP041 [*] Replace aliased errors with `TimeoutError`
+senex\tools\gitnexus_impact.py:95:62: COM812 [*] Trailing comma missing
+senex\tools\gitnexus_impact.py:101:15: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\gitnexus_impact.py:101:34: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tools\gitnexus_impact.py:105:31: RUF100 [*] Unused `noqa` directive (unused: `BLE001`)
+senex\tools\gitnexus_impact.py:106:15: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\gitnexus_impact.py:106:34: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tools\gitnexus_query.py:24:22: TC001 Move application import `.context.ToolContext` into a type-checking block
+senex\tools\gitnexus_query.py:26:23: TC001 Move application import `.registry.ToolRegistry` into a type-checking block
+senex\tools\gitnexus_query.py:35:7: D101 Missing docstring in public class
+senex\tools\gitnexus_query.py:41:7: D101 Missing docstring in public class
+senex\tools\gitnexus_query.py:48:7: D101 Missing docstring in public class
+senex\tools\gitnexus_query.py:54:46: COM812 [*] Trailing comma missing
+senex\tools\gitnexus_query.py:79:65: COM812 [*] Trailing comma missing
+senex\tools\gitnexus_query.py:81:12: UP041 [*] Replace aliased errors with `TimeoutError`
+senex\tools\gitnexus_query.py:89:61: COM812 [*] Trailing comma missing
+senex\tools\gitnexus_query.py:95:15: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\gitnexus_query.py:95:34: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tools\gitnexus_query.py:99:31: RUF100 [*] Unused `noqa` directive (unused: `BLE001`)
+senex\tools\gitnexus_query.py:100:15: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\gitnexus_query.py:100:34: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tools\grep.py:1:1: D301 Use `r"""` if any backslashes in a docstring
+senex\tools\grep.py:25:21: TC003 Move standard library import `pathlib.Path` into a type-checking block
+senex\tools\grep.py:31:22: TC001 Move application import `.context.ToolContext` into a type-checking block
+senex\tools\grep.py:33:23: TC001 Move application import `.registry.ToolRegistry` into a type-checking block
+senex\tools\grep.py:56:41: COM812 [*] Trailing comma missing
+senex\tools\grep.py:60:7: D101 Missing docstring in public class
+senex\tools\grep.py:68:9: D102 Missing docstring in public method
+senex\tools\grep.py:81:9: D102 Missing docstring in public method
+senex\tools\grep.py:85:19: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\grep.py:86:17: EM101 Exception must not use a string literal, assign to variable first
+senex\tools\grep.py:86:63: COM812 [*] Trailing comma missing
+senex\tools\grep.py:91:7: D101 Missing docstring in public class
+senex\tools\grep.py:98:7: D101 Missing docstring in public class
+senex\tools\grep.py:131:75: COM812 [*] Trailing comma missing
+senex\tools\grep.py:150:22: COM812 [*] Trailing comma missing
+senex\tools\grep.py:168:15: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\grep.py:168:34: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tools\grep.py:174:19: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\grep.py:174:38: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tools\list_dir.py:22:22: TC001 Move application import `.context.ToolContext` into a type-checking block
+senex\tools\list_dir.py:28:23: TC001 Move application import `.registry.ToolRegistry` into a type-checking block
+senex\tools\list_dir.py:39:7: D101 Missing docstring in public class
+senex\tools\list_dir.py:45:7: D101 Missing docstring in public class
+senex\tools\list_dir.py:52:7: D101 Missing docstring in public class
+senex\tools\list_dir.py:59:11: C901 `list_dir_handler` is too complex (13 > 10)
+senex\tools\list_dir.py:60:40: COM812 [*] Trailing comma missing
+senex\tools\list_dir.py:69:8: PLR1714 Consider merging multiple comparisons: `normalized in {"", "."}`.
+senex\tools\list_dir.py:75:9: TRY203 Remove exception handler; error is immediately re-raised
+senex\tools\list_dir.py:81:19: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\list_dir.py:81:38: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tools\list_dir.py:83:19: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\list_dir.py:83:38: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tools\list_dir.py:91:19: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\list_dir.py:91:38: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tools\list_symbols.py:25:21: TC003 Move standard library import `pathlib.Path` into a type-checking block
+senex\tools\list_symbols.py:30:22: TC001 Move application import `.context.ToolContext` into a type-checking block
+senex\tools\list_symbols.py:36:23: TC001 Move application import `.registry.ToolRegistry` into a type-checking block
+senex\tools\list_symbols.py:56:7: D101 Missing docstring in public class
+senex\tools\list_symbols.py:66:7: D101 Missing docstring in public class
+senex\tools\list_symbols.py:74:7: D101 Missing docstring in public class
+senex\tools\list_symbols.py:119:5: C901 `_format_python_sig` is too complex (16 > 10)
+senex\tools\list_symbols.py:119:5: PLR0912 Too many branches (15 > 12)
+senex\tools\list_symbols.py:120:51: FBT001 Boolean-typed positional argument in function definition
+senex\tools\list_symbols.py:120:65: COM812 [*] Trailing comma missing
+senex\tools\list_symbols.py:201:14: COM812 [*] Trailing comma missing
+senex\tools\list_symbols.py:214:59: COM812 [*] Trailing comma missing
+senex\tools\list_symbols.py:240:14: COM812 [*] Trailing comma missing
+senex\tools\list_symbols.py:256:12: SLF001 Private member accessed: `_symbols`
+senex\tools\list_symbols.py:269:39: COM812 [*] Trailing comma missing
+senex\tools\list_symbols.py:289:52: COM812 [*] Trailing comma missing
+senex\tools\list_symbols.py:293:55: COM812 [*] Trailing comma missing
+senex\tools\list_symbols.py:300:49: COM812 [*] Trailing comma missing
+senex\tools\list_symbols.py:304:61: COM812 [*] Trailing comma missing
+senex\tools\list_symbols.py:311:55: COM812 [*] Trailing comma missing
+senex\tools\list_symbols.py:315:62: COM812 [*] Trailing comma missing
+senex\tools\list_symbols.py:327:35: COM812 [*] Trailing comma missing
+senex\tools\list_symbols.py:331:60: COM812 [*] Trailing comma missing
+senex\tools\list_symbols.py:338:44: COM812 [*] Trailing comma missing
+senex\tools\list_symbols.py:345:37: COM812 [*] Trailing comma missing
+senex\tools\list_symbols.py:369:83: COM812 [*] Trailing comma missing
+senex\tools\list_symbols.py:392:69: COM812 [*] Trailing comma missing
+senex\tools\list_symbols.py:403:12: PIE810 Call `startswith` once with a `tuple`
+senex\tools\list_symbols.py:415:5: C901 `_extract_by_patterns` is too complex (11 > 10)
+senex\tools\list_symbols.py:429:32: PLR2004 Magic value used in comparison, consider replacing `2` with a constant variable
+senex\tools\list_symbols.py:438:101: E501 Line too long (108 > 100)
+senex\tools\list_symbols.py:460:22: COM812 [*] Trailing comma missing
+senex\tools\list_symbols.py:480:44: COM812 [*] Trailing comma missing
+senex\tools\list_symbols.py:491:5: TRY203 Remove exception handler; error is immediately re-raised
+senex\tools\list_symbols.py:496:19: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\list_symbols.py:496:38: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tools\list_symbols.py:498:19: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\list_symbols.py:498:38: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tools\list_symbols.py:502:19: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\list_symbols.py:503:17: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tools\list_symbols.py:503:74: COM812 [*] Trailing comma missing
+senex\tools\loop.py:60:35: TC001 Move application import `senex.secret_redactor.SecretRedactor` into a type-checking block
+senex\tools\loop.py:83:33: SIM112 Use capitalized environment variable `PROGRAMFILES` instead of `ProgramFiles`
+senex\tools\loop.py:84:33: SIM112 Use capitalized environment variable `PROGRAMFILES(X86)` instead of `ProgramFiles(x86)`
+senex\tools\loop.py:84:101: E501 Line too long (104 > 100)
+senex\tools\loop.py:112:28: UP017 [*] Use `datetime.UTC` alias
+senex\tools\loop.py:124:5: D413 [*] Missing blank line after last section ("Attributes")
+senex\tools\loop.py:137:9: D102 Missing docstring in public method
+senex\tools\loop.py:163:26: COM812 [*] Trailing comma missing
+senex\tools\loop.py:198:9: PLR0913 Too many arguments in function definition (12 > 5)
+senex\tools\loop.py:198:9: D107 Missing docstring in `__init__`
+senex\tools\loop.py:211:9: FBT001 Boolean-typed positional argument in function definition
+senex\tools\loop.py:211:9: FBT002 Boolean default positional argument in function definition
+senex\tools\loop.py:247:15: C901 `run` is too complex (12 > 10)
+senex\tools\loop.py:247:15: PLR0913 Too many arguments in function definition (6 > 5)
+senex\tools\loop.py:247:15: PLR0912 Too many branches (13 > 12)
+senex\tools\loop.py:340:26: COM812 [*] Trailing comma missing
+senex\tools\loop.py:343:72: COM812 [*] Trailing comma missing
+senex\tools\loop.py:348:25: PLC0415 `import` should be at the top-level of a file
+senex\tools\loop.py:365:30: COM812 [*] Trailing comma missing
+senex\tools\loop.py:379:30: COM812 [*] Trailing comma missing
+senex\tools\loop.py:387:22: COM812 [*] Trailing comma missing
+senex\tools\loop.py:406:26: COM812 [*] Trailing comma missing
+senex\tools\loop.py:415:22: COM812 [*] Trailing comma missing
+senex\tools\loop.py:429:15: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\loop.py:429:30: EM101 Exception must not use a string literal, assign to variable first
+senex\tools\pack_hash.py:21:23: TC001 Move application import `.registry.ToolRegistry` into a type-checking block
+senex\tools\pack_hash.py:25:53: COM812 [*] Trailing comma missing
+senex\tools\pack_hash.py:38:5: D413 [*] Missing blank line after last section ("Raises")
+senex\tools\read_file.py:25:22: TC001 Move application import `.context.ToolContext` into a type-checking block
+senex\tools\read_file.py:31:23: TC001 Move application import `.registry.ToolRegistry` into a type-checking block
+senex\tools\read_file.py:45:7: D101 Missing docstring in public class
+senex\tools\read_file.py:52:9: D102 Missing docstring in public method
+senex\tools\read_file.py:55:23: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\read_file.py:55:34: EM101 Exception must not use a string literal, assign to variable first
+senex\tools\read_file.py:56:50: PLR2004 Magic value used in comparison, consider replacing `2000` with a constant variable
+senex\tools\read_file.py:57:23: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\read_file.py:57:34: EM101 Exception must not use a string literal, assign to variable first
+senex\tools\read_file.py:61:7: D101 Missing docstring in public class
+senex\tools\read_file.py:70:41: COM812 [*] Trailing comma missing
+senex\tools\read_file.py:79:5: TRY203 Remove exception handler; error is immediately re-raised
+senex\tools\read_file.py:86:19: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\read_file.py:86:38: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tools\read_file.py:88:19: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\read_file.py:88:38: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tools\read_file.py:91:19: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\read_file.py:92:17: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tools\read_file.py:92:82: COM812 [*] Trailing comma missing
+senex\tools\registry.py:26:29: TC003 Move standard library import `collections.abc.Awaitable` into a type-checking block
+senex\tools\registry.py:26:40: TC003 Move standard library import `collections.abc.Callable` into a type-checking block
+senex\tools\registry.py:33:22: TC001 Move application import `.context.ToolContext` into a type-checking block
+senex\tools\registry.py:108:9: D107 Missing docstring in `__init__`
+senex\tools\registry.py:131:9: D102 Missing docstring in public method
+senex\tools\registry.py:141:19: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\registry.py:141:28: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tools\registry.py:147:9: D413 [*] Missing blank line after last section ("Raises")
+senex\tools\registry.py:153:23: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\registry.py:153:32: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tools\registry.py:163:18: COM812 [*] Trailing comma missing
+senex\tools\registry.py:167:15: PLR0911 Too many return statements (7 > 6)
+senex\tools\registry.py:216:16: UP041 [*] Replace aliased errors with `TimeoutError`
+senex\tools\registry.py:227:13: PLC0415 `import` should be at the top-level of a file
+senex\tools\registry.py:249:40: COM812 [*] Trailing comma missing
+senex\tools\registry.py:263:28: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `raw`
+senex\tools\run_semgrep.py:33:22: TC001 Move application import `.context.ToolContext` into a type-checking block
+senex\tools\run_semgrep.py:40:23: TC001 Move application import `.registry.ToolRegistry` into a type-checking block
+senex\tools\run_semgrep.py:61:7: D101 Missing docstring in public class
+senex\tools\run_semgrep.py:69:9: D102 Missing docstring in public method
+senex\tools\run_semgrep.py:71:19: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\run_semgrep.py:72:17: EM101 Exception must not use a string literal, assign to variable first
+senex\tools\run_semgrep.py:72:77: COM812 [*] Trailing comma missing
+senex\tools\run_semgrep.py:77:7: D101 Missing docstring in public class
+senex\tools\run_semgrep.py:87:7: D101 Missing docstring in public class
+senex\tools\run_semgrep.py:111:63: COM812 [*] Trailing comma missing
+senex\tools\run_semgrep.py:113:16: UP041 [*] Replace aliased errors with `TimeoutError`
+senex\tools\run_semgrep.py:118:9: TRY300 Consider moving this statement to an `else` block
+senex\tools\run_semgrep.py:129:15: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\run_semgrep.py:129:34: EM101 Exception must not use a string literal, assign to variable first
+senex\tools\run_semgrep.py:133:15: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\run_semgrep.py:133:34: EM101 Exception must not use a string literal, assign to variable first
+senex\tools\run_semgrep.py:165:14: COM812 [*] Trailing comma missing
+senex\tools\run_semgrep.py:179:11: C901 `run_semgrep_handler` is too complex (12 > 10)
+senex\tools\run_semgrep.py:180:43: COM812 [*] Trailing comma missing
+senex\tools\run_semgrep.py:197:15: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\run_semgrep.py:198:13: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tools\run_semgrep.py:198:65: COM812 [*] Trailing comma missing
+senex\tools\run_semgrep.py:203:5: TRY203 Remove exception handler; error is immediately re-raised
+senex\tools\run_semgrep.py:207:15: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\run_semgrep.py:207:31: EM101 Exception must not use a string literal, assign to variable first
+senex\tools\run_semgrep.py:210:15: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\run_semgrep.py:210:34: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tools\run_semgrep.py:212:15: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\run_semgrep.py:212:34: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tools\run_semgrep.py:231:65: COM812 [*] Trailing comma missing
+senex\tools\run_semgrep.py:233:12: UP041 [*] Replace aliased errors with `TimeoutError`
+senex\tools\run_semgrep.py:254:74: COM812 [*] Trailing comma missing
+senex\tools\safety.py:24:35: TC001 Move application import `senex.secret_redactor.SecretRedactor` into a type-checking block
+senex\tools\safety.py:40:41: COM812 [*] Trailing comma missing
+senex\tools\safety.py:60:35: COM812 [*] Trailing comma missing
+senex\tools\safety.py:74:5: D413 [*] Missing blank line after last section ("Raises")
+senex\tools\safety.py:90:23: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\safety.py:90:38: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tools\safety.py:99:15: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\safety.py:99:31: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tools\safety.py:104:19: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\safety.py:105:17: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tools\safety.py:105:83: COM812 [*] Trailing comma missing
+senex\tools\safety.py:132:5: D413 [*] Missing blank line after last section ("Returns")
+senex\tools\safety.py:136:15: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\safety.py:137:13: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tools\safety.py:137:63: COM812 [*] Trailing comma missing
+senex\tools\safety.py:142:15: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\safety.py:143:13: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tools\safety.py:143:81: COM812 [*] Trailing comma missing
+senex\tools\safety.py:148:15: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\safety.py:148:31: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tools\safety.py:156:15: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\safety.py:157:13: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tools\safety.py:157:76: COM812 [*] Trailing comma missing
+senex\tools\safety.py:159:5: RET501 [*] Do not explicitly `return None` in function if it is the only possible return value
+senex\tools\safety.py:159:5: PLR1711 [*] Useless `return` statement at end of function
+senex\tools\safety.py:163:5: D301 Use `r"""` if any backslashes in a docstring
+senex\tools\search_code.py:20:22: TC001 Move application import `.context.ToolContext` into a type-checking block
+senex\tools\search_code.py:22:23: TC001 Move application import `.registry.ToolRegistry` into a type-checking block
+senex\tools\search_code.py:34:7: D101 Missing docstring in public class
+senex\tools\search_code.py:40:7: D101 Missing docstring in public class
+senex\tools\search_code.py:47:7: D101 Missing docstring in public class
+senex\tools\search_code.py:53:43: COM812 [*] Trailing comma missing
+senex\tools\search_code.py:67:19: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\search_code.py:68:17: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tools\search_code.py:68:73: COM812 [*] Trailing comma missing
+senex\tools\search_code.py:71:19: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\search_code.py:72:17: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tools\search_code.py:72:58: COM812 [*] Trailing comma missing
+senex\tools\search_code.py:75:12: PLR2004 Magic value used in comparison, consider replacing `500` with a constant variable
+senex\tools\search_code.py:75:38: PLR2004 Magic value used in comparison, consider replacing `600` with a constant variable
+senex\tools\search_code.py:76:19: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\search_code.py:77:17: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tools\search_code.py:77:85: COM812 [*] Trailing comma missing
+senex\tools\search_code.py:79:12: PLR2004 Magic value used in comparison, consider replacing `400` with a constant variable
+senex\tools\search_code.py:79:38: PLR2004 Magic value used in comparison, consider replacing `500` with a constant variable
+senex\tools\search_code.py:80:19: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\search_code.py:81:17: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tools\search_code.py:81:85: COM812 [*] Trailing comma missing
+senex\tools\search_code.py:87:19: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\search_code.py:87:38: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tools\search_code.py:92:19: TRY003 Avoid specifying long messages outside the exception class
+senex\tools\search_code.py:92:38: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tui\app.py:24:21: TC003 Move standard library import `pathlib.Path` into a type-checking block
+senex\tui\app.py:25:1: UP035 [*] Import from `collections.abc` instead: `Awaitable`, `Callable`
+senex\tui\app.py:45:37: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `**kwargs`
+senex\tui\app.py:46:5: PLC0415 `import` should be at the top-level of a file
+senex\tui\app.py:58:16: RUF012 Mutable default value for class attribute
+senex\tui\app.py:62:9: D107 Missing docstring in `__init__`
+senex\tui\app.py:68:9: FBT001 Boolean-typed positional argument in function definition
+senex\tui\app.py:68:9: FBT002 Boolean default positional argument in function definition
+senex\tui\app.py:82:39: UP037 [*] Remove quotes from type annotation
+senex\tui\app.py:88:9: FBT001 Boolean-typed positional argument in function definition
+senex\tui\app.py:88:9: FBT002 Boolean default positional argument in function definition
+senex\tui\app.py:99:15: D102 Missing docstring in public method
+senex\tui\app.py:103:9: D102 Missing docstring in public method
+senex\tui\app.py:107:9: D102 Missing docstring in public method
+senex\tui\app.py:111:9: D102 Missing docstring in public method
+senex\tui\app.py:114:43: UP037 [*] Remove quotes from type annotation
+senex\tui\app.py:137:77: COM812 [*] Trailing comma missing
+senex\tui\app.py:187:17: TRY400 Use `logging.exception` instead of `logging.error`
+senex\tui\app.py:198:13: SIM105 Use `contextlib.suppress(asyncio.CancelledError, Exception)` instead of `try`-`except`-`pass`
+senex\tui\app.py:200:13: S110 `try`-`except`-`pass` detected, consider logging the exception
+senex\tui\exceptions.py:20:5: D205 1 blank line required between summary line and description
+senex\tui\launcher.py:18:25: TC002 Move third-party import `textual.app.ComposeResult` into a type-checking block
+senex\tui\launcher.py:56:9: D107 Missing docstring in `__init__`
+senex\tui\launcher.py:64:9: D102 Missing docstring in public method
+senex\tui\launcher.py:114:15: D102 Missing docstring in public method
+senex\tui\launcher.py:169:9: PLC0415 `import` should be at the top-level of a file
+senex\tui\launcher.py:169:9: I001 [*] Import block is un-sorted or un-formatted
+senex\tui\launcher.py:170:9: PLC0415 `import` should be at the top-level of a file
+senex\tui\launcher.py:171:9: PLC0415 `import` should be at the top-level of a file
+senex\tui\launcher.py:216:9: SIM105 Use `contextlib.suppress(Exception)` instead of `try`-`except`-`pass`
+senex\tui\launcher.py:218:9: S110 `try`-`except`-`pass` detected, consider logging the exception
+senex\tui\launcher.py:221:15: D102 Missing docstring in public method
+senex\tui\launcher.py:240:9: SIM105 Use `contextlib.suppress(Exception)` instead of `try`-`except`-`pass`
+senex\tui\launcher.py:242:9: S110 `try`-`except`-`pass` detected, consider logging the exception
+senex\tui\launcher.py:265:16: ASYNC240 Async functions should not use pathlib.Path methods, use trio.Path or anyio.path
+senex\tui\launcher.py:272:9: SIM105 Use `contextlib.suppress(Exception)` instead of `try`-`except`-`pass`
+senex\tui\launcher.py:274:9: S110 `try`-`except`-`pass` detected, consider logging the exception
+senex\tui\launcher.py:286:42: SLF001 Private member accessed: `_options`
+senex\tui\launcher.py:296:29: SLF001 Private member accessed: `_options`
+senex\tui\launcher.py:304:29: FBT001 Boolean-typed positional argument in function definition
+senex\tui\launcher.py:304:29: FBT002 Boolean default positional argument in function definition
+senex\tui\launcher.py:310:21: ASYNC240 Async functions should not use pathlib.Path methods, use trio.Path or anyio.path
+senex\tui\launcher.py:330:9: PLC0415 `import` should be at the top-level of a file
+senex\tui\launcher.py:331:9: PLC0415 `import` should be at the top-level of a file
+senex\tui\launcher.py:349:9: PLC0415 `import` should be at the top-level of a file
+senex\tui\launcher.py:361:19: TRY003 Avoid specifying long messages outside the exception class
+senex\tui\launcher.py:361:30: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tui\monitor.py:13:25: TC002 Move third-party import `textual.app.ComposeResult` into a type-checking block
+senex\tui\monitor.py:38:28: UP017 [*] Use `datetime.UTC` alias
+senex\tui\monitor.py:44:16: RUF012 Mutable default value for class attribute
+senex\tui\monitor.py:49:9: D107 Missing docstring in `__init__`
+senex\tui\monitor.py:53:9: D102 Missing docstring in public method
+senex\tui\monitor.py:58:9: D102 Missing docstring in public method
+senex\tui\monitor.py:59:22: FBT003 Boolean positional value in function call
+senex\tui\monitor.py:61:9: D102 Missing docstring in public method
+senex\tui\monitor.py:62:22: FBT003 Boolean positional value in function call
+senex\tui\monitor.py:80:16: RUF012 Mutable default value for class attribute
+senex\tui\monitor.py:92:9: D107 Missing docstring in `__init__`
+senex\tui\monitor.py:109:9: D102 Missing docstring in public method
+senex\tui\monitor.py:109:31: FBT001 Boolean-typed positional argument in function definition
+senex\tui\monitor.py:112:9: D102 Missing docstring in public method
+senex\tui\monitor.py:119:15: D102 Missing docstring in public method
+senex\tui\monitor.py:124:55: COM812 [*] Trailing comma missing
+senex\tui\monitor.py:127:15: D102 Missing docstring in public method
+senex\tui\monitor.py:139:13: TRY400 Use `logging.exception` instead of `logging.error`
+senex\tui\monitor.py:150:13: S112 `try`-`except`-`continue` detected, consider logging the exception
+senex\tui\monitor.py:165:9: PLC0415 `import` should be at the top-level of a file
+senex\tui\monitor.py:168:13: SLF001 Private member accessed: `_handle_widget_error`
+senex\tui\monitor.py:175:42: RUF100 [*] Unused `noqa` directive (unused: `BLE001`)
+senex\tui\monitor.py:180:15: D102 Missing docstring in public method
+senex\tui\monitor.py:186:24: FBT001 Boolean-typed positional argument in function definition
+senex\tui\monitor.py:192:15: D102 Missing docstring in public method
+senex\tui\monitor.py:197:19: FBT001 Boolean-typed positional argument in function definition
+senex\tui\monitor.py:203:15: D102 Missing docstring in public method
+senex\tui\monitor.py:208:19: FBT001 Boolean-typed positional argument in function definition
+senex\tui\monitor.py:214:15: D102 Missing docstring in public method
+senex\tui\monitor.py:221:15: D102 Missing docstring in public method
+senex\tui\runtime.py:10:21: TC003 Move standard library import `pathlib.Path` into a type-checking block
+senex\tui\runtime.py:15:26: TC001 Move application import `senex.config.SenexConfig` into a type-checking block
+senex\tui\runtime.py:16:24: TC001 Move application import `senex.lens.Lens` into a type-checking block
+senex\tui\view.py:20:21: TC003 Move standard library import `pathlib.Path` into a type-checking block
+senex\tui\view.py:21:1: UP035 [*] Import from `collections.abc` instead: `Iterator`
+senex\tui\view.py:35:45: RUF003 Comment contains ambiguous `×` (MULTIPLICATION SIGN). Did you mean `x` (LATIN SMALL LETTER X)?
+senex\tui\view.py:44:5: D413 [*] Missing blank line after last section ("Raises")
+senex\tui\view.py:50:15: TRY003 Avoid specifying long messages outside the exception class
+senex\tui\view.py:50:27: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tui\view.py:58:19: TRY003 Avoid specifying long messages outside the exception class
+senex\tui\view.py:59:17: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tui\view.py:59:59: COM812 [*] Trailing comma missing
+senex\tui\view.py:63:19: TRY003 Avoid specifying long messages outside the exception class
+senex\tui\view.py:64:17: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tui\view.py:64:67: COM812 [*] Trailing comma missing
+senex\tui\view.py:70:19: TRY003 Avoid specifying long messages outside the exception class
+senex\tui\view.py:71:17: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tui\view.py:71:75: COM812 [*] Trailing comma missing
+senex\tui\view.py:76:57: COM812 [*] Trailing comma missing
+senex\tui\view.py:79:15: TRY003 Avoid specifying long messages outside the exception class
+senex\tui\view.py:79:27: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tui\view.py:101:64: RUF002 Docstring contains ambiguous `×` (MULTIPLICATION SIGN). Did you mean `x` (LATIN SMALL LETTER X)?
+senex\tui\view.py:106:5: D413 [*] Missing blank line after last section ("Raises")
+senex\tui\view.py:114:9: RET501 [*] Do not explicitly `return None` in function if it is the only possible return value
+senex\tui\view.py:135:5: RET501 [*] Do not explicitly `return None` in function if it is the only possible return value
+senex\tui\widgets\current_file.py:15:25: TC002 Move third-party import `textual.app.ComposeResult` into a type-checking block
+senex\tui\widgets\current_file.py:42:9: D107 Missing docstring in `__init__`
+senex\tui\widgets\current_file.py:42:54: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `**kwargs`
+senex\tui\widgets\current_file.py:53:9: D102 Missing docstring in public method
+senex\tui\widgets\current_file.py:65:9: D102 Missing docstring in public method
+senex\tui\widgets\current_file.py:68:35: RUF100 [*] Unused `noqa` directive (unused: `BLE001`)
+senex\tui\widgets\current_file.py:69:19: TRY003 Avoid specifying long messages outside the exception class
+senex\tui\widgets\current_file.py:69:37: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tui\widgets\current_file.py:71:9: C901 `_dispatch` is too complex (12 > 10)
+senex\tui\widgets\current_file.py:139:9: SIM108 Use ternary operator `text = "Skills: " + ", ".join(self._skill_names) if self._skill_names else "Skills: -"` instead of `if`-`else`-block
+senex\tui\widgets\error_banner.py:16:25: TC002 Move third-party import `textual.app.ComposeResult` into a type-checking block
+senex\tui\widgets\error_banner.py:42:9: D107 Missing docstring in `__init__`
+senex\tui\widgets\error_banner.py:42:34: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `**kwargs`
+senex\tui\widgets\error_banner.py:47:9: D102 Missing docstring in public method
+senex\tui\widgets\error_banner.py:51:9: D102 Missing docstring in public method
+senex\tui\widgets\error_banner.py:55:9: D102 Missing docstring in public method
+senex\tui\widgets\error_banner.py:58:9: D102 Missing docstring in public method
+senex\tui\widgets\error_banner.py:61:35: RUF100 [*] Unused `noqa` directive (unused: `BLE001`)
+senex\tui\widgets\error_banner.py:62:19: TRY003 Avoid specifying long messages outside the exception class
+senex\tui\widgets\error_banner.py:62:37: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tui\widgets\error_banner.py:69:9: PLR0911 Too many return statements (10 > 6)
+senex\tui\widgets\error_banner.py:123:97: COM812 [*] Trailing comma missing
+senex\tui\widgets\findings_panel.py:14:25: TC002 Move third-party import `textual.app.ComposeResult` into a type-checking block
+senex\tui\widgets\findings_panel.py:25:7: D101 Missing docstring in public class
+senex\tui\widgets\findings_panel.py:31:9: D102 Missing docstring in public method
+senex\tui\widgets\findings_panel.py:48:9: D107 Missing docstring in `__init__`
+senex\tui\widgets\findings_panel.py:48:34: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `**kwargs`
+senex\tui\widgets\findings_panel.py:52:9: D102 Missing docstring in public method
+senex\tui\widgets\findings_panel.py:60:9: D102 Missing docstring in public method
+senex\tui\widgets\findings_panel.py:74:35: RUF100 [*] Unused `noqa` directive (unused: `BLE001`)
+senex\tui\widgets\findings_panel.py:75:19: TRY003 Avoid specifying long messages outside the exception class
+senex\tui\widgets\findings_panel.py:75:37: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tui\widgets\progress.py:5:44: RUF002 Docstring contains ambiguous `×` (MULTIPLICATION SIGN). Did you mean `x` (LATIN SMALL LETTER X)?
+senex\tui\widgets\progress.py:12:25: TC002 Move third-party import `textual.app.ComposeResult` into a type-checking block
+senex\tui\widgets\progress.py:23:24: PLR0124 Name compared with itself, consider replacing `seconds != seconds`
+senex\tui\widgets\progress.py:26:16: PLR2004 Magic value used in comparison, consider replacing `60` with a constant variable
+senex\tui\widgets\progress.py:29:18: PLR2004 Magic value used in comparison, consider replacing `60` with a constant variable
+senex\tui\widgets\progress.py:40:9: D107 Missing docstring in `__init__`
+senex\tui\widgets\progress.py:47:9: D102 Missing docstring in public method
+senex\tui\widgets\progress.py:53:9: D102 Missing docstring in public method
+senex\tui\widgets\progress.py:64:35: RUF100 [*] Unused `noqa` directive (unused: `BLE001`)
+senex\tui\widgets\progress.py:65:19: TRY003 Avoid specifying long messages outside the exception class
+senex\tui\widgets\progress.py:65:37: EM102 Exception must not use an f-string literal, assign to variable first
+senex\tui\widgets\progress.py:78:81: COM812 [*] Trailing comma missing
+senex\tui\widgets\status.py:11:25: TC002 Move third-party import `textual.app.ComposeResult` into a type-checking block
+senex\tui\widgets\status.py:16:39: TC001 Move application import `senex.subscribers.metrics.MetricsCollectorSubscriber` into a type-checking block
+senex\tui\widgets\status.py:25:9: D107 Missing docstring in `__init__`
+senex\tui\widgets\status.py:25:71: ANN401 Dynamically typed expressions (typing.Any) are disallowed in `**kwargs`
+senex\tui\widgets\status.py:31:9: D102 Missing docstring in public method
+senex\tui\widgets\status.py:46:9: D102 Missing docstring in public method
+senex\tui\widgets\status.py:52:35: RUF100 [*] Unused `noqa` directive (unused: `BLE001`)
+senex\tui\widgets\status.py:53:19: TRY003 Avoid specifying long messages outside the exception class
+senex\tui\widgets\status.py:53:37: EM102 Exception must not use an f-string literal, assign to variable first
+senex\walker.py:16:1: I001 [*] Import block is un-sorted or un-formatted
+senex\walker.py:25:21: TC001 Move application import `.config.WalkerCfg` into a type-checking block
+senex\walker.py:26:21: TC001 Move application import `.events.EventBus` into a type-checking block
+senex\walker.py:34:7: N818 Exception name `RepoPathInvalid` should be named with an Error suffix
+senex\walker.py:38:7: N818 Exception name `PathOutsideRepo` should be named with an Error suffix
+senex\walker.py:46:7: N818 Exception name `WalkerLimitExceeded` should be named with an Error suffix
+senex\walker.py:54:5: D413 [*] Missing blank line after last section ("Attributes")
+senex\walker.py:80:9: D107 Missing docstring in `__init__`
+senex\walker.py:86:9: C901 `discover` is too complex (15 > 10)
+senex\walker.py:86:9: PLR0912 Too many branches (16 > 12)
+senex\walker.py:86:9: PLR0915 Too many statements (59 > 50)
+senex\walker.py:96:9: D413 [*] Missing blank line after last section ("Raises")
+senex\walker.py:102:19: TRY003 Avoid specifying long messages outside the exception class
+senex\walker.py:103:17: EM102 Exception must not use an f-string literal, assign to variable first
+senex\walker.py:103:78: COM812 [*] Trailing comma missing
+senex\walker.py:106:19: TRY003 Avoid specifying long messages outside the exception class
+senex\walker.py:106:35: EM102 Exception must not use an f-string literal, assign to variable first
+senex\walker.py:113:23: TRY003 Avoid specifying long messages outside the exception class
+senex\walker.py:114:21: EM102 Exception must not use an f-string literal, assign to variable first
+senex\walker.py:114:91: COM812 [*] Trailing comma missing
+senex\walker.py:141:55: COM812 [*] Trailing comma missing
+senex\walker.py:148:27: TRY003 Avoid specifying long messages outside the exception class
+senex\walker.py:149:25: EM102 Exception must not use an f-string literal, assign to variable first
+senex\walker.py:150:72: COM812 [*] Trailing comma missing
+senex\walker.py:187:54: COM812 [*] Trailing comma missing
+senex\walker.py:206:14: COM812 [*] Trailing comma missing
+senex\walker.py:210:76: COM812 [*] Trailing comma missing
+senex\walker.py:223:9: TRY300 Consider moving this statement to an `else` block
+senex\walker.py:231:9: TRY300 Consider moving this statement to an `else` block
+Found 1541 errors.
+[*] 484 fixable with the `--fix` option (267 hidden fixes can be enabled with the `--unsafe-fixes` option).

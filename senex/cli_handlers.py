@@ -89,7 +89,10 @@ def cmd_lifecycle(args: argparse.Namespace) -> int:
 
     if args.lifecycle_cmd == "status":
         return asyncio.run(
-            cli_lifecycle_status(as_json=bool(getattr(args, "as_json", False)))
+            cli_lifecycle_status(
+                as_json=bool(getattr(args, "as_json", False)),
+                config_path=getattr(args, "config", None),
+            )
         )
     if args.lifecycle_cmd == "clear-locks":
         return asyncio.run(

@@ -37,8 +37,8 @@ class LauncherScreen(Screen[None]):
       * ``#repo_path`` — Input, default = ``repo_path_default``
       * ``#lens_select`` — Select with available lenses
       * ``#model_select`` — Select populated from
-        ``client.list_loaded_models()``; falls back to ``[no LM Studio]``
-        and disables the Start button
+        ``client.list_loaded_models()``; falls back to
+        ``[no inference server]`` and disables the Start button
       * ``#temperature``, ``#max_tokens``, ``#seed`` — numeric Inputs
       * ``#include_tests``, ``#save_traces`` — Switches
       * ``#resume_btn`` — visible only if a prior audit dir exists
