@@ -319,6 +319,24 @@ def _select_model(
             "the desired SGLANG_MODEL) and re-run."
         )
 
+    # Single-served-model fast path: SGLang and similar OpenAI-compat
+    # servers expose exactly one model at a time, so a 1-item menu is
+    # noise. Announce the served model and proceed. If the served id
+    # differs from the configured default, prefer the served one (the
+    # user's senex.config.toml may have drifted from the .env they used
+    # to start the container).
+    if len(models) == 1:
+        served = models[0].id
+        if served == default_model:
+            _print(sout, f"(model: {served})")
+        else:
+            _print(
+                sout,
+                f"(model: {served} — config default {default_model!r} "
+                f"is not the served id; using served)",
+            )
+        return served
+
     # Bounded loop: allow at most 8 re-prompts.
     for _ in range(8):
         _print(sout, "")
@@ -422,19 +440,45 @@ def _print_lms_checklist(base_url: str, stdout: "TextIO") -> None:
 _CONTEXT_WINDOW_OPTIONS: tuple[int, ...] = (8192, 16384, 32768, 65536, 131072)
 
 
+def _detect_served_context_window(base_url: str) -> int | None:
+    """Best-effort: probe ``GET /v1/models`` and return the first model's
+    ``max_model_len``. Returns ``None`` on any error so the caller can
+    fall back to the configured value."""
+    try:
+        import httpx
+
+        with httpx.Client(timeout=2.0) as cx:
+            resp = cx.get(f"{base_url.rstrip('/')}/models")
+            if resp.status_code != 200:
+                return None
+            data = resp.json().get("data") or []
+            for rec in data:
+                mml = rec.get("max_model_len")
+                if isinstance(mml, int) and mml > 0:
+                    return mml
+            return None
+    except Exception:
+        return None
+
+
 def _select_context_window(
     current: int,
     *,
+    base_url: str | None = None,
     stdin: TextIO | None = None,
     stdout: TextIO | None = None,
 ) -> int:
     """Prompt for the context window size; returns the chosen value.
 
-    The chosen value must match whatever is set in LM Studio's model
-    settings — senex uses it to compute per-call token budgets.
+    The chosen value must NOT exceed what the inference server actually
+    serves — senex uses it as the per-call token budget. When ``base_url``
+    is reachable and reports a ``max_model_len``, that value is used as
+    the recommended cap (and as the default when the configured value
+    exceeds it).
 
     Args:
         current: Current configured value (shown as pre-selected default).
+        base_url: Inference-server URL for ``max_model_len`` auto-detection.
         stdin: Input stream (default ``sys.stdin``).
         stdout: Output stream (default ``sys.stdout``).
 
@@ -449,15 +493,42 @@ def _select_context_window(
     sin: TextIO = stdin if stdin is not None else sys.stdin
     sout: TextIO = stdout if stdout is not None else sys.stdout
 
+    served = _detect_served_context_window(base_url) if base_url else None
+    # If the server reports a smaller cap than the configured default,
+    # prefer the server's cap as the suggested default (otherwise the
+    # call will fail at runtime).
+    if served is not None and served < current:
+        _print(
+            sout,
+            f"(server max_model_len={served} < config default {current}; "
+            f"clamping default to {served})",
+        )
+        current = served
+
     options = list(_CONTEXT_WINDOW_OPTIONS)
     if current not in options:
         options = sorted({current, *options})
+    # Drop options larger than what the server can serve.
+    if served is not None:
+        options = [o for o in options if o <= served]
+        if current not in options:
+            options.append(current)
+            options.sort()
 
     for _ in range(8):
         _print(sout, "")
-        _print(sout, "Context window (must match LM Studio model settings → Context Length):")
+        if served is not None:
+            _print(
+                sout,
+                f"Context window (server caps at {served}; choose <= that for the senex token budget):",
+            )
+        else:
+            _print(
+                sout,
+                "Context window (must not exceed what the inference server serves):",
+            )
         for i, v in enumerate(options, start=1):
-            tag = " ← recommended" if v in (16384, 32768) else ""
+            tag = " <- server cap" if served is not None and v == served else ""
             cur = "  (current)" if v == current else ""
             _print(sout, f"  {i}) {v}{tag}{cur}")
         _print(sout, f"  Enter to keep current ({current})")
@@ -827,9 +898,10 @@ def interactive_audit_setup(
         )
         _print(sout, f"  -> model: {chosen_model}")
 
-        # 4. Context window (must match LM Studio's model settings).
+        # 4. Context window — auto-detected cap from /v1/models when reachable.
         chosen_ctx = _select_context_window(
             config.lmstudio.context_window,
+            base_url=config.lmstudio.base_url,
             stdin=stdin,
             stdout=sout,
         )
@@ -866,9 +938,18 @@ def interactive_audit_setup(
             stdout=sout,
         )
 
-        # 9. Confirm.
+        # 9. Confirm. Show the load-bearing run parameters at a glance so
+        #    the user catches drift before kicking off a multi-minute audit.
+        backend = _detect_backend(config.lmstudio.base_url)
+        backend_label = (
+            "SGLang" if backend == "sglang"
+            else "LM Studio" if backend == "lmstudio"
+            else "inference server"
+        )
         proceed = _yes_no(
-            f"Start audit on {repo_name} with {chosen_model} ({chosen_effort} effort)?",
+            f"Start audit on {repo_name} with {chosen_model} on {backend_label} "
+            f"({chosen_effort} effort, ctx {chosen_ctx}, "
+            f"tools {config.lmstudio.tools.max_calls_per_file}/file)?",
             default=True,
             stdin=stdin,
             stdout=sout,

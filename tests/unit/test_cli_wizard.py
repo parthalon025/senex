@@ -304,14 +304,21 @@ def test_select_context_window_pick_by_number() -> None:
     assert result == _CONTEXT_WINDOW_OPTIONS[0]
 
 
-def test_select_context_window_shows_recommended_tag() -> None:
+def test_select_context_window_renders_options_and_current_marker() -> None:
+    """Without a reachable base_url the helper falls back to the static menu
+    and marks the current value. The legacy 'recommended' tag was replaced
+    with a server-cap-aware 'server cap' marker; without server probing
+    only the '(current)' marker is exercised here."""
     from senex.cli_wizard import _select_context_window
 
     stdin = io.StringIO("\n")
     stdout = io.StringIO()
-    _select_context_window(32768, stdin=stdin, stdout=stdout)
+    chosen = _select_context_window(32768, stdin=stdin, stdout=stdout)
     out = stdout.getvalue()
-    assert "recommended" in out
+    assert chosen == 32768
+    assert "32768" in out
+    assert "(current)" in out
+    assert "Context window" in out
 
 
 # ---------------------------------------------------------------------------
@@ -368,8 +375,9 @@ def test_wizard_effort_and_ctx_propagate_to_config(tmp_path: Path) -> None:
         repos=cfg.repos,
         lmstudio=cfg.lmstudio.model_copy(update={"model": "m1"}),
     )
-    client = _fake_client(["m1"])
-    # 1=repo  ""=scan_subdir  ""=model  2=ctx(16384)  3=effort(low)  ""=tests  ""=thinking  ""=confirm
+    # Two models forces the menu (single-served-model fast path skips it).
+    client = _fake_client(["m1", "m2"])
+    # 1=repo  ""=scan_subdir  ""=model(default)  2=ctx(16384)  3=effort(low)  ""=tests  ""=thinking  ""=confirm
     stdin = io.StringIO("1\n\n\n2\n3\n\n\n\n")
     stdout = io.StringIO()
     rt = interactive_audit_setup(cfg, client, stdin=stdin, stdout=stdout)
