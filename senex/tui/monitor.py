@@ -89,7 +89,12 @@ class MonitorScreen(Screen[None]):
     MonitorScreen { layout: vertical; }
     """
 
-    def __init__(self, bus: EventBus, command_bus: CommandBus) -> None:
+    def __init__(
+        self,
+        bus: EventBus,
+        command_bus: CommandBus,
+        tools_max: int = 8,
+    ) -> None:
         super().__init__()
         self._bus = bus
         self._command_bus = command_bus
@@ -99,6 +104,7 @@ class MonitorScreen(Screen[None]):
         self._min_priority_display = False
         self._sub_handle: Any = None
         self._replay_mode = False
+        self._tools_max = tools_max
 
     def set_replay_mode(self, value: bool) -> None:
         self._replay_mode = value
@@ -106,7 +112,7 @@ class MonitorScreen(Screen[None]):
     def compose(self) -> ComposeResult:
         yield ErrorBannerWidget(id="error_banner")
         yield ProgressWidget(id="progress")
-        yield CurrentFileWidget(id="current_file")
+        yield CurrentFileWidget(tools_max=self._tools_max, id="current_file")
         yield FindingsPanelWidget(id="findings_panel")
         yield StatusStripWidget(self._metrics, id="status_strip")
 

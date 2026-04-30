@@ -134,6 +134,12 @@
     },
     {
       "$ref": "#/$defs/RunLockReleased"
+    },
+    {
+      "$ref": "#/$defs/SkillsInjected"
+    },
+    {
+      "$ref": "#/$defs/MemoryInjected"
     }
   ],
   "$defs": {
@@ -1573,6 +1579,82 @@
         },
         "model_fingerprint": {},
         "remaining_holders": {}
+      }
+    },
+    "SkillsInjected": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "path",
+        "names"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "SkillsInjected"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "path": {},
+        "names": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "MemoryInjected": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "seq",
+        "run_id",
+        "path",
+        "finding_count"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "MemoryInjected"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "path": {},
+        "finding_count": {
+          "type": "integer",
+          "minimum": 0
+        }
       }
     }
   }
