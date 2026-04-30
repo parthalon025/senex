@@ -26,21 +26,23 @@ top_n_medium = 100
 top_n_low    = 100
 
 [lmstudio]
-base_url           = "http://localhost:1234/v1"
+# Inference-server endpoint. Defaults match SGLang's compose stack
+# (http://localhost:30000/v1). For LM Studio, set base_url to
+# "http://localhost:1234/v1" and pick a model id served by `lms ls`.
+base_url           = "http://localhost:30000/v1"
 api_key            = "lm-studio"
 connect_timeout    = 10
 read_timeout       = 600
 http_retries       = 3
 backoff_seconds    = [5, 15, 45]
-model              = "google/gemma-4-26b-a4b"
+model              = "google/gemma-4-E4B-it"
 preset             = ""
 allow_non_loopback = false
-# If true, use OpenAI-compat 'json_schema' response_format strictly. If false
-# (default), pre-emptively use 'json_object' + post-hoc Pydantic validation.
-# Default false because Gemma + LM Studio rejects strict json_schema unreliably
-# (returns empty content). Set true for OpenAI/Together/Groq backends that
-# honor strict schema.
-strict_json_schema = false
+# If true, use OpenAI-compat 'json_schema' response_format strictly. SGLang
+# honors strict JSON schema natively, so this defaults to true. Set false
+# only when targeting backends that do not support strict schema (e.g.
+# older LM Studio + Gemma combinations).
+strict_json_schema = true
 
 [lmstudio.sampling]
 temperature       = 0.6
@@ -90,6 +92,20 @@ load_timeout_seconds            = 120     # auto_load subprocess timeout
 load_wait_timeout_seconds       = 600     # max wait for manual load on auto_load failure (0 = disable)
 load_wait_poll_interval_seconds = 5.0     # is_loaded poll cadence during wait
 runlock_dir                     = ""
+
+# [lmstudio.sglang] — SGLang Docker container management (only applies when
+# the configured base_url is served by a senex-managed SGLang stack). When
+# manage_container=true, senex runs `docker compose up -d` at audit start and
+# `down` at audit completion ("load on startup, shutdown on completion").
+# Leave manage_container=false to keep the container running between runs
+# (the default — bring it up manually via `bash infra/sglang/sglang.sh up`).
+[lmstudio.sglang]
+manage_container        = false
+compose_file            = "infra/sglang/docker-compose.yml"
+env_file                = "infra/sglang/.env"
+startup_timeout_seconds = 180
+via_wsl                 = true
+wsl_distro              = "Ubuntu"
 
 # [ui] — Launcher / TUI surface settings (M11).
 # Drives the "Scan disk for repos" button on the Launcher screen.

@@ -1,0 +1,14 @@
+senex\lmstudio_lifecycle.py:591: error: Cannot find implementation or library stub for module named "lmstudio"  [import-not-found]
+senex\lmstudio_lifecycle.py:591: note: See https://mypy.readthedocs.io/en/stable/running_mypy.html#missing-imports
+senex\lmstudio_client.py:1181: error: Returning Any from function declared to return "dict[str, object]"  [no-any-return]
+senex\tools\list_symbols.py:188: error: Unused "type: ignore" comment  [unused-ignore]
+senex\tools\list_symbols.py:207: error: Unused "type: ignore" comment  [unused-ignore]
+senex\tools\list_symbols.py:210: error: Unused "type: ignore" comment  [unused-ignore]
+senex\tools\gitnexus_context.py:79: error: Missing type parameters for generic type "dict"  [type-arg]
+senex\tools\gitnexus_context.py:79: note: Error code "type-arg" not covered by "type: ignore" comment
+senex\tools\gitnexus_context.py:80: error: Missing type parameters for generic type "dict"  [type-arg]
+senex\tools\gitnexus_context.py:80: note: Error code "type-arg" not covered by "type: ignore" comment
+senex\skills.py:13: error: Missing type parameters for generic type "dict"  [type-arg]
+senex\skills.py:18: error: Returning Any from function declared to return "list[dict[Any, Any]]"  [no-any-return]
+senex\auditor.py:638: error: Function is missing a return type annotation  [no-untyped-def]
+Found 10 errors in 6 files (checked 78 source files)

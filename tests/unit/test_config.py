@@ -19,7 +19,7 @@ def test_load_config_example_returns_senexconfig() -> None:
     cfg = load_config(EXAMPLE)
     assert isinstance(cfg, SenexConfig)
     assert cfg.lens.name == "correctness"
-    assert cfg.lmstudio.model == "google/gemma-4-26b-a4b"
+    assert cfg.lmstudio.model == "google/gemma-4-E4B-it"
 
 
 def test_load_config_unknown_key_raises_with_hint(tmp_path: Path) -> None:

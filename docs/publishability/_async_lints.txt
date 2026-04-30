@@ -1,0 +1,12 @@
+senex\findings_aggregator.py:74:16: ASYNC240 Async functions should not use pathlib.Path methods, use trio.Path or anyio.path
+senex\lmstudio_lifecycle.py:139:41: ASYNC109 Async function definition with a `timeout` parameter
+senex\lmstudio_lifecycle.py:191:41: ASYNC109 Async function definition with a `timeout` parameter
+senex\lmstudio_lifecycle.py:223:36: ASYNC109 Async function definition with a `timeout` parameter
+senex\lmstudio_lifecycle.py:310:41: ASYNC109 Async function definition with a `timeout` parameter
+senex\lmstudio_lifecycle.py:424:46: ASYNC109 Async function definition with a `timeout` parameter
+senex\lmstudio_lifecycle.py:448:38: ASYNC109 Async function definition with a `timeout` parameter
+senex\lmstudio_lifecycle.py:488:41: ASYNC109 Async function definition with a `timeout` parameter
+senex\phases\file_audit.py:312:22: ASYNC240 Async functions should not use pathlib.Path methods, use trio.Path or anyio.path
+senex\tui\launcher.py:265:16: ASYNC240 Async functions should not use pathlib.Path methods, use trio.Path or anyio.path
+senex\tui\launcher.py:310:21: ASYNC240 Async functions should not use pathlib.Path methods, use trio.Path or anyio.path
+Found 11 errors.

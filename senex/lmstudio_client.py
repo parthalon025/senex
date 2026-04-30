@@ -356,7 +356,7 @@ class LMStudioClient:
             # (has its own retry/abort semantics in _stream_with_retry).
             if 400 <= exc.response.status_code < 500:
                 raise SchemaNegotiationFailed(
-                    f"LM Studio HTTP {exc.response.status_code}: {exc.response.text[:200]}"
+                    f"Inference server HTTP {exc.response.status_code}: {exc.response.text[:200]}"
                 ) from exc
             raise
 
@@ -961,23 +961,21 @@ class LMStudioClient:
                 },
             }
         else:
-            # json_object fallback path: inject a system-prompt JSON reminder
-            # as defense-in-depth, then emit response_format=json_schema so
-            # SGLang still enforces structure server-side. The json_schema →
-            # json_object fallback is reached only when the backend explicitly
-            # rejected the json_schema mode (cached via _schema_mode), so we
-            # keep the server-side enforcement when strict_json_schema is true.
+            # json_object fallback path: this branch is reached only after the
+            # backend explicitly rejected response_format=json_schema with a
+            # 4xx (cached via _schema_mode). Re-emitting json_schema strict=True
+            # would re-trigger that same 400, so we OMIT response_format
+            # entirely and rely on a system-prompt JSON reminder + post-hoc
+            # Pydantic validation (see the json.loads / _validate_audit_schema
+            # block below).
+            #
+            # Under SGLang this branch is dead — SGLang accepts json_schema
+            # natively and never raises the schema-error 400. It is retained
+            # as a safety net for non-SGLang backends (older LM Studio + Gemma
+            # combinations) that reject json_schema strict mode.
             body["messages"] = _inject_json_object_reminder(
                 _deep_copy_messages(body.get("messages", [])), schema
             )
-            body["response_format"] = {
-                "type": "json_schema",
-                "json_schema": {
-                    "name": "audit_response",
-                    "schema": _sanitize_schema_for_lmstudio(schema),
-                    "strict": True,
-                },
-            }
 
         if _strict_retry:
             body["messages"] = _inject_strict_retry_preamble(
