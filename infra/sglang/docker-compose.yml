@@ -1,0 +1,42 @@
+services:
+  sglang:
+    image: lmsysorg/sglang:latest
+    command: >
+      python3 -m sglang.launch_server
+      --model-path ${SGLANG_MODEL:-Qwen/Qwen3-8B-AWQ}
+      --reasoning-parser qwen3-thinking
+      --tool-call-parser qwen
+      --mem-fraction-static ${SGLANG_MEM_FRACTION:-0.85}
+      --host 0.0.0.0
+      --port 30000
+      --context-length ${SGLANG_CONTEXT_LENGTH:-32768}
+    ports:
+      - "${SGLANG_PORT:-30000}:30000"
+    volumes:
+      - hf_cache:/root/.cache/huggingface
+    runtime: nvidia
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:30000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - HF_HOME=/root/.cache/huggingface
+      - HF_TOKEN=${HF_TOKEN:-}
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-all}
+    # SGLang logs model loading progress to stdout — useful for first-run downloads.
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+volumes:
+  hf_cache:
+    # Separate from the "ollama" volume — SGLang caches HuggingFace safetensors,
+    # not GGUF. Keeping them separate lets you prune one without affecting the other.
+    name: sglang_hf_cache

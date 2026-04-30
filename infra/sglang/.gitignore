@@ -1,0 +1,2 @@
+# Machine-local overrides — never commit tokens or local paths
+.env.local

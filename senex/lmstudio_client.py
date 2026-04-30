@@ -323,10 +323,18 @@ class LMStudioClient:
         if self._fingerprint_pinned is not None:
             observed_fp = await self._verify_fingerprint(path=None)
 
-        # 3. Build base body (sampling + thinking + tools).
-        base_body = self._build_base_body(messages=messages, tools=tools)
+        # 3. Activate SGLang thinking mode via chat_template_kwargs when enabled.
+        # SGLang exposes thinking via extra_body={"chat_template_kwargs":
+        # {"enable_thinking": True}} rather than via <|think|> token injection.
+        # The extra_body is merged into the request body in _build_base_body.
+        extra_body: dict[str, object] | None = None
+        if self._config.thinking.enabled and "gemma" in self._config.model.lower():
+            extra_body = {"chat_template_kwargs": {"enable_thinking": True}}
 
-        # 4. Dispatch via schema fallback decision tree (§3.3).
+        # 4. Build base body (sampling + thinking + tools).
+        base_body = self._build_base_body(messages=messages, tools=tools, extra_body=extra_body)
+
+        # 5. Dispatch via schema fallback decision tree (§3.3).
         path_event = None  # M3 client doesn't know "path"; M8 supplies via task wrapper.
         try:
             if schema is None:
@@ -889,38 +897,14 @@ class LMStudioClient:
         schema: dict[str, object],
         path: str | None,
     ) -> tuple[_StreamResult, dict[str, object] | None]:
-        """Run §3.3 schema fallback decision tree with one strict-retry on schema-fail."""
+        """Run §3.3 schema fallback decision tree with one strict-retry on schema-fail.
+
+        SGLang handles tools + json_schema natively, so we always attempt the
+        json_schema path first. The json_schema → json_object fallback is retained
+        as a safety net for non-SGLang backends that do not support strict schema.
+        """
         # Cached decision short-circuits the probe.
         if self._schema_mode == "json_object":
-            return await self._post_validate(
-                base_body=base_body, schema=schema, mode="json_object", path=path
-            )
-
-        # v1.0.1 — Gemma + tools + response_format=json_schema returns an
-        # empty completion (the model's structured-output enforcement and
-        # tool-calling are mutually exclusive in current LM Studio: when
-        # both are requested, the model emits tool_calls or empty content
-        # and skips the structured content path entirely). Pre-emptively
-        # switch to json_object mode for THIS call so the model produces
-        # structured output, then validate post-hoc with Pydantic. We
-        # deliberately do NOT cache the decision here — when ToolLoop
-        # subsequently calls chat() WITHOUT tools to gather the final
-        # response, json_schema may still be the better mode for that
-        # turn. The session-wide cache is reserved for hard 400 fallbacks.
-        #
-        # v1.0.2 — Extended the same pre-emptive switch to ALL Gemma calls,
-        # not just tools+schema combos. Strict ``json_schema`` mode on
-        # Gemma + LM Studio sometimes returns empty content even on
-        # tools-less calls (the structured-output enforcement is fragile
-        # across both paths). When ``strict_json_schema=False`` (default)
-        # we skip the strict-mode probe entirely and rely on system-prompt
-        # JSON coercion + post-hoc Pydantic validation. Backends that
-        # honor strict schema reliably (OpenAI / Together / Groq) can opt
-        # back into the strict path with ``[lmstudio].strict_json_schema = true``.
-        use_json_object_preemptively = (
-            bool(base_body.get("tools")) or not self._config.strict_json_schema
-        )
-        if use_json_object_preemptively:
             return await self._post_validate(
                 base_body=base_body, schema=schema, mode="json_object", path=path
             )
@@ -931,7 +915,7 @@ class LMStudioClient:
             )
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 400 and _SCHEMA_ERROR_RE.search(e.response.text):
-                # json_schema not supported on this model — fall back permanently.
+                # json_schema not supported on this backend — fall back permanently.
                 self._schema_mode = "json_object"
                 try:
                     return await self._post_validate(
@@ -977,41 +961,23 @@ class LMStudioClient:
                 },
             }
         else:
-            # v1.0.1 — LM Studio's OpenAI-compat surface only accepts
-            # ``response_format.type`` of ``json_schema`` or ``text``; it 400s
-            # on ``json_object`` (the OpenAI value). When tools are present
-            # we cannot use ``json_schema`` either (Gemma returns empty
-            # content). Solution: omit ``response_format`` entirely and rely
-            # on the system-prompt JSON reminder + post-hoc Pydantic
-            # validation to coerce + check structure.
-            #
-            # v1.0.2 — Extended the omission to tools-less calls when
-            # ``strict_json_schema`` is false (the default for Gemma).
-            # Empirically Gemma sometimes returns empty content even on
-            # tools-less ``json_schema`` calls, so the strict server-side
-            # enforcement isn't actually buying reliability — it's the
-            # source of the empty-response bug. The system-prompt reminder
-            # + post-hoc Pydantic validation is now the canonical coercion
-            # path for Gemma. Backends that honor strict schema (OpenAI,
-            # Together, Groq) can opt back in via ``strict_json_schema=true``;
-            # the json_schema response_format is then re-emitted on this
-            # branch so the strict-retry path retains server-side enforcement.
+            # json_object fallback path: inject a system-prompt JSON reminder
+            # as defense-in-depth, then emit response_format=json_schema so
+            # SGLang still enforces structure server-side. The json_schema →
+            # json_object fallback is reached only when the backend explicitly
+            # rejected the json_schema mode (cached via _schema_mode), so we
+            # keep the server-side enforcement when strict_json_schema is true.
             body["messages"] = _inject_json_object_reminder(
                 _deep_copy_messages(body.get("messages", [])), schema
             )
-            if not body.get("tools") and self._config.strict_json_schema:
-                # Strict-mode fallback path: keep server-side enforcement.
-                body["response_format"] = {
-                    "type": "json_schema",
-                    "json_schema": {
-                        "name": "audit_response",
-                        "schema": _sanitize_schema_for_lmstudio(schema),
-                        "strict": True,
-                    },
-                }
-            # else: omit response_format entirely. System prompt + post-hoc
-            # validation do the work. body["tools"] / body["tool_choice"]
-            # (when set) stay as-is so the model can still request tool calls.
+            body["response_format"] = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "audit_response",
+                    "schema": _sanitize_schema_for_lmstudio(schema),
+                    "strict": True,
+                },
+            }
 
         if _strict_retry:
             body["messages"] = _inject_strict_retry_preamble(
@@ -1107,6 +1073,7 @@ class LMStudioClient:
         *,
         messages: list[ChatMessage],
         tools: list[ToolSchema] | None,
+        extra_body: dict[str, object] | None = None,
     ) -> dict[str, object]:
         body: dict[str, object] = {
             "model": self._config.model,
@@ -1122,6 +1089,10 @@ class LMStudioClient:
         if tools:
             body["tools"] = list(tools)
             body["tool_choice"] = "auto"
+        # SGLang thinking activation: merge extra_body fields (e.g.
+        # chat_template_kwargs) into the request body when provided.
+        if extra_body:
+            body.update(extra_body)
         return body
 
 

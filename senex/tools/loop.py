@@ -208,6 +208,7 @@ class ToolLoop:
         max_result_tokens: int = 2048,
         npx_path: Path | None = None,
         bus: EventBus | None = None,
+        cot_reasoning_turn: bool = False,
     ) -> None:
         self._client = client
         self._registry = registry
@@ -220,6 +221,7 @@ class ToolLoop:
         self._max_result_tokens = max_result_tokens
         self._npx_path = npx_path if npx_path is not None else _resolve_npx_path()
         self._bus = bus
+        self._cot_reasoning_turn = cot_reasoning_turn
         # Per-file tool dispatch counts; reset by each ``run()`` so a
         # reused loop instance reports the most recent file's tools.
         self._tool_counts: Counter[str] = Counter()
@@ -288,6 +290,20 @@ class ToolLoop:
         # current file's dispatches (M11 bug 2 — ``FileMetadata.tools_used``).
         self._tool_counts = Counter()
 
+        # Pre-loop CoT reasoning turn: a prose (no schema, no tools) call whose
+        # response is appended to history so the structured-output loop has the
+        # model's explicit step-by-step reasoning in context. Opt-in via
+        # ``ToolsCfg.cot_reasoning_turn``; default False preserves existing behaviour.
+        if self._cot_reasoning_turn:
+            reasoning_messages = _to_chat_messages(messages)
+            reasoning_response = await self._client.chat(
+                task=task,
+                messages=reasoning_messages,
+                schema=None,
+                tools=None,
+            )
+            messages.append(_assistant_message_dict(reasoning_response))
+
         for i in range(self._max_calls + 1):
             tools_arg = (
                 self._registry.openai_tools(lens_tools)
@@ -295,6 +311,9 @@ class ToolLoop:
                 else None
             )
             chat_messages = _to_chat_messages(messages)
+            # SGLang handles tools + structured output natively; pass schema
+            # on every turn so the model produces a validated response
+            # regardless of whether tool calls are also active.
             response = await self._client.chat(
                 task=task,
                 messages=chat_messages,
