@@ -106,6 +106,13 @@ def cmd_audit(args: argparse.Namespace) -> int:
         sys.stderr.write(f"senex audit: config parse failed: {exc}\n")
         return _EXIT_CONFIG
 
+    # Pre-flight: when [lmstudio.sglang].manage_container=true, the wizard
+    # and TUI launcher would otherwise hit "no models loaded" because they
+    # probe /v1/models before lifecycle.acquire gets a chance to start the
+    # container. Bring it up here so every entry path sees a healthy server.
+    if not _ensure_managed_container_up(config):
+        return _EXIT_EXTERNAL
+
     if args.nightly:
         return _run_nightly(args, config, cfg_path)
 
@@ -179,6 +186,66 @@ def _run_wizard(
         repo=repo,
         output_root=output_root,
     )
+
+
+def _ensure_managed_container_up(config: SenexConfig) -> bool:
+    """Bring the SGLang container up when ``manage_container=true``.
+
+    Idempotent — ``docker compose up -d`` is a no-op when the container is
+    already running. Polls /v1/models until healthy or the configured
+    ``startup_timeout_seconds`` elapses.
+
+    Returns ``True`` on success or when container management is disabled
+    (the existing manual workflow). Returns ``False`` only when management
+    is on AND we failed to bring it up; caller should exit with
+    ``_EXIT_EXTERNAL`` so the user gets a clear failure rather than a
+    cryptic wizard probe error later.
+    """
+    sglang_cfg = getattr(config.lmstudio, "sglang", None)
+    if sglang_cfg is None or not sglang_cfg.manage_container:
+        return True
+
+    import asyncio
+
+    from senex.lmstudio_lifecycle import HTTPBackend, ModelLoadFailed
+
+    backend = HTTPBackend(
+        base_url=config.lmstudio.base_url,
+        api_key=config.lmstudio.api_key,
+        manage_container=True,
+        compose_file=sglang_cfg.compose_file,
+        env_file=sglang_cfg.env_file,
+        startup_timeout_seconds=sglang_cfg.startup_timeout_seconds,
+        via_wsl=sglang_cfg.via_wsl,
+        wsl_distro=sglang_cfg.wsl_distro,
+    )
+
+    async def _start() -> None:
+        await backend._run_docker(
+            "up -d", timeout=sglang_cfg.startup_timeout_seconds
+        )
+        await backend._wait_for_health(
+            timeout=sglang_cfg.startup_timeout_seconds
+        )
+
+    sys.stdout.write(
+        "[sglang] Starting container (compose up -d) — "
+        "this may take a moment on first run...\n"
+    )
+    sys.stdout.flush()
+    try:
+        asyncio.run(_start())
+    except ModelLoadFailed as exc:
+        sys.stderr.write(f"senex audit: SGLang container start failed: {exc}\n")
+        return False
+    except Exception as exc:  # noqa: BLE001 — surface any unexpected error
+        sys.stderr.write(
+            f"senex audit: unexpected error starting SGLang container: {exc}\n"
+        )
+        return False
+    sys.stdout.write("[sglang] Container ready.\n")
+    sys.stdout.flush()
+    return True
 
 
 def _build_wizard_client(config: SenexConfig) -> Any:
