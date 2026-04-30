@@ -59,6 +59,8 @@ from senex.events import (
     FileContextBuilt,
     FileError,
     FileStart,
+    MemoryInjected,
+    SkillsInjected,
 )
 from senex.findings_partial import FindingsPartialWriter, compute_finding_id
 from senex.lmstudio_client import ChatMessage
@@ -351,17 +353,26 @@ class FileAuditPhase:
         if anchor:
             system_prompt = f"{system_prompt}\n\n---\n\n{anchor}"
 
-        skill_fragments = select_skills(
+        skill_pairs = select_skills(
             file_path=str(file),
             source=source,
             awareness=awareness,
             lens_dir=lens.system_prompt_path.parent,
         )
-        if skill_fragments:
+        skill_names = [name for name, _ in skill_pairs]
+        await bus.publish(
+            SkillsInjected(
+                ts=_now(),
+                run_id=self._run_id,
+                path=relpath,
+                names=skill_names,
+            )
+        )
+        if skill_pairs:
             system_prompt = (
                 system_prompt
                 + "\n\n---\n\n"
-                + "\n\n---\n\n".join(skill_fragments)
+                + "\n\n---\n\n".join(text for _, text in skill_pairs)
             )
 
         user_prompt = build_user_prompt(
@@ -380,6 +391,14 @@ class FileAuditPhase:
             self._memory.update(self._audit_dir)
             if mem_block := self._memory.format_injection():
                 messages.append({"role": "system", "content": mem_block})
+                await bus.publish(
+                    MemoryInjected(
+                        ts=_now(),
+                        run_id=self._run_id,
+                        path=relpath,
+                        finding_count=self._memory.finding_count,
+                    )
+                )
 
         # ---- Token budget gate (§8.2 row "Pre-LMS token count > 90%") ----
         chat_messages = [ChatMessage(**m) for m in messages]

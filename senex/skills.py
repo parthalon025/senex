@@ -28,11 +28,15 @@ def select_skills(
     source: str,
     awareness: GraphContext | None,
     lens_dir: Path,
-) -> list[str]:
-    """Return skill fragment strings whose triggers match this file."""
+) -> list[tuple[str, str]]:
+    """Return ``(name, text)`` tuples for every skill whose triggers match.
+
+    The TUI / event log uses ``name`` to surface which skills fired; the
+    audit prompt is built from ``text``.
+    """
     skills_dir = lens_dir / "skills"
     skills_cfg = _load_skills_cfg(skills_dir)
-    selected: list[str] = []
+    selected: list[tuple[str, str]] = []
     for skill in skills_cfg:
         for trigger in skill.get("triggers", []):
             matched = False
@@ -46,6 +50,8 @@ def select_skills(
                     total = sum(awareness.callers_d1_count.values())
                     matched = total >= trigger["min_callers"]
             if matched:
-                selected.append(_load_skill_text(skills_dir, skill["file"]))
+                selected.append(
+                    (skill["name"], _load_skill_text(skills_dir, skill["file"]))
+                )
                 break  # one trigger match per skill is sufficient
     return selected

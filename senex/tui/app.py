@@ -127,8 +127,15 @@ class SenexApp(App[int]):
         self.call_later(self._push_monitor_and_spawn_test_only)
 
     async def _push_monitor_and_spawn(self) -> None:
-        await self.push_screen(MonitorScreen(self._bus, self._command_bus))
         cfg = self._pending_runtime_config
+        tools_max = (
+            cfg.config.lmstudio.tools.max_calls_per_file
+            if cfg is not None
+            else 8
+        )
+        await self.push_screen(
+            MonitorScreen(self._bus, self._command_bus, tools_max=tools_max)
+        )
         if cfg is None:
             return
         self._pending_runtime_config = None

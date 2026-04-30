@@ -109,6 +109,22 @@ class FileContextBuilt(BaseEvent):
     graph_context_tokens: int
 
 
+class SkillsInjected(BaseEvent):
+    """Emitted after select_skills runs; ``names`` is the list of skill
+    fragments that matched the file's triggers (empty when no skill fired)."""
+    type: Literal["SkillsInjected"] = Field(default="SkillsInjected")
+    path: str
+    names: list[str]
+
+
+class MemoryInjected(BaseEvent):
+    """Emitted when MemoryBuffer.format_injection() returns a non-empty block.
+    ``finding_count`` is the number of carried-forward findings included."""
+    type: Literal["MemoryInjected"] = Field(default="MemoryInjected")
+    path: str
+    finding_count: int
+
+
 class GraphContextUnavailable(BaseEvent):
     # Emitted by GitNexusCLIProvider (M2) when the gitnexus CLI fails or
     # returns no data; the auditor proceeds with the sentinel awareness
@@ -384,7 +400,8 @@ class RunLockReleased(BaseEvent):
 ALL_EVENT_TYPES: tuple[type[BaseEvent], ...] = (
     RunStart, PreflightWarning, DiscoveryStart, DiscoveryComplete,
     SymlinkSkipped, SuspiciousEmptyFinding,
-    FileStart, FileContextBuilt, GraphContextUnavailable, FileLLMCall,
+    FileStart, FileContextBuilt, SkillsInjected, MemoryInjected,
+    GraphContextUnavailable, FileLLMCall,
     ThinkingStarted, ThinkingTick, ThinkingComplete,
     OutputStarted, OutputTick, OutputComplete,
     FileComplete, FileError,

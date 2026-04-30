@@ -37,6 +37,11 @@ class MemoryBuffer:
         self._seen_ids: set[str] = set()
         self._lines: list[str] = []
 
+    @property
+    def finding_count(self) -> int:
+        """Number of distinct findings currently held in the buffer."""
+        return len(self._seen_ids)
+
     def update(self, audit_dir: Path) -> None:
         """Ingest new findings from findings.partial.jsonl (idempotent)."""
         partial = audit_dir / "findings.partial.jsonl"

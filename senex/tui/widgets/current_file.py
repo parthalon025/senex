@@ -21,9 +21,11 @@ from senex.events import (
     BaseEvent,
     FileContextBuilt,
     FileStart,
+    MemoryInjected,
     OutputComplete,
     OutputStarted,
     OutputTick,
+    SkillsInjected,
     ThinkingComplete,
     ThinkingStarted,
     ThinkingTick,
@@ -35,15 +37,18 @@ from senex.tui.exceptions import WidgetRenderError
 class CurrentFileWidget(Widget):
     """Current-file panel (spec §5.7)."""
 
-    DEFAULT_CSS = "CurrentFileWidget { height: 4; }"
+    DEFAULT_CSS = "CurrentFileWidget { height: 5; }"
 
-    def __init__(self, **kwargs: Any) -> None:
+    def __init__(self, tools_max: int = 8, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self._phase = "-"
         self._thinking_tokens = 0
         self._out_tokens = 0
         self._in_tokens = 0
         self._tools_used = 0
+        self._tools_max = tools_max
+        self._skill_names: list[str] = []
+        self._memory_findings = 0
 
     def compose(self) -> ComposeResult:
         yield Label("File: -", id="filename")
@@ -52,7 +57,10 @@ class CurrentFileWidget(Widget):
             yield Label("Thinking tokens: 0", id="thinking_tokens")
             yield Label("In: 0", id="in_tokens")
             yield Label("Out: 0", id="out_tokens")
-        yield Label("Tools used: 0", id="tools_used")
+        with Horizontal():
+            yield Label(f"Tools used: 0 / {self._tools_max}", id="tools_used")
+            yield Label("Skills: -", id="skills")
+            yield Label("Memory: 0", id="memory")
 
     def handle_audit_event(self, event: BaseEvent) -> None:
         try:
@@ -89,6 +97,12 @@ class CurrentFileWidget(Widget):
         elif isinstance(event, ToolCall):
             self._tools_used += 1
             self._refresh_tools()
+        elif isinstance(event, SkillsInjected):
+            self._skill_names = list(event.names)
+            self._refresh_skills()
+        elif isinstance(event, MemoryInjected):
+            self._memory_findings = event.finding_count
+            self._refresh_memory()
 
     def _reset_for_new_file(self, path: str) -> None:
         self._phase = "-"
@@ -96,11 +110,15 @@ class CurrentFileWidget(Widget):
         self._out_tokens = 0
         self._in_tokens = 0
         self._tools_used = 0
+        self._skill_names = []
+        self._memory_findings = 0
         self._set("#filename", f"File: {path}")
         self._refresh_phase()
         self._refresh_thinking()
         self._refresh_out()
         self._refresh_tools()
+        self._refresh_skills()
+        self._refresh_memory()
 
     def _refresh_phase(self) -> None:
         self._set("#phase", f"Phase: {self._phase}")
@@ -112,7 +130,20 @@ class CurrentFileWidget(Widget):
         self._set("#out_tokens", f"Out: {self._out_tokens}")
 
     def _refresh_tools(self) -> None:
-        self._set("#tools_used", f"Tools used: {self._tools_used}")
+        self._set(
+            "#tools_used",
+            f"Tools used: {self._tools_used} / {self._tools_max}",
+        )
+
+    def _refresh_skills(self) -> None:
+        if self._skill_names:
+            text = "Skills: " + ", ".join(self._skill_names)
+        else:
+            text = "Skills: -"
+        self._set("#skills", text)
+
+    def _refresh_memory(self) -> None:
+        self._set("#memory", f"Memory: {self._memory_findings}")
 
     def _set(self, sel: str, text: str) -> None:
         try:
