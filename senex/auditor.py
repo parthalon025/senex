@@ -132,7 +132,10 @@ async def lifecycle_acquire_or_resume(
             fingerprint and ``allow_mixed`` is False.
         ModelLoadFailed / ModelLoadTimeout: backend load failed.
     """
-    backend = await LifecycleBackendFactory.select()
+    backend = await LifecycleBackendFactory.select(
+        base_url=config.lmstudio.base_url,
+        api_key=config.lmstudio.api_key,
+    )
     lifecycle = Lifecycle(
         backend=backend,
         bus=bus,
@@ -514,9 +517,34 @@ async def run_audit(
             _snapshot_config(config, audit_dir)
 
             duration = (_now() - started_at).total_seconds()
-            totals: dict[str, int] = {}
+            totals: dict[str, int] = {
+                "files_audited": int(getattr(run_metadata, "files_audited", 0) or 0),
+                "files_errored": int(getattr(run_metadata, "files_errored", 0) or 0),
+                "files_skipped": int(getattr(run_metadata, "files_skipped", 0) or 0),
+                "high": 0,
+                "medium": 0,
+                "low": 0,
+                "healthy": 0,
+            }
+            # Tally priorities from findings.partial.jsonl (already on disk via
+            # FindingsPartialWriter; aggregate phase has run by this point).
+            partial = audit_dir / "findings.partial.jsonl"
+            if partial.is_file():
+                import json as _json
+                for raw in partial.read_text(encoding="utf-8").splitlines():
+                    raw = raw.strip()
+                    if not raw:
+                        continue
+                    try:
+                        rec = _json.loads(raw)
+                    except _json.JSONDecodeError:
+                        continue
+                    p = rec.get("priority", "")
+                    if p in totals:
+                        totals[p] += 1
+            totals["finding_count"] = totals["high"] + totals["medium"] + totals["low"]
             if isinstance(phase_state, dict):
-                totals["finding_count"] = int(phase_state.get("finding_count", 0))
+                totals["finding_count"] = int(phase_state.get("finding_count", totals["finding_count"]))
             await bus.publish(
                 RunComplete(
                     ts=_now(),

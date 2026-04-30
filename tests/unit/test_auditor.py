@@ -107,7 +107,7 @@ async def test_lifecycle_cm_release_on_normal_exit(tmp_path: Path) -> None:
     fake = _FakeBackend()
     with patch(
         "senex.auditor.LifecycleBackendFactory.select",
-        new=lambda: _async_return(fake),
+        new=lambda *a, **kw: _async_return(fake),
     ), patch.object(RunLock, "acquire", lambda *args, **kwargs: 1), patch.object(
         RunLock, "release", lambda *args, **kwargs: 0
     ):
@@ -148,7 +148,7 @@ async def test_lifecycle_cm_release_on_body_exception(tmp_path: Path) -> None:
 
     with patch(
         "senex.auditor.LifecycleBackendFactory.select",
-        new=lambda: _async_return(fake),
+        new=lambda *a, **kw: _async_return(fake),
     ), patch.object(RunLock, "acquire", lambda *args, **kwargs: 1), patch.object(
         RunLock, "release", _release
     ):
@@ -387,7 +387,7 @@ async def test_run_audit_writes_events_jsonl(tmp_path: Path) -> None:
     fake.loaded = True
     with patch(
         "senex.auditor.LifecycleBackendFactory.select",
-        new=lambda: _async_return(fake),
+        new=lambda *a, **kw: _async_return(fake),
     ), patch(
         "senex.runlock.RunLock.acquire", new=lambda *args, **kw: 1
     ), patch(
@@ -467,7 +467,7 @@ async def test_run_audit_keyboard_interrupt_returns_130(tmp_path: Path) -> None:
     fake.loaded = True
     with patch(
         "senex.auditor.LifecycleBackendFactory.select",
-        new=lambda: _async_return(fake),
+        new=lambda *a, **kw: _async_return(fake),
     ), patch(
         "senex.runlock.RunLock.acquire", new=lambda *args, **kw: 1
     ), patch(

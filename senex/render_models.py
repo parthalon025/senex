@@ -50,6 +50,7 @@ class FileMetadata(_StrictModel):
     thinking_seconds: float = Field(ge=0.0)
     output_seconds: float = Field(ge=0.0)
     tools_used: list[ToolCallSummary] = Field(default_factory=list)
+    tools_max: int = Field(default=0, ge=0)
     compactions_used: int = Field(ge=0)
     compactions_max: int = Field(ge=0)
     graph_context_summary: str

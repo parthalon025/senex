@@ -102,10 +102,17 @@ class TasksCfg(_StrictModel):
 
 class ToolsCfg(_StrictModel):
     enabled: bool = True
-    max_calls_per_file: int = Field(default=5, ge=0)
+    max_calls_per_file: int = Field(default=8, ge=0)
     max_result_tokens: int = Field(default=2048, gt=0)
     tool_timeout_seconds: int = Field(default=30, gt=0)
     enabled_tools: list[str] | None = None  # subset of lens tools when set
+    cot_reasoning_turn: bool = False  # insert a prose reasoning turn before structured output
+
+
+class MemoryCfg(_StrictModel):
+    enabled: bool = True
+    max_tokens: int = Field(default=800, gt=0)
+    min_priority: Literal["high", "medium", "low"] = "medium"
 
 
 class CompactionCfg(_StrictModel):
@@ -135,20 +142,25 @@ class LifecycleCfg(_StrictModel):
 
 
 class LmStudioCfg(_StrictModel):
-    base_url: str = "http://localhost:1234/v1"
+    # SGLang inference backend endpoint (http://localhost:30000/v1).
+    # SGLang serves an OpenAI-compatible API with native tool-call and
+    # structured-output support; no LM Studio workarounds are needed.
+    base_url: str = "http://localhost:30000/v1"
     api_key: str = "lm-studio"
     connect_timeout: int = 10
     read_timeout: int = 600
     http_retries: int = 3
     backoff_seconds: list[int] = Field(default_factory=lambda: [5, 15, 45])
-    model: str = "google/gemma-4-26b-a4b"
+    model: str = "google/gemma-4-E4B-it"
     preset: str = ""
     allow_non_loopback: bool = False
     # Token budget enforcement (M3 §3.4): pre-call check fails the request when
-    # count_tokens(messages) > token_budget_pct * context_window. M4 sets these
-    # per-model after probing /v1/models. The defaults are conservative starting
-    # points for a 32K-context model; real values are populated by the lifecycle
-    # layer at runlock acquisition.
+    # count_tokens(messages) > token_budget_pct * context_window. The default
+    # value of 32768 is a safe fallback for config-validation only — it is NOT
+    # a hardcoded limit for any particular model. The lifecycle layer calls
+    # probe_capabilities() and overwrites context_window at runlock acquisition
+    # with the actual context window reported by the loaded model (e.g. 131072
+    # for Gemma 4 E4B). Do not rely on this default for production budget math.
     context_window: int = Field(default=32768, gt=0)
     token_budget_pct: float = Field(default=0.9, gt=0.0, le=1.0)
     # Fingerprint cache TTL (M3 §3.7). Re-probing /v1/models on every chat() is
@@ -156,19 +168,19 @@ class LmStudioCfg(_StrictModel):
     # this many seconds before re-verifying.
     fingerprint_recheck_interval_s: float = Field(default=60.0, gt=0.0)
     strict_json_schema: bool = Field(
-        default=False,
+        default=True,
         description=(
             "If true, use OpenAI-compat 'json_schema' response_format strictly. "
-            "If false (default), pre-emptively use 'json_object' + post-hoc Pydantic "
-            "validation. Default false because Gemma + LM Studio rejects strict "
-            "json_schema unreliably (returns empty content). Set true for OpenAI/"
-            "Together/Groq backends that honor strict schema."
+            "SGLang honors strict JSON schema natively, so this defaults to True. "
+            "Set false only when targeting backends that do not support strict schema "
+            "(e.g. older LM Studio + Gemma combinations)."
         ),
     )
     sampling: SamplingCfg = Field(default_factory=SamplingCfg)
     thinking: ThinkingCfg = Field(default_factory=ThinkingCfg)
     tasks: TasksCfg = Field(default_factory=TasksCfg)
     tools: ToolsCfg = Field(default_factory=ToolsCfg)
+    memory: MemoryCfg = Field(default_factory=MemoryCfg)
     compaction: CompactionCfg = Field(default_factory=CompactionCfg)
     lifecycle: LifecycleCfg = Field(default_factory=LifecycleCfg)
 

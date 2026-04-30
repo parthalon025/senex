@@ -8,13 +8,14 @@ import pytest
 from senex.lens import Lens, LensNotFound, LensValidationError
 
 
-def test_lens_load_correctness_returns_lens_with_six_tools() -> None:
+def test_lens_load_correctness_returns_lens_with_nine_tools() -> None:
     lens = Lens.load("correctness")
     assert lens.name == "correctness"
     assert lens.version == "1.0.0"
     assert lens.tools == [
         "gitnexus_query", "gitnexus_context", "gitnexus_impact",
         "read_file", "grep", "search_code",
+        "list_dir", "list_symbols", "run_semgrep",
     ]
 
 

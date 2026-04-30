@@ -148,12 +148,12 @@ class Renderer:
         tool_parts = ", ".join(f"`{t.name}`x{t.count}" for t in meta.tools_used)
         if tool_parts:
             lines.append(
-                f"**Tools used:** {tools_total} / 5 ({tool_parts})  "
+                f"**Tools used:** {tools_total} / {meta.tools_max} ({tool_parts})  "
                 f"**Compactions:** {meta.compactions_used} / {meta.compactions_max}"
             )
         else:
             lines.append(
-                f"**Tools used:** {tools_total} / 5  "
+                f"**Tools used:** {tools_total} / {meta.tools_max}  "
                 f"**Compactions:** {meta.compactions_used} / {meta.compactions_max}"
             )
         lines.append(f"**GitNexus context:** {meta.graph_context_summary}")

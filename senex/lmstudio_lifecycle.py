@@ -358,12 +358,101 @@ class LMSCLIBackend:
 # Backend factory -----------------------------------------------------------
 
 
+class HTTPBackend:
+    """OpenAI-compatible HTTP backend (SGLang, vLLM, etc.).
+
+    SGLang loads its served model on container start; ``load`` / ``unload``
+    are no-ops (the container restart is the lifecycle boundary).
+    ``is_loaded`` queries ``GET /v1/models`` and checks for ``model_id`` in
+    the returned list.
+    """
+
+    backend_name = "http"
+
+    def __init__(self, base_url: str, api_key: str = "lm-studio") -> None:
+        self._base_url = base_url.rstrip("/")
+        self._api_key = api_key
+
+    async def _list_models(self) -> list[dict[str, Any]]:
+        import httpx
+
+        headers = {"Authorization": f"Bearer {self._api_key}"} if self._api_key else {}
+        async with httpx.AsyncClient(timeout=10.0) as cx:
+            resp = await cx.get(f"{self._base_url}/models", headers=headers)
+            resp.raise_for_status()
+            payload = resp.json()
+        data = payload.get("data") if isinstance(payload, dict) else None
+        return [r for r in (data or []) if isinstance(r, dict)]
+
+    async def is_loaded(self, model_id: str) -> bool:
+        validate_model_id(model_id)
+        try:
+            records = await self._list_models()
+        except Exception:
+            return False
+        return any(r.get("id") == model_id for r in records)
+
+    async def load(self, model_id: str, timeout: int) -> ModelInfo:
+        # SGLang loads at container start; treat as already-loaded.
+        validate_model_id(model_id)
+        records = await self._list_models()
+        digest = "sglang-served"
+        for r in records:
+            if r.get("id") == model_id:
+                digest = str(r.get("created", "sglang-served"))
+                break
+        fp = _compute_fingerprint(model_id, "auto", digest)
+        return ModelInfo(
+            model_id=model_id,
+            quant="auto",
+            checkpoint_digest=digest,
+            fingerprint=fp,
+            backend=self.backend_name,
+        )
+
+    async def unload(self, model_id: str) -> None:
+        # No-op: SGLang model lifecycle is bound to the container.
+        validate_model_id(model_id)
+
+    async def list_loaded(self) -> list[ModelInfo]:
+        records = await self._list_models()
+        out: list[ModelInfo] = []
+        for r in records:
+            mid = str(r.get("id", ""))
+            digest = str(r.get("created", "sglang-served"))
+            fp = _compute_fingerprint(mid, "auto", digest)
+            out.append(
+                ModelInfo(
+                    model_id=mid,
+                    quant="auto",
+                    checkpoint_digest=digest,
+                    fingerprint=fp,
+                    backend=self.backend_name,
+                )
+            )
+        return out
+
+
 class LifecycleBackendFactory:
-    """Selects the best available backend (SDK preferred -> CLI fallback)."""
+    """Selects the best available backend (HTTP -> SDK -> CLI)."""
 
     @classmethod
-    async def select(cls) -> LifecycleBackend:
-        """Try SDK first, then CLI; raise LifecycleBackendUnavailable if neither."""
+    async def select(cls, base_url: str | None = None, api_key: str = "lm-studio") -> LifecycleBackend:
+        """Probe backends in order and return the first that responds.
+
+        When ``base_url`` is provided and ``GET {base_url}/models`` succeeds,
+        the HTTPBackend is selected (matches SGLang/vLLM-style servers). Falls
+        back to the lmstudio Python SDK then the ``lms`` CLI.
+        """
+        if base_url:
+            http = HTTPBackend(base_url=base_url, api_key=api_key)
+            try:
+                await http._list_models()
+            except Exception:
+                pass
+            else:
+                return http
+
         try:
             import lmstudio
 
@@ -382,8 +471,8 @@ class LifecycleBackendFactory:
             return LMSCLIBackend()
 
         raise LifecycleBackendUnavailable(
-            "neither lmstudio Python SDK nor lms CLI is available; "
-            "install one or set lifecycle.auto_load=false"
+            "no usable lifecycle backend (HTTP, lmstudio SDK, lms CLI); "
+            "verify SGLang/LM Studio is running or set lifecycle.auto_load=false"
         )
 
 
@@ -448,7 +537,10 @@ async def doctor_check_lifecycle_backend(config: Any) -> DoctorCheck:
     """
     auto_load = bool(config.lmstudio.lifecycle.auto_load)
     try:
-        backend = await LifecycleBackendFactory.select()
+        backend = await LifecycleBackendFactory.select(
+            base_url=config.lmstudio.base_url,
+            api_key=config.lmstudio.api_key,
+        )
     except LifecycleBackendUnavailable as exc:
         if auto_load:
             return DoctorCheck(

@@ -5,4 +5,7 @@ enabled_tools = [
   "read_file",
   "grep",
   "search_code",
+  "list_dir",
+  "list_symbols",
+  "run_semgrep",
 ]

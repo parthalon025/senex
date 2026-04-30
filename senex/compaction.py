@@ -60,6 +60,13 @@ if TYPE_CHECKING:
 # into history and must be sanitized before insertion.
 _ANSI_RE: Final = re.compile(r"\x1b\[[0-9;]*[a-zA-Z]|\x1b\][^\x07]*\x07")
 _CTRL_RE: Final = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")
+# Strips leading <think>...</think> blocks that Gemma 4 E4B (and other
+# reasoning models) may emit before their JSON answer when LM Studio has
+# not pre-stripped the thinking section. Non-greedy + DOTALL so the regex
+# does not swallow multiple blocks in the unlikely event the model emits
+# more than one. Applied only on the raw-text fallback path of
+# ``_parse_response``; the structured ``content_dict`` path is unaffected.
+_THINK_BLOCK_RE: Final = re.compile(r"\A\s*<think>.*?</think>\s*", re.DOTALL)
 
 _COMPACTED_PREFIX: Final = "[COMPACTED]\n"
 
@@ -195,6 +202,21 @@ def _is_compacted_block(m: dict[str, Any]) -> bool:
     return isinstance(content, str) and content.startswith(_COMPACTED_PREFIX)
 
 
+def _strip_think_block(text: str) -> str:
+    """Strip a leading ``<think>...</think>`` block from *text*, if present.
+
+    With SGLang as the inference backend, thinking content is returned in the
+    ``reasoning_content`` field of the response, NOT inline in ``content``.
+    This function is therefore a no-op under normal SGLang operation. It is
+    retained as a safety net for non-streaming edge cases or fallback to
+    LM Studio, where Gemma 4 E4B may emit thinking blocks inline before the
+    JSON answer. ``lmstudio_client._do_stream`` already strips these for the
+    streaming path; this provides belt-and-suspenders coverage for the
+    raw-text fallback path of ``_parse_response``.
+    """
+    return _THINK_BLOCK_RE.sub("", text)
+
+
 def _strip_control(text: str) -> str:
     return _CTRL_RE.sub("", _ANSI_RE.sub("", text))
 
@@ -226,11 +248,16 @@ def _parse_response(response: ChatResponse) -> CompactionResult:
     payload = response.content_dict
     if payload is None:
         # Schema-less compaction call returns content as raw JSON text.
+        # Strip any leading <think>...</think> block before parsing; Gemma 4
+        # E4B emits thinking sections before the JSON answer in thinking mode,
+        # and lmstudio_client's streaming-path strip is the primary defence,
+        # but this provides belt-and-suspenders coverage for non-streaming or
+        # edge-case responses where the think block survives into content.
         import json
 
         if not response.content:
             raise ValueError("compaction response: empty body")
-        payload = json.loads(response.content)
+        payload = json.loads(_strip_think_block(response.content))
     return TypeAdapter(CompactionResult).validate_python(payload)
 
 

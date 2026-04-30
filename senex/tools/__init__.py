@@ -1,4 +1,4 @@
-"""senex.tools — Tool framework: registry, safety, dispatch loop, 6 tools.
+"""senex.tools — Tool framework: registry, safety, dispatch loop, 9 tools.
 
 Implements spec §5.11 (tool framework), §5.11.1 (v1 tool set), §5.11.2
 (per-lens packs), §5.11.3 (loop semantics), §5.11.4 (tool safety), §SEC-2
@@ -39,10 +39,10 @@ from .safety import (
 
 
 def register_default_tools(registry: ToolRegistry) -> None:
-    """Register the v1 6-tool default pack with ``registry``.
+    """Register the v1 9-tool default pack with ``registry``.
 
     Calls each tool module's per-tool register_<name>() function. After
-    this, the registry can serve any of the 6 tools the correctness lens
+    this, the registry can serve any of the 9 tools the correctness lens
     (and any future lens) declares in its ``tools.toml``.
 
     Spec §5.11.1 lists the v1 tool set; conventions §13 documents the
@@ -56,7 +56,10 @@ def register_default_tools(registry: ToolRegistry) -> None:
         gitnexus_impact,
         gitnexus_query,
         grep,
+        list_dir,
+        list_symbols,
         read_file,
+        run_semgrep,
         search_code,
     )
 
@@ -66,6 +69,9 @@ def register_default_tools(registry: ToolRegistry) -> None:
     read_file.register_read_file(registry)
     grep.register_grep(registry)
     search_code.register_search_code(registry)
+    list_dir.register_list_dir(registry)
+    list_symbols.register_list_symbols(registry)
+    run_semgrep.register_run_semgrep(registry)
 
 
 __all__ = [

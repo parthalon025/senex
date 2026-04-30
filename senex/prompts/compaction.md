@@ -33,6 +33,11 @@ RULES
   rationale text, not identifiers.
 - The summary will be inserted as a single system message replacing the
   compressed turns; subsequent reasoning will rely on it.
+- If you have a thinking/reasoning mode, complete your internal reasoning
+  first and then emit ONLY the final JSON in the response body. Do not
+  include <think>...</think> blocks or any other reasoning tokens in the
+  output — the caller parses the response as raw JSON and will reject
+  any non-JSON prefix.
 
 OUTPUT
 Emit only the JSON object matching the compaction_response schema. No

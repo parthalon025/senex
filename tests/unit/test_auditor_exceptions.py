@@ -97,7 +97,7 @@ async def _run_with_phase_raising(
 
     with patch(
         "senex.auditor.LifecycleBackendFactory.select",
-        new=lambda: _async_return(fake),
+        new=lambda *a, **kw: _async_return(fake),
     ), patch.object(RunLock, "acquire", lambda *a, **kw: 1), patch.object(
         RunLock, "release", lambda *a, **kw: 0
     ), patch("senex.auditor.LMStudioClient") as lms_class:
@@ -251,7 +251,7 @@ async def test_unexpected_exception_propagates(tmp_path: Path) -> None:
 
     with patch(
         "senex.auditor.LifecycleBackendFactory.select",
-        new=lambda: _async_return(fake),
+        new=lambda *a, **kw: _async_return(fake),
     ), patch.object(RunLock, "acquire", lambda *a, **kw: 1), patch.object(
         RunLock, "release", lambda *a, **kw: 0
     ), patch("senex.auditor.LMStudioClient") as lms_class:

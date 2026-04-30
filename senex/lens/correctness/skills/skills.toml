@@ -1,0 +1,35 @@
+[[skills]]
+name = "security"
+file  = "security.md"
+
+[[skills.triggers]]
+type    = "path_pattern"
+pattern = "(?i)(auth|login|token|secret|crypt|hash|password|session|jwt|oauth|saml)"
+
+[[skills.triggers]]
+type    = "content_pattern"
+pattern = "hashlib|hmac|os\\.environ|subprocess|re\\.compile|sql|exec|eval|yaml\\.load"
+
+[[skills]]
+name = "async_concurrency"
+file  = "async_concurrency.md"
+
+[[skills.triggers]]
+type    = "path_pattern"
+pattern = "(?i)(async|worker|queue|task|thread|concurrent|schedule|daemon)"
+
+[[skills.triggers]]
+type    = "content_pattern"
+pattern = "asyncio|aiohttp|threading|concurrent\\.futures|anyio|trio|gevent"
+
+[[skills]]
+name = "api_surface"
+file  = "api_surface.md"
+
+[[skills.triggers]]
+type    = "graph_fanin"
+min_callers = 5
+
+[[skills.triggers]]
+type    = "path_pattern"
+pattern = "(?i)(api|route|endpoint|handler|controller|view|webhook|rpc|server)"

@@ -22,6 +22,15 @@ RULES
 - Priority is the maximum of the constituent findings' priorities.
 - Confidence is conservative: low if any constituent is low.
 
+REASONING SEQUENCE
+Before emitting JSON, work through these steps:
+1. Group findings by symptom pattern, not by file.
+2. Discard any group with fewer than 2 distinct files.
+3. For remaining groups, assess whether fixing them as a unit yields more
+   value than individual fixes. Only promote to a theme if yes.
+4. Assign priority = max of constituent priorities; confidence = min.
+Then emit the JSON.
+
 OUTPUT
 Emit only the JSON object matching the crosscut_response schema. No prose
 framing, no markdown fences. The JSON object IS the entire response.

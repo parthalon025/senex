@@ -242,10 +242,23 @@ def check_sampling_ranges(config: SenexConfig) -> CheckResult:
 
 
 def check_lifecycle_backend(config: SenexConfig) -> CheckResult:
-    """Lifecycle backend (lmstudio SDK or ``lms`` CLI) available when needed."""
+    """Lifecycle backend (HTTP, lmstudio SDK, or ``lms`` CLI) available when needed."""
     auto_load = bool(config.lmstudio.lifecycle.auto_load)
     auto_unload = bool(config.lmstudio.lifecycle.auto_unload)
     needs = auto_load or auto_unload
+
+    # HTTP backend (SGLang / vLLM / OpenAI-compat servers): probe /v1/models.
+    http_available = False
+    base_url = config.lmstudio.base_url
+    if base_url:
+        try:
+            import httpx
+
+            with httpx.Client(timeout=3.0) as cx:
+                resp = cx.get(f"{base_url.rstrip('/')}/models")
+                http_available = resp.status_code == 200
+        except Exception:
+            http_available = False
 
     sdk_available = False
     if "lmstudio" in sys.modules and sys.modules["lmstudio"] is not None:
@@ -258,15 +271,17 @@ def check_lifecycle_backend(config: SenexConfig) -> CheckResult:
             sdk_available = False
     cli_available = shutil.which("lms") is not None
 
-    if sdk_available or cli_available:
-        return _ok(f"backend: sdk={sdk_available} cli={cli_available}")
+    if http_available or sdk_available or cli_available:
+        return _ok(
+            f"backend: http={http_available} sdk={sdk_available} cli={cli_available}"
+        )
     if not needs:
         return _warn(
             "no lifecycle backend available; auto_load/auto_unload disabled"
         )
     return _fail(
-        "neither lmstudio Python SDK nor lms CLI is available; "
-        "install one or set lifecycle.auto_load=false",
+        "no lifecycle backend (HTTP, lmstudio SDK, lms CLI); "
+        "verify SGLang/LM Studio is running or set lifecycle.auto_load=false",
         exit_code=3,
     )
 
