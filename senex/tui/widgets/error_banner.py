@@ -6,8 +6,10 @@ Driven by ``FileError``, ``ToolError``, ``ToolBudgetExhausted``,
 Also surfaces M11 manual-load progress (``ModelLoadWaiting``,
 ``ModelLoadStillWaiting``, ``ModelLoadCompleteAfterWait``) so the user
 knows when auto_load failed but a manual GUI load can still rescue
-the run. Sticky: remains visible until dismissed (key ``e`` on the
-host); resurfaces on the next error or wait notification.
+the run. Sticky: remains visible until dismissed via the ``e``
+keybinding (registered on ``MonitorScreen.BINDINGS`` -> action
+``dismiss_banner``); resurfaces on the next error or wait
+notification.
 """
 from __future__ import annotations
 

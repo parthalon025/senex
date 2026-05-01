@@ -30,12 +30,14 @@ from senex.subscribers.base import (
 )
 from senex.subscribers.disk_writer import DiskWriterSubscriber
 from senex.subscribers.headless_subscriber import HeadlessSubscriber
+from senex.subscribers.jsonl_headless_subscriber import JSONLinesHeadlessSubscriber
 from senex.subscribers.metrics import Metrics, MetricsCollectorSubscriber
 from senex.subscribers.tui_subscriber import TuiSubscriber
 
 __all__ = [
     "DiskWriterSubscriber",
     "HeadlessSubscriber",
+    "JSONLinesHeadlessSubscriber",
     "Metrics",
     "MetricsCollectorSubscriber",
     "Subscriber",

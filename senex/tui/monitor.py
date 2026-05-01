@@ -14,6 +14,7 @@ from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Container
 from textual.screen import ModalScreen, Screen
+from textual.widget import Widget
 from textual.widgets import Label, Static
 
 from senex.events import (
@@ -36,6 +37,78 @@ log = logging.getLogger(__name__)
 
 def _now() -> datetime:
     return datetime.now(tz=timezone.utc)
+
+
+class _FocusHost(Widget):
+    """Invisible focusable widget that anchors Monitor focus (F-10).
+
+    The Monitor's five visible widgets are all read-only renderers that
+    cannot accept focus; without this host, ``app.focused`` would be
+    ``None`` after any modal dismiss. The CSS keeps the host
+    non-displaying (zero height + no background) but ``can_focus = True``
+    means Textual will park focus here when no other widget claims it.
+    """
+
+    can_focus = True
+
+    DEFAULT_CSS = """
+    _FocusHost {
+        height: 0;
+        width: 0;
+        background: transparent;
+    }
+    """
+
+
+class HelpScreen(ModalScreen[None]):
+    """In-app help / keybindings reference (F-9).
+
+    Lists every Monitor keybinding plus the help binding itself.
+    Dismisses on ``Escape`` or ``Enter`` (per F-9 acceptance criterion).
+    """
+
+    BINDINGS = [
+        Binding("escape", "close", "Close"),
+        Binding("enter", "close", "Close"),
+        Binding("question_mark", "close", "Close"),
+        Binding("f1", "close", "Close"),
+    ]
+
+    DEFAULT_CSS = """
+    HelpScreen { align: center middle; }
+    #help_dialog {
+        width: 60;
+        height: auto;
+        border: round $primary;
+        padding: 1 2;
+        background: $surface;
+    }
+    #help_title { text-style: bold; }
+    """
+
+    _HELP_TEXT = (
+        "senex Monitor - keybindings\n"
+        "\n"
+        "  q     Quit (with confirmation)\n"
+        "  s     Skip current file\n"
+        "  r     Rerun current file\n"
+        "  p     Pause / resume\n"
+        "  t     Toggle minimum priority\n"
+        "  e     Dismiss error banner\n"
+        "  ?     Show this help\n"
+        "\n"
+        "  ctrl+q   Force quit (cancels audit)\n"
+        "\n"
+        "Press Enter or Escape to close."
+    )
+
+    def compose(self) -> ComposeResult:
+        with Container(id="help_dialog"):
+            yield Label("senex - Help", id="help_title")
+            yield Static(self._HELP_TEXT, id="help_body")
+
+    def action_close(self) -> None:
+        self.dismiss(None)
 
 
 class ConfirmDialog(ModalScreen[bool]):
@@ -75,6 +148,8 @@ class MonitorScreen(Screen[None]):
     | ``r`` | Rerun current | yes | ``Command(type="Rerun", target=path)`` |
     | ``p`` | Pause/Resume toggle | no | ``Command(type="Pause"|"Resume")`` |
     | ``t`` | Toggle min-priority display | no | (local only) |
+    | ``e`` | Dismiss error banner | no | (local only) |
+    | ``?`` / ``F1`` | Show help screen | no | (local only) |
     """
 
     BINDINGS = [
@@ -83,6 +158,9 @@ class MonitorScreen(Screen[None]):
         Binding("r", "request_rerun", "Rerun"),
         Binding("p", "toggle_pause", "Pause/Resume"),
         Binding("t", "toggle_min_priority", "Toggle priority"),
+        Binding("e", "dismiss_banner", "Dismiss banner"),
+        Binding("question_mark", "show_help", "Help"),
+        Binding("f1", "show_help", "Help", show=False),
     ]
 
     DEFAULT_CSS = """
@@ -115,6 +193,20 @@ class MonitorScreen(Screen[None]):
         yield CurrentFileWidget(tools_max=self._tools_max, id="current_file")
         yield FindingsPanelWidget(id="findings_panel")
         yield StatusStripWidget(self._metrics, id="status_strip")
+        # F-10: invisible focusable host. None of the five visible widgets
+        # are focusable, so after a modal dismiss focus has nowhere to land.
+        # This zero-height container takes focus so ``app.focused`` is
+        # always non-None while the Monitor is active.
+        yield _FocusHost(id="monitor_focus_host")
+
+    async def on_screen_resume(self) -> None:
+        """Restore focus to the host whenever this screen regains focus.
+
+        Triggered on initial mount and after any modal (ConfirmDialog,
+        HelpScreen) dismiss - the underlying Textual screen-resume hook
+        is the canonical place to assert focus restoration (F-10).
+        """
+        self._restore_focus()
 
     async def on_mount(self) -> None:
         # Register a local subscriber on the bus so each event is fanned
@@ -184,6 +276,7 @@ class MonitorScreen(Screen[None]):
             return
 
         def _quit_done(confirmed: bool | None) -> None:
+            self._restore_focus()
             if confirmed:
                 self._post_then(Command(type="Quit", ts=_now()), exit_after=True)
 
@@ -195,6 +288,7 @@ class MonitorScreen(Screen[None]):
         path = self._current_path
 
         def _done(confirmed: bool | None) -> None:
+            self._restore_focus()
             if confirmed:
                 self._post_then(Command(type="Skip", target=path, ts=_now()))
 
@@ -206,6 +300,7 @@ class MonitorScreen(Screen[None]):
         path = self._current_path
 
         def _done(confirmed: bool | None) -> None:
+            self._restore_focus()
             if confirmed:
                 self._post_then(Command(type="Rerun", target=path, ts=_now()))
 
@@ -221,6 +316,50 @@ class MonitorScreen(Screen[None]):
     async def action_toggle_min_priority(self) -> None:
         self._min_priority_display = not self._min_priority_display
 
+    async def action_dismiss_banner(self) -> None:
+        """Dismiss the sticky error banner (F-1).
+
+        No-op when the banner is not currently displayed; subsequent
+        errors will resurface it. The action is bound to the ``e`` key
+        on this Monitor screen so the banner's own "press e to dismiss"
+        instruction now works.
+        """
+        try:
+            banner = self.query_one("#error_banner", ErrorBannerWidget)
+        except Exception:  # noqa: BLE001 - DOM may be transitioning.
+            return
+        if not banner.display:
+            return
+        banner.dismiss()
+        # Restore focus to the focusable host so keybindings continue
+        # to work after dismissal (F-10 supports the same host).
+        self._restore_focus()
+
+    async def action_show_help(self) -> None:
+        """Show the in-app help screen (F-9)."""
+        await self.app.push_screen(HelpScreen(), self._help_done)
+
+    def _help_done(self, _: object) -> None:
+        """Restore focus after the help screen closes."""
+        self._restore_focus()
+
+    def _restore_focus(self) -> None:
+        """Restore focus to the Monitor's focusable host (F-10).
+
+        Called after any modal dismiss (ConfirmDialog, HelpScreen) to
+        guarantee ``app.focused`` is non-None - keybindings are screen
+        level so this is belt-and-braces, but the WCAG 2.4.3 / 2.4.7
+        contract requires an asserted focus owner.
+        """
+        try:
+            host = self.query_one("#monitor_focus_host")
+        except Exception:  # noqa: BLE001 - DOM may be transitioning.
+            return
+        try:
+            host.focus()
+        except Exception:  # noqa: BLE001 - focus may be denied transiently.
+            return
+
     async def _post(self, command: Command) -> None:
         await self._command_bus.publish(command)
 
@@ -234,4 +373,4 @@ class MonitorScreen(Screen[None]):
         self.app.call_later(_do)
 
 
-__all__ = ["ConfirmDialog", "MonitorScreen"]
+__all__ = ["ConfirmDialog", "HelpScreen", "MonitorScreen"]
