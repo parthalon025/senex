@@ -47,6 +47,7 @@ class OutputCfg(_StrictModel):
     root: str = Field(default_factory=_default_output_root)
     filename_template: str = "{repo}/{date}-{run_id_short}"
     redact_secrets: bool = True
+    retention_days: int = Field(default=0, ge=0)  # 0 = retain forever
 
 
 class LensCfg(_StrictModel):

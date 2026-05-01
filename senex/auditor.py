@@ -37,7 +37,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, AsyncIterator
 
-from ulid import ULID
+import ulid
 
 from senex.atomic_io import write_text_atomic
 from senex.checkpoint import (
@@ -223,7 +223,7 @@ async def run_audit(
     redactor = SecretRedactor()
 
     # ---- Build run identity ----
-    run_id_full = str(ULID())
+    run_id_full = str(ulid.new())
     run_id_short = run_id_full[:8]
     audit_dir = compute_audit_dir(repo, output_root, run_id_short)
     audit_dir.mkdir(parents=True, exist_ok=True)

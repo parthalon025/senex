@@ -8,6 +8,7 @@
 # root              = "/home/youruser/senex-audits"
 filename_template = "{repo}/{date}-{run_id_short}"
 redact_secrets    = true
+retention_days    = 0  # 0 = retain forever; future versions may auto-prune
 
 [lens]
 name             = "correctness"
