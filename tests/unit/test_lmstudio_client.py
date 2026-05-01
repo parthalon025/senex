@@ -1,4 +1,4 @@
-"""Tests for senex.lmstudio_client — M3 LM Studio integration.
+"""Tests for senex.inference_client — M3 LM Studio integration.
 
 Covers (per ``docs/superpowers/plans/2026-04-26-senex-v1/m3-lmstudio.md``):
 3.1 basic chat + schema validation, 3.2 streaming + Tick coalescing +
@@ -19,34 +19,34 @@ import pytest
 
 from senex.config import LmStudioCfg
 from senex.events import EventBus
-from senex.lmstudio_client import ChatMessage, LMStudioClient
+from senex.inference_client import ChatMessage, LMStudioClient
 from senex.secret_redactor import SecretRedactor
 
 
 # --- Boundary checks (M3 ↔ M5 contract — see plan §"M3 ↔ M5 boundary check") ---
 
 def test_lmstudio_client_does_not_import_senex_tools() -> None:
-    """senex/lmstudio_client.py MUST NOT import senex.tools.* (M5 territory)."""
-    src = (Path(__file__).resolve().parents[2] / "senex" / "lmstudio_client.py").read_text(
+    """senex/inference_client.py MUST NOT import senex.tools.* (M5 territory)."""
+    src = (Path(__file__).resolve().parents[2] / "senex" / "inference_client.py").read_text(
         encoding="utf-8"
     )
     assert "from senex.tools" not in src, (
-        "lmstudio_client.py imported senex.tools.*; iteration belongs in M5 ToolLoop."
+        "inference_client.py imported senex.tools.*; iteration belongs in M5 ToolLoop."
     )
     assert "import senex.tools" not in src, (
-        "lmstudio_client.py imported senex.tools.*; iteration belongs in M5 ToolLoop."
+        "inference_client.py imported senex.tools.*; iteration belongs in M5 ToolLoop."
     )
 
 
 def test_lmstudio_client_has_no_iteration_methods() -> None:
     """LMStudioClient MUST NOT define a tool-loop / iteration / compaction surface."""
-    src = (Path(__file__).resolve().parents[2] / "senex" / "lmstudio_client.py").read_text(
+    src = (Path(__file__).resolve().parents[2] / "senex" / "inference_client.py").read_text(
         encoding="utf-8"
     )
     forbidden = ("_tool_loop", "iterate_tools", "compaction_callback")
     for token in forbidden:
         assert token not in src, (
-            f"lmstudio_client.py contains forbidden symbol {token!r} — that lives in M5/M6."
+            f"inference_client.py contains forbidden symbol {token!r} — that lives in M5/M6."
         )
 
 
@@ -167,7 +167,7 @@ from senex.events import (  # noqa: E402
     ThinkingStarted,
     ThinkingTick,
 )
-from senex.lmstudio_client import _ANSI_RE, _THINK_TAG_RE  # noqa: E402
+from senex.inference_client import _ANSI_RE, _THINK_TAG_RE  # noqa: E402
 
 
 def _sse_response(chunks: list[dict[str, Any]]) -> httpx.Response:
@@ -454,7 +454,7 @@ def httpx_regex_compile(pattern: str) -> Any:
 
 # --- Task 3.3: schema fallback decision tree ---------------------------------
 
-from senex.lmstudio_errors import (  # noqa: E402
+from senex.inference_errors import (  # noqa: E402
     LMSResponseInvalidJSON,
     LMSResponseSchemaInvalid,
     SchemaNegotiationFailed,
@@ -714,7 +714,7 @@ async def test_schema_invalid_retried_once_with_stricter_prompt(
     audit_schema: dict[str, Any],
 ) -> None:
     """First response fails schema validation; second (with strict preamble) succeeds."""
-    from senex.lmstudio_client import STRICT_RETRY_PREAMBLE
+    from senex.inference_client import STRICT_RETRY_PREAMBLE
 
     client._schema_mode = "json_object"  # type: ignore[attr-defined]
     bad = '{"schema_version":"wrong","overall_assessment":"x","findings":[],"recommendations":[]}'
@@ -747,7 +747,7 @@ async def test_schema_invalid_retried_once_with_stricter_prompt(
 
 # --- Task 3.4: pre-LMS token counting + budget enforcement ------------------
 
-from senex.lmstudio_errors import TokenBudgetExceeded  # noqa: E402
+from senex.inference_errors import TokenBudgetExceeded  # noqa: E402
 
 
 def test_count_tokens_returns_positive_for_nonempty_messages(
@@ -848,7 +848,7 @@ async def test_chat_raises_token_budget_exceeded_above_90_percent(
 
 # --- Task 3.5: retry + backoff policy ---------------------------------------
 
-from senex.lmstudio_errors import LMSConnectionLost  # noqa: E402
+from senex.inference_errors import LMSConnectionLost  # noqa: E402
 
 
 @pytest.fixture
@@ -1350,8 +1350,8 @@ async def test_chat_streamed_tool_calls_assembled_correctly(
 import hashlib  # noqa: E402
 
 from senex.events import ModelFingerprintChanged  # noqa: E402
-from senex.lmstudio_client import LoadedModelInfo  # noqa: E402
-from senex.lmstudio_errors import FingerprintChanged  # noqa: E402
+from senex.inference_client import LoadedModelInfo  # noqa: E402
+from senex.inference_errors import FingerprintChanged  # noqa: E402
 
 
 def test_compute_fingerprint_canonical(client: LMStudioClient) -> None:
@@ -1839,7 +1839,7 @@ async def test_redaction_order_strip_then_redact(
 def test_sanitize_schema_drops_conditional_anyof_required() -> None:
     """LM Studio rejects ``anyOf: [{required: [...]}, {required: [...]}]``;
     the sanitizer drops it but preserves all other shape constraints."""
-    from senex.lmstudio_client import _sanitize_schema_for_lmstudio
+    from senex.inference_client import _sanitize_schema_for_lmstudio
 
     schema = {
         "type": "object",
@@ -1868,7 +1868,7 @@ def test_sanitize_schema_drops_conditional_anyof_required() -> None:
 def test_sanitize_schema_preserves_richer_anyof() -> None:
     """``anyOf`` with shape constraints (not just ``required``) is kept;
     only the conditional-required pattern is dropped."""
-    from senex.lmstudio_client import _sanitize_schema_for_lmstudio
+    from senex.inference_client import _sanitize_schema_for_lmstudio
 
     schema = {
         "type": "object",
@@ -1885,7 +1885,7 @@ def test_sanitize_schema_preserves_richer_anyof() -> None:
 def test_sanitize_schema_drops_oneof_required_too() -> None:
     """Same rule applies to ``oneOf`` — both surface the conditional-required
     pattern senex's audit_response.schema.json uses."""
-    from senex.lmstudio_client import _sanitize_schema_for_lmstudio
+    from senex.inference_client import _sanitize_schema_for_lmstudio
 
     schema = {
         "oneOf": [
@@ -1899,7 +1899,7 @@ def test_sanitize_schema_drops_oneof_required_too() -> None:
 def test_sanitize_schema_recurses_into_array_items() -> None:
     """Conditional-required inside ``items`` is dropped (this is the actual
     pattern in audit_response.schema.json — findings[i].location.anyOf)."""
-    from senex.lmstudio_client import _sanitize_schema_for_lmstudio
+    from senex.inference_client import _sanitize_schema_for_lmstudio
 
     schema = {
         "type": "array",

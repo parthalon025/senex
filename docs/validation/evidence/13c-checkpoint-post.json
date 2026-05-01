@@ -1,0 +1,36 @@
+{
+  "completed_files": [
+    {
+      "completed_at": "2026-05-01T19:59:53.648710+00:00",
+      "path": "healthy.py"
+    },
+    {
+      "completed_at": "2026-05-01T19:59:53.717159+00:00",
+      "path": "io_helper.py"
+    },
+    {
+      "completed_at": "2026-05-01T19:59:53.786987+00:00",
+      "path": "main.py"
+    },
+    {
+      "completed_at": "2026-05-01T19:59:53.858784+00:00",
+      "path": "util.py"
+    }
+  ],
+  "config_hash": "5186e14578887606b06cd2e3b88f1fe0c97a688d67acc5506a049d28202d516b",
+  "current_phase": "aggregate",
+  "lens_version": "1.0.0",
+  "model_fingerprint": "0d80b0bf01a9f56aa5b4a34235767bcf8074388e5f5c64b0251f1bd3bb5e9d52",
+  "phase_artifact_hashes": {},
+  "phase_status": {
+    "aggregate": "complete",
+    "crosscut": "complete",
+    "discovery": "complete",
+    "file_audit": "complete",
+    "preflight": "complete"
+  },
+  "prompt_hash": "de364503023f58f286fee89a35bc376f7401afc75f7fc947d1bc298fccb4999a",
+  "run_id": "01KQJJ0G79QT17KFPHCPF4QFKH",
+  "schema_version": 1,
+  "tool_pack_hash": "454a3d15377e48c6de58e3ed2ef4972f9edf7062353d29581b927bc04b8f7800"
+}

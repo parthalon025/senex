@@ -16,7 +16,7 @@ from senex.lifecycle_cli import (
     cli_lifecycle_status,
     register_lifecycle_subparser,
 )
-from senex.lmstudio_lifecycle import ModelInfo, _compute_fingerprint
+from senex.inference_lifecycle import ModelInfo, _compute_fingerprint
 from senex.runlock import RunLock, _lock_path
 
 
@@ -120,7 +120,7 @@ async def test_lifecycle_status_handles_no_backend(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     """Backend unavailable -> JSON still emits version=1 with empty loaded_models."""
-    from senex.lmstudio_lifecycle import LifecycleBackendUnavailable
+    from senex.inference_lifecycle import LifecycleBackendUnavailable
 
     monkeypatch.setattr(
         "senex.lifecycle_cli.LifecycleBackendFactory.select",

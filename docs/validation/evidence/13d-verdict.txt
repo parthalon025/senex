@@ -1,0 +1,8 @@
+Gate 13d: PARTIAL
+Reason: tiny_python fixture files are trivially clean; Gemma-4-26B-A4B
+made zero tool calls on these 4 files. ToolCall events confirmed working
+in senex-audits/pensiv/2026-04-28-01KQAGNF (193 events across real repo audit).
+This is a known model-behavior characteristic: the model skips tool calls
+when the code is simple enough to audit in a single pass.
+ToolCall events in tiny_python: 0
+Thinking traces in tiny_python: 0

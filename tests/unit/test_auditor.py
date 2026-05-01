@@ -68,7 +68,7 @@ class _FakeBackend:
         return self.loaded
 
     async def load(self, model_id: str, timeout: int) -> Any:
-        from senex.lmstudio_lifecycle import ModelInfo, _compute_fingerprint
+        from senex.inference_lifecycle import ModelInfo, _compute_fingerprint
 
         _FakeBackend.load_calls += 1
         self.loaded = True

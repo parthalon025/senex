@@ -166,7 +166,7 @@ class LauncherScreen(Screen[None]):
         """Indirection layer so tests can patch without spinning up a client."""
         if self._config is None:
             return []
-        from senex.lmstudio_client import LMStudioClient
+        from senex.inference_client import LMStudioClient
         from senex.secret_redactor import SecretRedactor
         from senex.events import EventBus
 

@@ -101,13 +101,13 @@ async def test_view_missing_events_jsonl_raises_named(tmp_path: Path) -> None:
 @pytest.mark.asyncio
 async def test_view_offline_no_lms_call(audit_dir: Path) -> None:
     """Replay must succeed even when LMS is unreachable."""
-    from senex.lmstudio_errors import LMSConnectionLost
+    from senex.inference_errors import LMSConnectionLost
 
     async def boom(self) -> object:
         raise LMSConnectionLost("never available")
 
     with patch(
-        "senex.lmstudio_client.LMStudioClient.list_loaded_models", boom
+        "senex.inference_client.LMStudioClient.list_loaded_models", boom
     ):
         await run_view(audit_dir, speed=1000.0, headless=True)
 

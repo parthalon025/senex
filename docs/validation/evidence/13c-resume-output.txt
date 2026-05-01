@@ -1,0 +1,29 @@
+--- senex audit: E:\senex\tests\fixtures\repos\tiny_python (run 01KQJJ0G) ---
+[0/4] auditing healthy.py — 0 findings (high=0, medium=0, low=0)
+[1/4] auditing io_helper.py — 0 findings (high=0, medium=0, low=0)
+[2/4] auditing main.py — 0 findings (high=0, medium=0, low=0)
+[3/4] auditing util.py — 0 findings (high=0, medium=0, low=0)
+
+--- Run complete ---
+Duration: 0m15s
+Files: 4 audited, 0 errors, 0 skipped
+Findings: HIGH=0 MEDIUM=0 LOW=0 HEALTHY=0
+Exit status: success
+
+---STDERR---
+INFO:httpx:HTTP Request: GET http://localhost:1234/v1/models "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:1234/v1/models "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:1234/v1/models "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:1234/v1/models "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:1234/v1/models "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:1234/v1/models "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:1234/v1/models "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST http://localhost:1234/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:1234/v1/models "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST http://localhost:1234/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST http://localhost:1234/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST http://localhost:1234/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST http://localhost:1234/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST http://localhost:1234/v1/chat/completions "HTTP/1.1 200 OK"
+WARNING:senex.cross_cutting:crosscut LMS call failed (attempt 1): peer closed connection without sending complete message body (incomplete chunked read)
+WARNING:senex.cross_cutting:crosscut LMS call failed (attempt 2): All connection attempts failed

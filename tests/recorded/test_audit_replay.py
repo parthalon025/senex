@@ -18,7 +18,7 @@ import pytest
 
 from senex.config import LmStudioCfg
 from senex.events import EventBus
-from senex.lmstudio_client import ChatMessage, LMStudioClient
+from senex.inference_client import ChatMessage, LMStudioClient
 from senex.secret_redactor import SecretRedactor
 
 

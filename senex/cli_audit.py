@@ -207,7 +207,7 @@ def _ensure_managed_container_up(config: SenexConfig) -> bool:
 
     import asyncio
 
-    from senex.lmstudio_lifecycle import HTTPBackend, ModelLoadFailed
+    from senex.inference_lifecycle import HTTPBackend, ModelLoadFailed
 
     backend = HTTPBackend(
         base_url=config.lmstudio.base_url,
@@ -258,7 +258,7 @@ def _build_wizard_client(config: SenexConfig) -> Any:
     """
     try:
         from senex.events import EventBus
-        from senex.lmstudio_client import LMStudioClient
+        from senex.inference_client import LMStudioClient
         from senex.secret_redactor import SecretRedactor
     except ImportError:
         return None

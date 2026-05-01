@@ -52,7 +52,7 @@ def _seed_partial(audit_dir: Path) -> None:
 
 class _OkClient:
     async def chat(self, *, task: str, messages: list[Any], schema: Any, tools: Any = None) -> Any:
-        from senex.lmstudio_client import ChatResponse
+        from senex.inference_client import ChatResponse
 
         body = {
             "schema_version": 1,

@@ -1,4 +1,4 @@
-"""senex.lmstudio_client — OpenAI-compatible LM Studio client (M3).
+"""senex.inference_client — OpenAI-compatible LM Studio client (M3).
 
 Implements spec §5.4 (`audit_response.schema.json`), §5.5 (LM Studio inference
 controls), §5.5.2.3 (model fingerprint), §5.6 (Tick events), §8.1 (preflight
@@ -36,7 +36,7 @@ from senex.events import (
     ThinkingStarted,
     ThinkingTick,
 )
-from senex.lmstudio_errors import (
+from senex.inference_errors import (
     FingerprintChanged,
     LMSConnectionLost,
     LMSResponseInvalidJSON,

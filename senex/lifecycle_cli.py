@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from senex.lmstudio_lifecycle import (
+from senex.inference_lifecycle import (
     LifecycleBackendFactory,
     LifecycleBackendUnavailable,
 )

@@ -1,0 +1,4 @@
+PASS
+checkpoint_found=True
+resume_exit=0
+files_in_findings=4

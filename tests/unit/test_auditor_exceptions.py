@@ -34,7 +34,7 @@ class _FakeBackend:
         return self.loaded
 
     async def load(self, model_id: str, timeout: int) -> Any:
-        from senex.lmstudio_lifecycle import ModelInfo, _compute_fingerprint
+        from senex.inference_lifecycle import ModelInfo, _compute_fingerprint
 
         self.loaded = True
         fp = _compute_fingerprint(model_id, "q4", "deadbeef")
@@ -200,7 +200,7 @@ async def test_lifecycle_backend_unavailable_returns_external_error(
     tmp_path: Path,
 ) -> None:
     """``LifecycleBackendUnavailable`` raised inside the run -> exit 3."""
-    from senex.lmstudio_lifecycle import LifecycleBackendUnavailable
+    from senex.inference_lifecycle import LifecycleBackendUnavailable
 
     await _run_with_phase_raising(
         tmp_path,
@@ -212,7 +212,7 @@ async def test_lifecycle_backend_unavailable_returns_external_error(
 @pytest.mark.asyncio
 async def test_fingerprint_mismatch_returns_external_error(tmp_path: Path) -> None:
     """``FingerprintMismatch`` from inside the lifecycle CM -> exit 3."""
-    from senex.lmstudio_lifecycle import FingerprintMismatch
+    from senex.inference_lifecycle import FingerprintMismatch
 
     await _run_with_phase_raising(
         tmp_path,
@@ -224,7 +224,7 @@ async def test_fingerprint_mismatch_returns_external_error(tmp_path: Path) -> No
 @pytest.mark.asyncio
 async def test_lifecycle_error_returns_external_error(tmp_path: Path) -> None:
     """A generic ``LifecycleError`` (parent of LifecycleBackendUnavailable) -> exit 3."""
-    from senex.lmstudio_lifecycle import LifecycleError
+    from senex.inference_lifecycle import LifecycleError
 
     await _run_with_phase_raising(
         tmp_path,

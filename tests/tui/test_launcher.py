@@ -8,7 +8,7 @@ import pytest
 from textual.widgets import Button, Input, Select, Static, Switch
 
 from senex.events import CommandBus, EventBus
-from senex.lmstudio_client import LoadedModelInfo
+from senex.inference_client import LoadedModelInfo
 from senex.tui.app import SenexApp
 from senex.tui.launcher import LauncherScreen
 
@@ -80,7 +80,7 @@ async def test_launcher_unreachable_lms_shows_placeholder(tmp_path: Path) -> Non
     app = _app(tmp_path)
 
     async def fake_models(self: LauncherScreen) -> list[str]:
-        from senex.lmstudio_errors import LMSConnectionLost
+        from senex.inference_errors import LMSConnectionLost
         raise LMSConnectionLost("connection refused")
 
     with patch.object(LauncherScreen, "_fetch_loaded_models", fake_models):

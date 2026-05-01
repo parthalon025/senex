@@ -1,0 +1,94 @@
+[output]
+root              = "E:/senex-audits"
+filename_template = "{repo}/{date}-{run_id_short}"
+redact_secrets    = true
+
+[lens]
+name             = "correctness"
+min_priority     = "all"
+include_tests    = false
+
+[walker]
+max_size_bytes        = 524288
+max_files             = 500000000
+extensions            = [".py"]
+default_excludes      = ["node_modules", ".venv", "venv", "dist", "build", "__pycache__", "*.min.*", ".git", "vendor", ".gitnexus", ".claude", ".mypy_cache", ".pytest_cache", ".ruff_cache"]
+respect_gitignore     = false
+scan_subdir           = ""
+include_tests         = true
+
+[crosscut]
+top_n_high   = 50
+top_n_medium = 100
+top_n_low    = 100
+
+[lmstudio]
+base_url           = "http://localhost:1234/v1"
+api_key            = "lm-studio"
+connect_timeout    = 10
+read_timeout       = 600
+http_retries       = 3
+backoff_seconds    = [5, 15, 45]
+model              = "google/gemma-4-26b-a4b"
+preset             = ""
+allow_non_loopback = false
+context_window     = 32768
+strict_json_schema = false
+
+[lmstudio.sampling]
+temperature       = 0.6
+top_p             = 0.95
+top_k             = 64
+min_p             = 0.0
+repeat_penalty    = 1.0
+frequency_penalty = 0.0
+presence_penalty  = 0.0
+seed              = 42
+seed_random       = true
+max_tokens        = 8192
+stop              = []
+
+[lmstudio.thinking]
+enabled              = true
+effort               = "high"
+max_thinking_tokens  = 32768
+save_traces          = true
+include_in_report    = false
+
+[lmstudio.tasks.file_audit]
+temperature = 0.3
+max_tokens  = 12288
+
+[lmstudio.tasks.cross_cutting]
+temperature = 0.5
+max_tokens  = 4096
+
+[lmstudio.tools]
+enabled              = true
+max_calls_per_file   = 8
+max_result_tokens    = 2048
+tool_timeout_seconds = 30
+
+[lmstudio.memory]
+enabled      = true
+max_tokens   = 800
+min_priority = "medium"
+
+[lmstudio.compaction]
+enabled                  = true
+trigger_pct              = 0.80
+target_pct               = 0.50
+preserve_recent_turns    = 2
+max_compactions_per_file = 3
+
+[lmstudio.lifecycle]
+auto_load                       = true
+auto_unload                     = false
+load_timeout_seconds            = 30
+load_wait_timeout_seconds       = 60
+load_wait_poll_interval_seconds = 5.0
+runlock_dir                     = ""
+
+[ui]
+scan_root      = "E:/code"
+scan_max_depth = 6

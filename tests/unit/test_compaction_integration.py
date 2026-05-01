@@ -27,7 +27,7 @@ from senex.events import (
     CompactionTriggered as CompactionTriggeredEvent,
     EventBus,
 )
-from senex.lmstudio_client import (
+from senex.inference_client import (
     ChatResponse,
     ToolCall,
     ToolCallFunction,

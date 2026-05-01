@@ -311,7 +311,7 @@ class _FakeClient:
         non_loopback: bool = False,
         capabilities: object | None = None,
     ) -> None:
-        from senex.lmstudio_client import LoadedModelInfo, ProbedCapabilities
+        from senex.inference_client import LoadedModelInfo, ProbedCapabilities
 
         self._models = models if models is not None else [
             LoadedModelInfo(id="google/gemma-4-26b-a4b")
@@ -332,7 +332,7 @@ class _FakeClient:
 
     async def list_loaded_models(self) -> list[object]:
         if self._raise_list:
-            from senex.lmstudio_errors import LMSConnectionLost
+            from senex.inference_errors import LMSConnectionLost
 
             raise LMSConnectionLost("simulated")
         return self._models
@@ -392,7 +392,7 @@ async def test_check_schema_with_thinking_pass() -> None:
 
 @pytest.mark.asyncio
 async def test_check_schema_with_thinking_warn_when_unsupported() -> None:
-    from senex.lmstudio_client import ProbedCapabilities
+    from senex.inference_client import ProbedCapabilities
 
     caps = ProbedCapabilities(
         supports_tools=True,
@@ -416,7 +416,7 @@ async def test_check_streaming_pass() -> None:
 
 @pytest.mark.asyncio
 async def test_check_streaming_warn_when_unsupported() -> None:
-    from senex.lmstudio_client import ProbedCapabilities
+    from senex.inference_client import ProbedCapabilities
 
     caps = ProbedCapabilities(
         supports_tools=True,

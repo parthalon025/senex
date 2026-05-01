@@ -50,7 +50,7 @@ from senex.events import ToolBudgetExhausted as ToolBudgetExhaustedEvent
 from senex.events import ToolCall as ToolCallEvent
 from senex.events import ToolError as ToolErrorEvent
 from senex.events import ToolResult as ToolResultEvent
-from senex.lmstudio_client import (
+from senex.inference_client import (
     ChatMessage,
     ChatResponse,
     LMStudioClient,

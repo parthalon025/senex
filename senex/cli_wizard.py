@@ -29,10 +29,10 @@ from typing import TYPE_CHECKING, Any, TextIO
 
 from senex.config import SenexConfig
 from senex.lens import Lens
-from senex.lmstudio_errors import LMSConnectionLost
+from senex.inference_errors import LMSConnectionLost
 
 if TYPE_CHECKING:  # pragma: no cover
-    from senex.lmstudio_client import LMStudioClient
+    from senex.inference_client import LMStudioClient
     from senex.tui.runtime import RuntimeConfig
 
 

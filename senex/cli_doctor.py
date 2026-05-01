@@ -183,7 +183,7 @@ def _run_async_checks(
     without booting an LMS HTTP client.
     """
     from senex.events import EventBus
-    from senex.lmstudio_client import LMStudioClient
+    from senex.inference_client import LMStudioClient
 
     out: list[tuple[str, CheckResult]] = []
 

@@ -49,14 +49,14 @@ from senex.events import (
     CompactionTriggered,
     EventBus,
 )
-from senex.lmstudio_client import ChatMessage, ChatResponse, ToolCall, ToolCallFunction
+from senex.inference_client import ChatMessage, ChatResponse, ToolCall, ToolCallFunction
 from senex.secret_redactor import SecretRedactor
 
 if TYPE_CHECKING:
     from senex.llm_client import LLMClient
 
 # ANSI / control-sequence regex per conventions section 5 — mirrors the
-# pattern used in ``senex.lmstudio_client``. Compaction output flows back
+# pattern used in ``senex.inference_client``. Compaction output flows back
 # into history and must be sanitized before insertion.
 _ANSI_RE: Final = re.compile(r"\x1b\[[0-9;]*[a-zA-Z]|\x1b\][^\x07]*\x07")
 _CTRL_RE: Final = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")

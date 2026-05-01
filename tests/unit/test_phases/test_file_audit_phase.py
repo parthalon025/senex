@@ -24,13 +24,13 @@ from senex.events import (
 )
 from senex.findings_partial import FindingsPartialWriter
 from senex.lens import Lens
-from senex.lmstudio_client import (
+from senex.inference_client import (
     ChatMessage,
     ChatResponse,
     LoadedModelInfo,
     ProbedCapabilities,
 )
-from senex.lmstudio_errors import (
+from senex.inference_errors import (
     FingerprintChanged,
     LMSConnectionLost,
     LMSResponseSchemaInvalid,
@@ -374,7 +374,7 @@ async def test_lms_error_writes_error_artifact(tmp_path: Path) -> None:
     f1 = repo / "main.py"
     f1.write_text("x=1\n", encoding="utf-8")
 
-    from senex.lmstudio_errors import LMStudioError
+    from senex.inference_errors import LMStudioError
 
     client = FakeClient(responses=[LMStudioError("server returned 500")])
     phase, bus, cb, captured, state = _setup_phase(tmp_path, client, [f1])

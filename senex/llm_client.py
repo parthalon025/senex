@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 if TYPE_CHECKING:
     # Forward refs only: we don't import the implementation module to keep
     # this file dependency-light and avoid a circular import.
-    from senex.lmstudio_client import (
+    from senex.inference_client import (
         ChatMessage,
         ChatResponse,
         LoadedModelInfo,

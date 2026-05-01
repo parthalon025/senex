@@ -1,0 +1,42 @@
+{"v":1,"type":"RunLockAcquired","ts":"2026-05-01T19:59:50.846595Z","seq":0,"run_id":"01KQJJ0G79QT17KFPHCPF4QFKH","model_fingerprint":"0d80b0bf01a9f56aa5b4a34235767bcf8074388e5f5c64b0251f1bd3bb5e9d52","holder_count":1}
+{"v":1,"type":"RunStart","ts":"2026-05-01T19:59:51.263495Z","seq":1,"run_id":"01KQJJ0G79QT17KFPHCPF4QFKH","repo":"E:\\senex\\tests\\fixtures\\repos\\tiny_python","audit_dir":"E:\\senex-audits\\tiny_python\\2026-05-01-01KQJJ0G","model":"google/gemma-4-26b-a4b","lens":"correctness","lens_version":"1.0.0","config_hash":"5186e14578887606b06cd2e3b88f1fe0c97a688d67acc5506a049d28202d516b","prompt_hash":"de364503023f58f286fee89a35bc376f7401afc75f7fc947d1bc298fccb4999a","model_fingerprint":"0d80b0bf01a9f56aa5b4a34235767bcf8074388e5f5c64b0251f1bd3bb5e9d52","tool_pack_hash":"454a3d15377e48c6de58e3ed2ef4972f9edf7062353d29581b927bc04b8f7800","started_at":"2026-05-01T19:59:49.504866Z"}
+{"v":1,"type":"PreflightWarning","ts":"2026-05-01T19:59:53.424821Z","seq":2,"run_id":"01KQJJ0G79QT17KFPHCPF4QFKH","check":"gitnexus_index","message":"repo has no .gitnexus/ directory; graph context unavailable"}
+{"v":1,"type":"DiscoveryStart","ts":"2026-05-01T19:59:53.469873Z","seq":3,"run_id":"01KQJJ0G79QT17KFPHCPF4QFKH","repo":"E:\\senex\\tests\\fixtures\\repos\\tiny_python"}
+{"v":1,"type":"DiscoveryComplete","ts":"2026-05-01T19:59:53.472469Z","seq":4,"run_id":"01KQJJ0G79QT17KFPHCPF4QFKH","file_count":4,"skipped":[["E:\\senex\\tests\\fixtures\\repos\\tiny_python\\.gitignore","extension"],["E:\\senex\\tests\\fixtures\\repos\\tiny_python\\README.md","extension"]]}
+{"v":1,"type":"FileStart","ts":"2026-05-01T19:59:53.500325Z","seq":5,"run_id":"01KQJJ0G79QT17KFPHCPF4QFKH","path":"healthy.py","idx":0,"total":4}
+{"v":1,"type":"GraphContextUnavailable","ts":"2026-05-01T19:59:53.518098Z","seq":6,"run_id":"preflight","path":"healthy.py","reason":"npx gitnexus query --repo tiny_python What does healthy.py do? -> rc=1, stderr='C:\\Program' is not recognized as an internal or external command,\r\noperable program or batch file.\r\n"}
+{"v":1,"type":"FileContextBuilt","ts":"2026-05-01T19:59:53.519531Z","seq":7,"run_id":"01KQJJ0G79QT17KFPHCPF4QFKH","path":"healthy.py","graph_context_tokens":6}
+{"v":1,"type":"SkillsInjected","ts":"2026-05-01T19:59:53.521654Z","seq":8,"run_id":"01KQJJ0G79QT17KFPHCPF4QFKH","path":"healthy.py","names":[]}
+{"v":1,"type":"FileComplete","ts":"2026-05-01T19:59:53.644390Z","seq":9,"run_id":"01KQJJ0G79QT17KFPHCPF4QFKH","path":"healthy.py","finding_counts":{"high":0,"medium":0,"low":0,"healthy":0},"last_finding_summary":null}
+{"v":1,"type":"FileStart","ts":"2026-05-01T19:59:53.650392Z","seq":10,"run_id":"01KQJJ0G79QT17KFPHCPF4QFKH","path":"io_helper.py","idx":1,"total":4}
+{"v":1,"type":"GraphContextUnavailable","ts":"2026-05-01T19:59:53.664329Z","seq":11,"run_id":"preflight","path":"io_helper.py","reason":"npx gitnexus query --repo tiny_python What does io_helper.py do? -> rc=1, stderr='C:\\Program' is not recognized as an internal or external command,\r\noperable program or batch file.\r\n"}
+{"v":1,"type":"FileContextBuilt","ts":"2026-05-01T19:59:53.665731Z","seq":12,"run_id":"01KQJJ0G79QT17KFPHCPF4QFKH","path":"io_helper.py","graph_context_tokens":6}
+{"v":1,"type":"SkillsInjected","ts":"2026-05-01T19:59:53.667126Z","seq":13,"run_id":"01KQJJ0G79QT17KFPHCPF4QFKH","path":"io_helper.py","names":[]}
+{"v":1,"type":"FileComplete","ts":"2026-05-01T19:59:53.709959Z","seq":14,"run_id":"01KQJJ0G79QT17KFPHCPF4QFKH","path":"io_helper.py","finding_counts":{"high":0,"medium":0,"low":0,"healthy":0},"last_finding_summary":null}
+{"v":1,"type":"FileStart","ts":"2026-05-01T19:59:53.718919Z","seq":15,"run_id":"01KQJJ0G79QT17KFPHCPF4QFKH","path":"main.py","idx":2,"total":4}
+{"v":1,"type":"GraphContextUnavailable","ts":"2026-05-01T19:59:53.732468Z","seq":16,"run_id":"preflight","path":"main.py","reason":"npx gitnexus query --repo tiny_python What does main.py do? -> rc=1, stderr='C:\\Program' is not recognized as an internal or external command,\r\noperable program or batch file.\r\n"}
+{"v":1,"type":"FileContextBuilt","ts":"2026-05-01T19:59:53.733792Z","seq":17,"run_id":"01KQJJ0G79QT17KFPHCPF4QFKH","path":"main.py","graph_context_tokens":6}
+{"v":1,"type":"SkillsInjected","ts":"2026-05-01T19:59:53.735257Z","seq":18,"run_id":"01KQJJ0G79QT17KFPHCPF4QFKH","path":"main.py","names":[]}
+{"v":1,"type":"FileComplete","ts":"2026-05-01T19:59:53.778696Z","seq":19,"run_id":"01KQJJ0G79QT17KFPHCPF4QFKH","path":"main.py","finding_counts":{"high":0,"medium":0,"low":0,"healthy":0},"last_finding_summary":null}
+{"v":1,"type":"FileStart","ts":"2026-05-01T19:59:53.788663Z","seq":20,"run_id":"01KQJJ0G79QT17KFPHCPF4QFKH","path":"util.py","idx":3,"total":4}
+{"v":1,"type":"GraphContextUnavailable","ts":"2026-05-01T19:59:53.802022Z","seq":21,"run_id":"preflight","path":"util.py","reason":"npx gitnexus query --repo tiny_python What does util.py do? -> rc=1, stderr='C:\\Program' is not recognized as an internal or external command,\r\noperable program or batch file.\r\n"}
+{"v":1,"type":"FileContextBuilt","ts":"2026-05-01T19:59:53.803363Z","seq":22,"run_id":"01KQJJ0G79QT17KFPHCPF4QFKH","path":"util.py","graph_context_tokens":6}
+{"v":1,"type":"SkillsInjected","ts":"2026-05-01T19:59:53.804757Z","seq":23,"run_id":"01KQJJ0G79QT17KFPHCPF4QFKH","path":"util.py","names":[]}
+{"v":1,"type":"FileComplete","ts":"2026-05-01T19:59:53.851432Z","seq":24,"run_id":"01KQJJ0G79QT17KFPHCPF4QFKH","path":"util.py","finding_counts":{"high":0,"medium":0,"low":0,"healthy":0},"last_finding_summary":null}
+{"v":1,"type":"CrosscutStart","ts":"2026-05-01T19:59:53.876296Z","seq":25,"run_id":"01KQJJ0G79QT17KFPHCPF4QFKH"}
+{"v":1,"type":"OutputStarted","ts":"2026-05-01T19:59:56.105597Z","seq":26,"run_id":"lmstudio-client","path":""}
+{"v":1,"type":"OutputTick","ts":"2026-05-01T19:59:56.796496Z","seq":27,"run_id":"lmstudio-client","path":"","tokens_so_far":3,"delta_since_last_tick":3}
+{"v":1,"type":"OutputTick","ts":"2026-05-01T19:59:57.770452Z","seq":28,"run_id":"lmstudio-client","path":"","tokens_so_far":6,"delta_since_last_tick":3}
+{"v":1,"type":"OutputTick","ts":"2026-05-01T19:59:58.459177Z","seq":29,"run_id":"lmstudio-client","path":"","tokens_so_far":10,"delta_since_last_tick":4}
+{"v":1,"type":"OutputTick","ts":"2026-05-01T19:59:59.184459Z","seq":30,"run_id":"lmstudio-client","path":"","tokens_so_far":12,"delta_since_last_tick":2}
+{"v":1,"type":"OutputTick","ts":"2026-05-01T19:59:59.698228Z","seq":31,"run_id":"lmstudio-client","path":"","tokens_so_far":14,"delta_since_last_tick":2}
+{"v":1,"type":"OutputTick","ts":"2026-05-01T20:00:00.206941Z","seq":32,"run_id":"lmstudio-client","path":"","tokens_so_far":15,"delta_since_last_tick":1}
+{"v":1,"type":"OutputTick","ts":"2026-05-01T20:00:00.942384Z","seq":33,"run_id":"lmstudio-client","path":"","tokens_so_far":17,"delta_since_last_tick":2}
+{"v":1,"type":"OutputTick","ts":"2026-05-01T20:00:01.842901Z","seq":34,"run_id":"lmstudio-client","path":"","tokens_so_far":18,"delta_since_last_tick":1}
+{"v":1,"type":"OutputTick","ts":"2026-05-01T20:00:02.476949Z","seq":35,"run_id":"lmstudio-client","path":"","tokens_so_far":20,"delta_since_last_tick":2}
+{"v":1,"type":"CrosscutComplete","ts":"2026-05-01T20:00:05.060735Z","seq":36,"run_id":"01KQJJ0G79QT17KFPHCPF4QFKH","theme_count":0}
+{"v":1,"type":"AggregateStart","ts":"2026-05-01T20:00:05.081602Z","seq":37,"run_id":"01KQJJ0G79QT17KFPHCPF4QFKH"}
+{"v":1,"type":"AggregateComplete","ts":"2026-05-01T20:00:05.094025Z","seq":38,"run_id":"01KQJJ0G79QT17KFPHCPF4QFKH","finding_count":0,"theme_count":0}
+{"v":1,"type":"RunComplete","ts":"2026-05-01T20:00:05.107561Z","seq":39,"run_id":"01KQJJ0G79QT17KFPHCPF4QFKH","duration_seconds":15.602582,"totals":{"files_audited":4,"files_errored":0,"files_skipped":0,"high":0,"medium":0,"low":0,"healthy":0,"finding_count":0},"exit_status":0}
+{"v":1,"type":"RunLockReleased","ts":"2026-05-01T20:00:05.114901Z","seq":40,"run_id":"01KQJJ0G79QT17KFPHCPF4QFKH","model_fingerprint":"0d80b0bf01a9f56aa5b4a34235767bcf8074388e5f5c64b0251f1bd3bb5e9d52","remaining_holders":0}
+{"v":1,"type":"ModelUnloadSkipped","ts":"2026-05-01T20:00:05.116314Z","seq":41,"run_id":"01KQJJ0G79QT17KFPHCPF4QFKH","model_id":"google/gemma-4-26b-a4b","reason":"resumed_run_does_not_own_load"}

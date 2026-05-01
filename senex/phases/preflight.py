@@ -35,12 +35,12 @@ from typing import TYPE_CHECKING, Any
 
 from senex.config import SenexConfig, load_config
 from senex.events import EventBus, PreflightWarning
-from senex.lmstudio_errors import LMSConnectionLost
+from senex.inference_errors import LMSConnectionLost
 
 if TYPE_CHECKING:  # pragma: no cover — type-checking only
     from senex.events import CommandBus
     from senex.lens import Lens
-    from senex.lmstudio_client import LMStudioClient
+    from senex.inference_client import LMStudioClient
 
 from .base import Phase, PreflightFailure  # noqa: E402
 

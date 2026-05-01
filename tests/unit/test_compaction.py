@@ -33,7 +33,7 @@ from senex.events import (
     CompactionTriggered as CompactionTriggeredEvent,
     EventBus,
 )
-from senex.lmstudio_client import ChatResponse
+from senex.inference_client import ChatResponse
 from senex.secret_redactor import SecretRedactor
 
 

@@ -1,4 +1,4 @@
-"""senex.lmstudio_lifecycle - Model lifecycle management for LM Studio.
+"""senex.inference_lifecycle - Model lifecycle management for LM Studio.
 
 Implements spec section 5.5.2 (Model Lifecycle Management) including:
 - 5.5.2.1 Acquire/Release semantics (Lifecycle high-level API).

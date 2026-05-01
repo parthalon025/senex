@@ -24,7 +24,7 @@ from pydantic import ValidationError
 from senex.config import CrosscutCfg
 from senex.events import CrosscutComplete, CrosscutStart, EventBus
 from senex.llm_client import LLMClient
-from senex.lmstudio_client import ChatMessage
+from senex.inference_client import ChatMessage
 from senex.render_models import FindingRecord, Theme
 
 log = logging.getLogger(__name__)

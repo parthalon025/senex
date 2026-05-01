@@ -37,7 +37,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, AsyncIterator
 
-import ulid
+from ulid import ULID
 
 from senex.atomic_io import write_text_atomic
 from senex.checkpoint import (
@@ -48,8 +48,8 @@ from senex.checkpoint import (
 from senex.events import EventBus, RunComplete, RunStart
 from senex.findings_partial import FindingsPartialWriter
 from senex.graph_awareness import GitNexusCLIProvider
-from senex.lmstudio_client import LMStudioClient
-from senex.lmstudio_lifecycle import (
+from senex.inference_client import LMStudioClient
+from senex.inference_lifecycle import (
     FingerprintMismatch,
     Lifecycle,
     LifecycleBackendFactory,
@@ -223,7 +223,7 @@ async def run_audit(
     redactor = SecretRedactor()
 
     # ---- Build run identity ----
-    run_id_full = str(ulid.new())
+    run_id_full = str(ULID())
     run_id_short = run_id_full[:8]
     audit_dir = compute_audit_dir(repo, output_root, run_id_short)
     audit_dir.mkdir(parents=True, exist_ok=True)
@@ -586,7 +586,7 @@ async def run_audit(
         )
         return EXIT_EXTERNAL_ERROR
     except Exception as exc:  # noqa: BLE001 — final defense; surface as external error
-        from senex.lmstudio_lifecycle import LifecycleError
+        from senex.inference_lifecycle import LifecycleError
 
         if isinstance(exc, LifecycleError):
             log.error("lifecycle error: %s", exc)

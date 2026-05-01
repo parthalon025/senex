@@ -63,8 +63,8 @@ from senex.events import (
     SkillsInjected,
 )
 from senex.findings_partial import FindingsPartialWriter, compute_finding_id
-from senex.lmstudio_client import ChatMessage
-from senex.lmstudio_errors import (
+from senex.inference_client import ChatMessage
+from senex.inference_errors import (
     FingerprintChanged,
     LMSConnectionLost,
     LMSResponseInvalidJSON,
@@ -92,7 +92,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from senex.events import CommandBus
     from senex.graph_awareness import GraphContextProvider
     from senex.lens import Lens
-    from senex.lmstudio_client import LMStudioClient
+    from senex.inference_client import LMStudioClient
 
 log = logging.getLogger(__name__)
 
@@ -656,7 +656,7 @@ class FileAuditPhase:
     def _inject_strict_addendum(
         messages: list[dict[str, Any]],
     ) -> list[dict[str, Any]]:
-        from senex.lmstudio_client import STRICT_RETRY_PREAMBLE
+        from senex.inference_client import STRICT_RETRY_PREAMBLE
 
         out = [dict(m) for m in messages]
         if out and out[0].get("role") == "system":

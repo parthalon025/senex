@@ -18,7 +18,7 @@ from senex.events import (
     PreflightWarning,
 )
 from senex.lens import Lens
-from senex.lmstudio_client import LoadedModelInfo, ProbedCapabilities
+from senex.inference_client import LoadedModelInfo, ProbedCapabilities
 from senex.phases import PreflightFailure
 from senex.phases.preflight import (
     PreflightInputs,

@@ -1,4 +1,4 @@
-"""Tests for senex.lmstudio_lifecycle - backends, Lifecycle API, resume, doctor, threat surface.
+"""Tests for senex.inference_lifecycle - backends, Lifecycle API, resume, doctor, threat surface.
 
 Implements M4 Tasks 4.1-4.6 per the M4 plan.
 """
@@ -13,7 +13,7 @@ import pytest
 
 from senex.config import LifecycleCfg
 from senex.events import BaseEvent
-from senex.lmstudio_lifecycle import (
+from senex.inference_lifecycle import (
     FingerprintMismatch,
     InvalidModelId,
     Lifecycle,
@@ -675,14 +675,14 @@ async def test_doctor_fail_when_auto_load_and_no_backend(
 ) -> None:
     """auto_load=True + no backend -> status='fail'."""
     from senex.config import LifecycleCfg, SenexConfig
-    from senex.lmstudio_lifecycle import (
+    from senex.inference_lifecycle import (
         DoctorCheck,
         LifecycleBackendUnavailable,
         doctor_check_lifecycle_backend,
     )
 
     monkeypatch.setattr(
-        "senex.lmstudio_lifecycle.LifecycleBackendFactory.select",
+        "senex.inference_lifecycle.LifecycleBackendFactory.select",
         AsyncMock(side_effect=LifecycleBackendUnavailable("no backend")),
     )
     cfg = SenexConfig()
@@ -697,13 +697,13 @@ async def test_doctor_warn_when_no_backend_but_auto_load_false(
 ) -> None:
     """auto_load=False + no backend -> status='warn' (run can still attach)."""
     from senex.config import LifecycleCfg, SenexConfig
-    from senex.lmstudio_lifecycle import (
+    from senex.inference_lifecycle import (
         LifecycleBackendUnavailable,
         doctor_check_lifecycle_backend,
     )
 
     monkeypatch.setattr(
-        "senex.lmstudio_lifecycle.LifecycleBackendFactory.select",
+        "senex.inference_lifecycle.LifecycleBackendFactory.select",
         AsyncMock(side_effect=LifecycleBackendUnavailable("no backend")),
     )
     cfg = SenexConfig()
@@ -717,7 +717,7 @@ async def test_doctor_pass_when_backend_available(
 ) -> None:
     """Backend reachable -> status='pass', message names which backend."""
     from senex.config import LifecycleCfg, SenexConfig
-    from senex.lmstudio_lifecycle import (
+    from senex.inference_lifecycle import (
         LMStudioSDKBackend,
         doctor_check_lifecycle_backend,
     )
@@ -725,7 +725,7 @@ async def test_doctor_pass_when_backend_available(
     fake_backend = MagicMock(spec=LMStudioSDKBackend)
     fake_backend.backend_name = "sdk"
     monkeypatch.setattr(
-        "senex.lmstudio_lifecycle.LifecycleBackendFactory.select",
+        "senex.inference_lifecycle.LifecycleBackendFactory.select",
         AsyncMock(return_value=fake_backend),
     )
     cfg = SenexConfig()

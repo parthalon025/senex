@@ -19,8 +19,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from senex.config import RepoCfg, SenexConfig
-from senex.lmstudio_client import LoadedModelInfo
-from senex.lmstudio_errors import LMSConnectionLost
+from senex.inference_client import LoadedModelInfo
+from senex.inference_errors import LMSConnectionLost
 
 
 # ---------------------------------------------------------------------------

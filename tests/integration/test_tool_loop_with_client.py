@@ -16,7 +16,7 @@ import pytest
 from senex.config import LmStudioCfg
 from senex.events import EventBus
 from senex.events import ToolBudgetExhausted as ToolBudgetExhaustedEvent
-from senex.lmstudio_client import LMStudioClient
+from senex.inference_client import LMStudioClient
 from senex.secret_redactor import SecretRedactor
 from senex.tools.loop import ToolLoop
 from senex.tools.read_file import register_read_file

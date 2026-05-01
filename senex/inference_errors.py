@@ -1,4 +1,4 @@
-"""senex.lmstudio_errors — named exception classes for the LM Studio client.
+"""senex.inference_errors — named exception classes for the LM Studio client.
 
 Implements spec §8.2 (per-file recovery taxonomy) and §M3 plan exception list.
 Each subclass carries an ``error_kind: str`` class attribute that ``auditor.py``
