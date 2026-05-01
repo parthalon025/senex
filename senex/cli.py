@@ -83,7 +83,11 @@ def _build_common_parent() -> argparse.ArgumentParser:
         "--json",
         action="store_true",
         dest="as_json",
-        help="Emit machine-readable JSON output (where supported).",
+        help=(
+            "Emit machine-readable JSON output. Supported by: doctor, "
+            "config show, lifecycle status, and audit --no-tui (one "
+            "JSON-Lines event per stdout line)."
+        ),
     )
     parent.add_argument(
         "--no-load",
@@ -126,10 +130,23 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = root.add_subparsers(dest="command", required=True)
 
     # ---- audit ---------------------------------------------------------
+    _AUDIT_EPILOG = (
+        "TUI keybindings (during audit):\n"
+        "  q       Quit (with confirmation)\n"
+        "  s       Skip current file\n"
+        "  r       Rerun current file\n"
+        "  p       Pause / resume\n"
+        "  t       Toggle minimum priority\n"
+        "  e       Dismiss error banner\n"
+        "  ?       Show help\n"
+        "  ctrl+q  Force quit (cancels audit)\n"
+    )
     audit_p = subparsers.add_parser(
         "audit",
         parents=[parent],
         help="Run an audit against a repository.",
+        epilog=_AUDIT_EPILOG,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     audit_p.add_argument(
         "repo_path",

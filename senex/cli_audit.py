@@ -335,6 +335,11 @@ def _run_headless(
     inside ``run_audit`` once the audit dir is known; here we only wire
     the headless stdout subscriber + the metrics collector for end-of-run
     summary access.
+
+    F-13: when ``--json`` is set, swap :class:`HeadlessSubscriber` for
+    :class:`JSONLinesHeadlessSubscriber` so stdout is one JSON object per
+    line (parseable by ``jq`` / log shippers) instead of human-readable
+    text. Exit-code semantics are unchanged.
     """
     from senex.events import BaseEvent
 
@@ -342,7 +347,13 @@ def _run_headless(
     command_bus = CommandBus()
 
     metrics = MetricsCollectorSubscriber()
-    headless = HeadlessSubscriber()
+    if getattr(args, "as_json", False):
+        from senex.subscribers.jsonl_headless_subscriber import (
+            JSONLinesHeadlessSubscriber,
+        )
+        headless: Any = JSONLinesHeadlessSubscriber()
+    else:
+        headless = HeadlessSubscriber()
 
     async def _orchestrate() -> int:
         async def _to_metrics(ev: BaseEvent) -> None:
