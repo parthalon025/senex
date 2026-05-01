@@ -7,10 +7,32 @@ from __future__ import annotations
 
 import tomllib
 from copy import deepcopy
+from importlib import resources
 from pathlib import Path
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
+
+
+def _bundled_infra_path(*parts: str) -> str:
+    """Resolve ``senex/infra/<parts>`` to an absolute string path.
+
+    Used as a default-factory for SGLang Docker stack paths so that
+    ``pip install senex-audit`` ships the compose file inside the wheel
+    and runtime resolution does not depend on CWD.
+    """
+    base = resources.files("senex") / "infra"
+    target = base.joinpath(*parts)
+    return str(target)
+
+
+def _default_output_root() -> str:
+    """Cross-platform default for ``[output].root``.
+
+    Resolves to ``<user-home>/senex-audits`` so the default works on every
+    OS without hardcoding a Windows-specific drive path.
+    """
+    return str(Path.home() / "senex-audits")
 
 
 class UnknownConfigKey(ValueError):
@@ -22,10 +44,9 @@ class _StrictModel(BaseModel):
 
 
 class OutputCfg(_StrictModel):
-    root: str = "E:/senex-audits"
+    root: str = Field(default_factory=_default_output_root)
     filename_template: str = "{repo}/{date}-{run_id_short}"
     redact_secrets: bool = True
-    retention_days: int = Field(default=0, ge=0)
 
 
 class LensCfg(_StrictModel):
@@ -124,12 +145,17 @@ class SglangCfg(_StrictModel):
     completion" behaviour. Requires Docker available via WSL on Windows.
 
     Set ``manage_container=false`` to keep the container running between
-    runs (the previous default — manual ``bash infra/sglang/sglang.sh up``).
+    runs (the previous default — manual
+    ``bash senex/infra/sglang/sglang.sh up``).
     """
 
     manage_container: bool = False
-    compose_file: str = "infra/sglang/docker-compose.yml"
-    env_file: str = "infra/sglang/.env"
+    compose_file: str = Field(
+        default_factory=lambda: _bundled_infra_path("sglang", "docker-compose.yml")
+    )
+    env_file: str = Field(
+        default_factory=lambda: _bundled_infra_path("sglang", ".env")
+    )
     # Health-check timeout after `compose up` before raising ModelLoadFailed.
     startup_timeout_seconds: int = Field(default=180, gt=0)
     # When true on Windows, prepend `wsl -d Ubuntu -e bash -c "..."` to the

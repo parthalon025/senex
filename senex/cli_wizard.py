@@ -380,9 +380,9 @@ _LMS_CHECKLIST_ITEMS: tuple[str, ...] = (
 )
 
 _SGLANG_CHECKLIST_ITEMS: tuple[str, ...] = (
-    "Server running  →  bash infra/sglang/sglang.sh up (or `docker compose up -d`)",
+    "Server running  →  bash senex/infra/sglang/sglang.sh up (or `docker compose up -d`)",
     "Model loaded    →  GET /v1/models returns the configured model id",
-    "GPU healthy     →  bash infra/sglang/sglang.sh status (free VRAM > model size)",
+    "GPU healthy     →  bash senex/infra/sglang/sglang.sh status (free VRAM > model size)",
 )
 
 
