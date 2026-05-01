@@ -4,7 +4,6 @@ Implements M4 Tasks 4.1-4.6 per the M4 plan.
 """
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
@@ -19,8 +18,6 @@ from senex.inference_lifecycle import (
     Lifecycle,
     LifecycleBackendFactory,
     LifecycleBackendUnavailable,
-    LMSCLIBackend,
-    LMStudioSDKBackend,
     ModelInfo,
     ModelLoadFailed,
     ModelLoadTimeout,
@@ -77,51 +74,8 @@ def isolated_runlock(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 # ---------------------------------------------------------------------------
 # Task 4.1 - backend selection
+# (LMStudioSDKBackend and LMSCLIBackend removed; factory now selects Ollama or SGLang)
 # ---------------------------------------------------------------------------
-
-
-async def test_select_prefers_sdk(monkeypatch: pytest.MonkeyPatch) -> None:
-    """When the lmstudio Python SDK is reachable, select() returns LMStudioSDKBackend."""
-    mock_sdk = MagicMock()
-    # SDK probe is a list_loaded_models call; make it a successful no-op.
-    mock_sdk.list_loaded_models = AsyncMock(return_value=[])
-    monkeypatch.setitem(sys.modules, "lmstudio", mock_sdk)
-    backend = await LifecycleBackendFactory.select()
-    assert isinstance(backend, LMStudioSDKBackend)
-
-
-async def test_select_falls_back_to_cli(monkeypatch: pytest.MonkeyPatch) -> None:
-    """When the SDK import fails, fall back to the lms CLI if it's on PATH."""
-    # Force ImportError for the next ``import lmstudio``.
-    monkeypatch.setitem(sys.modules, "lmstudio", None)
-    monkeypatch.setattr(
-        "shutil.which",
-        lambda name: "/usr/local/bin/lms" if name == "lms" else None,
-    )
-    backend = await LifecycleBackendFactory.select()
-    assert isinstance(backend, LMSCLIBackend)
-
-
-async def test_select_raises_when_neither_available(monkeypatch: pytest.MonkeyPatch) -> None:
-    """All backends absent (HTTP unreachable + SDK + CLI) -> LifecycleBackendUnavailable."""
-    monkeypatch.setitem(sys.modules, "lmstudio", None)
-    monkeypatch.setattr("shutil.which", lambda name: None)
-    # Don't pass base_url so SGLangBackend isn't probed.
-    with pytest.raises(LifecycleBackendUnavailable, match="no usable lifecycle backend"):
-        await LifecycleBackendFactory.select()
-
-
-async def test_select_falls_back_when_sdk_unreachable(monkeypatch: pytest.MonkeyPatch) -> None:
-    """SDK importable but list_loaded_models raises -> fall back to CLI when present."""
-    mock_sdk = MagicMock()
-    mock_sdk.list_loaded_models = AsyncMock(side_effect=ConnectionError("server down"))
-    monkeypatch.setitem(sys.modules, "lmstudio", mock_sdk)
-    monkeypatch.setattr(
-        "shutil.which",
-        lambda name: "/usr/local/bin/lms" if name == "lms" else None,
-    )
-    backend = await LifecycleBackendFactory.select()
-    assert isinstance(backend, LMSCLIBackend)
 
 
 async def test_both_backends_produce_same_fingerprint() -> None:
@@ -606,64 +560,6 @@ def test_validate_model_id_accepts(good_id: str) -> None:
     assert validate_model_id(good_id) == good_id
 
 
-async def test_cli_backend_load_validates_before_subprocess(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    mock_proc = AsyncMock()
-    monkeypatch.setattr("asyncio.create_subprocess_exec", mock_proc)
-    backend = LMSCLIBackend()
-    with pytest.raises(InvalidModelId):
-        await backend.load("$(rm -rf /)", timeout=120)
-    mock_proc.assert_not_called()
-
-
-async def test_cli_backend_unload_validates_before_subprocess(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    mock_proc = AsyncMock()
-    monkeypatch.setattr("asyncio.create_subprocess_exec", mock_proc)
-    backend = LMSCLIBackend()
-    with pytest.raises(InvalidModelId):
-        await backend.unload("$(rm -rf /)")
-    mock_proc.assert_not_called()
-
-
-async def test_sdk_backend_load_validates_before_call() -> None:
-    mock_sdk = MagicMock()
-    mock_sdk.llm = AsyncMock()
-    backend = LMStudioSDKBackend(mock_sdk)
-    with pytest.raises(InvalidModelId):
-        await backend.load("$(rm -rf /)", timeout=120)
-    mock_sdk.llm.assert_not_called()
-
-
-async def test_subprocess_uses_list_form_and_shell_false(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Spec 5.5.2.6: list-form argv, shell=False, no metachars in any element."""
-    calls: list[tuple[Any, ...]] = []
-
-    async def fake_exec(*args: Any, **kwargs: Any) -> Any:
-        calls.append((args, kwargs))
-        proc = MagicMock()
-        proc.communicate = AsyncMock(return_value=(
-            b'{"model_id":"google/gemma-4-26b-a4b","quant":"Q5","digest":"abc"}',
-            b"",
-        ))
-        proc.returncode = 0
-        return proc
-
-    monkeypatch.setattr("asyncio.create_subprocess_exec", fake_exec)
-    backend = LMSCLIBackend()
-    await backend.load("google/gemma-4-26b-a4b", timeout=120)
-    args, kwargs = calls[0]
-    assert args[0] == "lms"
-    assert args[1] == "load"
-    assert args[2] == "google/gemma-4-26b-a4b"
-    assert "shell" not in kwargs or kwargs["shell"] is False
-    assert all(isinstance(a, str) and ";" not in a and "&" not in a for a in args)
-
-
 
 # ---------------------------------------------------------------------------
 # Task 4.5 - Doctor lifecycle backend check (spec section 8.1)
@@ -718,12 +614,11 @@ async def test_doctor_pass_when_backend_available(
     """Backend reachable -> status='pass', message names which backend."""
     from senex.config import LifecycleCfg, SenexConfig
     from senex.inference_lifecycle import (
-        LMStudioSDKBackend,
         doctor_check_lifecycle_backend,
     )
 
-    fake_backend = MagicMock(spec=LMStudioSDKBackend)
-    fake_backend.backend_name = "sdk"
+    fake_backend = MagicMock()
+    fake_backend.backend_name = "ollama"
     monkeypatch.setattr(
         "senex.inference_lifecycle.LifecycleBackendFactory.select",
         AsyncMock(return_value=fake_backend),
@@ -732,198 +627,9 @@ async def test_doctor_pass_when_backend_available(
     cfg.inference.lifecycle = LifecycleCfg(auto_load=True)
     result = await doctor_check_lifecycle_backend(cfg)
     assert result.status == "pass"
-    assert "sdk" in result.message.lower()
+    assert "ollama" in result.message.lower()
 
 
-
-# ---------------------------------------------------------------------------
-# Backend internal coverage (SDK + CLI) - happy paths, edge cases.
-# ---------------------------------------------------------------------------
-
-
-async def test_sdk_backend_is_loaded_true(monkeypatch: pytest.MonkeyPatch) -> None:
-    sdk = MagicMock()
-
-    class _Rec:
-        model_id = "m"
-        quant = "Q5"
-        checkpoint_digest = "abc"
-
-    sdk.list_loaded_models = AsyncMock(return_value=[_Rec()])
-    backend = LMStudioSDKBackend(sdk)
-    assert await backend.is_loaded("m") is True
-    assert await backend.is_loaded("other") is False
-
-
-async def test_sdk_backend_load_fingerprint_consistent() -> None:
-    sdk = MagicMock()
-
-    class _Rec:
-        model_id = "google/gemma-4-26b-a4b"
-        quant = "Q5_K_M"
-        checkpoint_digest = "abcdef"
-
-    sdk.llm = AsyncMock(return_value=_Rec())
-    backend = LMStudioSDKBackend(sdk)
-    info = await backend.load("google/gemma-4-26b-a4b", timeout=120)
-    expected = _compute_fingerprint(
-        "google/gemma-4-26b-a4b", "Q5_K_M", "abcdef"
-    )
-    assert info.fingerprint == expected
-    assert info.backend == "sdk"
-
-
-async def test_sdk_backend_unload_module_level_unload() -> None:
-    sdk = MagicMock()
-    sdk.unload = AsyncMock()
-    backend = LMStudioSDKBackend(sdk)
-    await backend.unload("m")
-    sdk.unload.assert_awaited_once_with("m")
-
-
-async def test_sdk_backend_unload_falls_back_to_record_unload() -> None:
-    sdk = MagicMock(spec=["llm", "list_loaded_models"])  # no module-level 'unload'
-    record = MagicMock()
-    record.unload = AsyncMock()
-    sdk.llm = AsyncMock(return_value=record)
-    backend = LMStudioSDKBackend(sdk)
-    await backend.unload("m")
-    record.unload.assert_awaited_once()
-
-
-async def test_sdk_backend_list_loaded_returns_modelinfo_list() -> None:
-    sdk = MagicMock()
-
-    class _Rec:
-        model_id = "m"
-        quant = "Q5"
-        checkpoint_digest = "abc"
-
-    sdk.list_loaded_models = AsyncMock(return_value=[_Rec(), _Rec()])
-    backend = LMStudioSDKBackend(sdk)
-    items = await backend.list_loaded()
-    assert len(items) == 2
-    assert all(i.backend == "sdk" for i in items)
-
-
-async def test_cli_backend_is_loaded_true(monkeypatch: pytest.MonkeyPatch) -> None:
-    async def fake_exec(*args: Any, **kwargs: Any) -> Any:
-        proc = MagicMock()
-        proc.communicate = AsyncMock(return_value=(
-            b'[{"model_id":"m","quant":"Q5","digest":"abc"}]',
-            b"",
-        ))
-        proc.returncode = 0
-        return proc
-
-    monkeypatch.setattr("asyncio.create_subprocess_exec", fake_exec)
-    backend = LMSCLIBackend()
-    assert await backend.is_loaded("m") is True
-    assert await backend.is_loaded("other") is False
-
-
-async def test_cli_backend_is_loaded_handles_invalid_json(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    async def fake_exec(*args: Any, **kwargs: Any) -> Any:
-        proc = MagicMock()
-        proc.communicate = AsyncMock(return_value=(b"not json", b""))
-        proc.returncode = 0
-        return proc
-
-    monkeypatch.setattr("asyncio.create_subprocess_exec", fake_exec)
-    backend = LMSCLIBackend()
-    assert await backend.is_loaded("m") is False
-
-
-async def test_cli_backend_load_failure_raises_modelloadfailed(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    async def fake_exec(*args: Any, **kwargs: Any) -> Any:
-        proc = MagicMock()
-        proc.communicate = AsyncMock(return_value=(b"", b"GPU OOM"))
-        proc.returncode = 1
-        return proc
-
-    monkeypatch.setattr("asyncio.create_subprocess_exec", fake_exec)
-    backend = LMSCLIBackend()
-    with pytest.raises(ModelLoadFailed, match="GPU OOM"):
-        await backend.load("m", timeout=120)
-
-
-async def test_cli_backend_load_falls_back_to_ps_when_no_payload(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """When 'lms load' returns empty stdout, fall back to 'lms ps' for ModelInfo."""
-    call_idx = [0]
-
-    async def fake_exec(*args: Any, **kwargs: Any) -> Any:
-        proc = MagicMock()
-        if call_idx[0] == 0:
-            proc.communicate = AsyncMock(return_value=(b"", b""))
-        else:
-            proc.communicate = AsyncMock(return_value=(
-                b'[{"model_id":"m","quant":"Q5","digest":"abc"}]',
-                b"",
-            ))
-        proc.returncode = 0
-        call_idx[0] += 1
-        return proc
-
-    monkeypatch.setattr("asyncio.create_subprocess_exec", fake_exec)
-    backend = LMSCLIBackend()
-    info = await backend.load("m", timeout=120)
-    assert info.backend == "cli"
-    assert info.quant == "Q5"
-
-
-async def test_cli_backend_unload_failure_raises(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    async def fake_exec(*args: Any, **kwargs: Any) -> Any:
-        proc = MagicMock()
-        proc.communicate = AsyncMock(return_value=(b"", b"unload error"))
-        proc.returncode = 2
-        return proc
-
-    monkeypatch.setattr("asyncio.create_subprocess_exec", fake_exec)
-    backend = LMSCLIBackend()
-    with pytest.raises(ModelLoadFailed, match="unload error"):
-        await backend.unload("m")
-
-
-async def test_cli_backend_list_loaded_handles_non_list_json(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    async def fake_exec(*args: Any, **kwargs: Any) -> Any:
-        proc = MagicMock()
-        proc.communicate = AsyncMock(return_value=(b'{"not":"a list"}', b""))
-        proc.returncode = 0
-        return proc
-
-    monkeypatch.setattr("asyncio.create_subprocess_exec", fake_exec)
-    backend = LMSCLIBackend()
-    items = await backend.list_loaded()
-    assert items == []
-
-
-async def test_cli_backend_list_loaded_returns_models(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    async def fake_exec(*args: Any, **kwargs: Any) -> Any:
-        proc = MagicMock()
-        proc.communicate = AsyncMock(return_value=(
-            b'[{"model_id":"m","quant":"Q5","digest":"abc"}]',
-            b"",
-        ))
-        proc.returncode = 0
-        return proc
-
-    monkeypatch.setattr("asyncio.create_subprocess_exec", fake_exec)
-    backend = LMSCLIBackend()
-    items = await backend.list_loaded()
-    assert len(items) == 1
-    assert items[0].backend == "cli"
 
 
 # ---------------------------------------------------------------------------

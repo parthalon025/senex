@@ -132,11 +132,7 @@ async def lifecycle_acquire_or_resume(
             fingerprint and ``allow_mixed`` is False.
         ModelLoadFailed / ModelLoadTimeout: backend load failed.
     """
-    backend = await LifecycleBackendFactory.select(
-        base_url=config.inference.base_url,
-        api_key=config.inference.api_key,
-        sglang_cfg=config.inference.sglang,
-    )
+    backend = await LifecycleBackendFactory.select(config.inference)
     lifecycle = Lifecycle(
         backend=backend,
         bus=bus,

@@ -105,3 +105,25 @@ async def test_list_loaded_returns_running_models(cfg):
     models = await backend.list_loaded()
     assert len(models) == 2
     assert models[0].model_id == "gemma4:e4b"
+
+
+@respx.mock
+@pytest.mark.asyncio
+async def test_factory_selects_ollama_when_reachable():
+    from senex.config import InferenceCfg
+    from senex.inference_lifecycle import LifecycleBackendFactory
+
+    respx.get("http://localhost:11434/").mock(return_value=httpx.Response(200))
+    cfg = InferenceCfg(backend="auto")
+    backend = await LifecycleBackendFactory.select(cfg)
+    assert isinstance(backend, OllamaBackend)
+
+
+@pytest.mark.asyncio
+async def test_factory_falls_back_to_sglang_when_backend_is_sglang():
+    from senex.config import InferenceCfg
+    from senex.inference_lifecycle import LifecycleBackendFactory, SGLangBackend
+
+    cfg = InferenceCfg(backend="sglang")
+    backend = await LifecycleBackendFactory.select(cfg)
+    assert isinstance(backend, SGLangBackend)

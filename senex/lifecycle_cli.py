@@ -22,32 +22,23 @@ from senex.inference_lifecycle import (
 from senex.runlock import RunLock, _is_pid_alive
 
 
-def _load_lifecycle_kwargs(config_path: str | None) -> dict[str, Any]:
-    """Read ``senex.config.toml`` and produce kwargs for ``LifecycleBackendFactory.select``.
+def _load_lifecycle_inference_cfg(config_path: str | None) -> "Any":
+    """Read ``senex.config.toml`` and return the ``InferenceCfg`` for factory selection.
 
-    Returns a kwargs dict that wires the HTTP backend (SGLang / vLLM /
-    OpenAI-compat servers) when ``base_url`` is set in the config; falls
-    back to the auto-discovery path (SDK / CLI) on any error so missing
-    or malformed config never breaks ``senex lifecycle status``.
+    Returns a default ``InferenceCfg`` on any error so missing or malformed
+    config never breaks ``senex lifecycle status``.
     """
     try:
-        from senex.config import load_config
+        from senex.config import InferenceCfg, load_config
 
         cfg_path = Path(config_path) if config_path else Path("senex.config.toml")
         if not cfg_path.exists():
-            return {}
+            return InferenceCfg()
         cfg = load_config(cfg_path)
-        base_url = getattr(cfg.inference, "base_url", "") or ""
-        api_key = getattr(cfg.inference, "api_key", "lm-studio") or "lm-studio"
-        sglang_cfg = getattr(cfg.inference, "sglang", None)
-        kwargs: dict[str, Any] = {"api_key": api_key}
-        if base_url:
-            kwargs["base_url"] = base_url
-        if sglang_cfg is not None:
-            kwargs["sglang_cfg"] = sglang_cfg
-        return kwargs
+        return cfg.inference
     except Exception:  # noqa: BLE001 — never let config trouble break status.
-        return {}
+        from senex.config import InferenceCfg
+        return InferenceCfg()
 
 
 def _default_runlock_root() -> Path:
@@ -89,8 +80,8 @@ async def cli_lifecycle_status(
     """
     loaded_models: list[dict[str, str]] = []
     try:
-        select_kwargs = _load_lifecycle_kwargs(config_path)
-        backend = await LifecycleBackendFactory.select(**select_kwargs)
+        inference_cfg = _load_lifecycle_inference_cfg(config_path)
+        backend = await LifecycleBackendFactory.select(inference_cfg)
         infos = await backend.list_loaded()
         for info in infos:
             loaded_models.append({

@@ -18,7 +18,6 @@ import hashlib
 import json
 import os
 import re
-import shutil
 import time
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
@@ -140,220 +139,6 @@ class LifecycleBackend(Protocol):
     async def load(self, model_id: str, timeout: int) -> ModelInfo: ...
     async def unload(self, model_id: str) -> None: ...
     async def list_loaded(self) -> list[ModelInfo]: ...
-
-
-# SDK backend ---------------------------------------------------------------
-
-
-class LMStudioSDKBackend:
-    """LM Studio Python SDK backend (preferred when available)."""
-
-    backend_name = "sdk"
-
-    def __init__(self, sdk: Any) -> None:
-        # ``sdk`` is the imported ``lmstudio`` module.
-        self._sdk = sdk
-
-    @staticmethod
-    def _info_from_sdk(record: Any, fallback_id: str) -> ModelInfo:
-        model_id = (
-            getattr(record, "model_id", None)
-            or getattr(record, "id", None)
-            or fallback_id
-        )
-        quant = (
-            getattr(record, "quant", None)
-            or getattr(record, "quantization", None)
-            or "unknown"
-        )
-        digest = (
-            getattr(record, "checkpoint_digest", None)
-            or getattr(record, "digest", None)
-            or "unknown"
-        )
-        fp = _compute_fingerprint(model_id, quant, digest)
-        return ModelInfo(
-            model_id=model_id,
-            quant=quant,
-            checkpoint_digest=digest,
-            fingerprint=fp,
-            backend=LMStudioSDKBackend.backend_name,
-        )
-
-    async def is_loaded(self, model_id: str) -> bool:
-        validate_model_id(model_id)
-        loaded = await self._sdk.list_loaded_models()
-        for record in loaded:
-            mid = getattr(record, "model_id", None) or getattr(record, "id", None)
-            if mid == model_id:
-                return True
-        return False
-
-    async def load(self, model_id: str, timeout: int) -> ModelInfo:
-        validate_model_id(model_id)
-        record = await self._sdk.llm(model_id)
-        return self._info_from_sdk(record, fallback_id=model_id)
-
-    async def unload(self, model_id: str) -> None:
-        validate_model_id(model_id)
-        unload_fn = getattr(self._sdk, "unload", None)
-        if unload_fn is not None:
-            await unload_fn(model_id)
-            return
-        record = await self._sdk.llm(model_id)
-        await record.unload()
-
-    async def list_loaded(self) -> list[ModelInfo]:
-        records = await self._sdk.list_loaded_models()
-        out: list[ModelInfo] = []
-        for r in records:
-            mid = getattr(r, "model_id", None) or getattr(r, "id", None) or ""
-            out.append(self._info_from_sdk(r, fallback_id=mid))
-        return out
-
-
-# CLI backend ---------------------------------------------------------------
-
-
-class LMSCLIBackend:
-    """``lms`` CLI backend (fallback when SDK is not available)."""
-
-    backend_name = "cli"
-
-    @staticmethod
-    async def _run_lms(*args: str, timeout: int | None = None) -> tuple[bytes, bytes, int]:
-        """Run ``lms <args>`` via asyncio.create_subprocess_exec (list-form, shell=False).
-
-        Caller MUST validate any model_id arg via ``validate_model_id`` before invoking.
-        """
-        proc = await asyncio.create_subprocess_exec(
-            "lms",
-            *args,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-        if timeout is not None:
-            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
-        else:
-            stdout, stderr = await proc.communicate()
-        return stdout, stderr, proc.returncode if proc.returncode is not None else 1
-
-    @staticmethod
-    def _record_model_id(record: dict[str, Any]) -> str | None:
-        """Extract the canonical model id from a ``lms ps --json`` record.
-
-        LM Studio's CLI JSON shape uses ``modelKey`` / ``indexedModelIdentifier`` /
-        ``identifier`` / ``path``. We also fall back to legacy/SDK-style
-        ``model_id`` and ``id`` for forward compatibility. First non-empty wins.
-        """
-        for field in (
-            "modelKey",
-            "indexedModelIdentifier",
-            "identifier",
-            "path",
-            "model_id",
-            "id",
-        ):
-            value = record.get(field)
-            if isinstance(value, str) and value:
-                return value
-        return None
-
-    @staticmethod
-    def _record_quant(record: dict[str, Any]) -> str:
-        """Extract a quant string from a ``lms ps --json`` record.
-
-        LM Studio nests the quant info as ``quantization: {name, bits}``;
-        legacy/SDK-style records may use ``quant`` (string) directly.
-        """
-        legacy = record.get("quant")
-        if isinstance(legacy, str) and legacy:
-            return legacy
-        nested = record.get("quantization")
-        if isinstance(nested, dict):
-            name = nested.get("name")
-            if isinstance(name, str) and name:
-                return name
-        if isinstance(nested, str) and nested:
-            return nested
-        return "unknown"
-
-    @classmethod
-    def _info_from_cli(cls, record: dict[str, Any], fallback_id: str) -> ModelInfo:
-        model_id = cls._record_model_id(record) or fallback_id
-        quant = cls._record_quant(record)
-        digest = str(record.get("checkpoint_digest") or record.get("digest") or "unknown")
-        fp = _compute_fingerprint(model_id, quant, digest)
-        return ModelInfo(
-            model_id=model_id,
-            quant=quant,
-            checkpoint_digest=digest,
-            fingerprint=fp,
-            backend=LMSCLIBackend.backend_name,
-        )
-
-    async def is_loaded(self, model_id: str) -> bool:
-        validate_model_id(model_id)
-        stdout, _stderr, _rc = await self._run_lms("ps", "--json")
-        try:
-            records = json.loads(stdout.decode("utf-8") or "[]")
-        except json.JSONDecodeError:
-            return False
-        if not isinstance(records, list):
-            return False
-        for r in records:
-            if not isinstance(r, dict):
-                continue
-            if self._record_model_id(r) == model_id:
-                return True
-        return False
-
-    async def load(self, model_id: str, timeout: int) -> ModelInfo:
-        validate_model_id(model_id)
-        stdout, stderr, rc = await self._run_lms("load", model_id, timeout=timeout)
-        if rc != 0:
-            raise ModelLoadFailed(
-                f"lms load {model_id!r} failed (rc={rc}): "
-                f"{stderr.decode('utf-8', 'replace')}"
-            )
-        try:
-            payload = json.loads(stdout.decode("utf-8") or "{}")
-        except json.JSONDecodeError:
-            payload = {}
-        if isinstance(payload, dict) and payload:
-            return self._info_from_cli(payload, fallback_id=model_id)
-        ps_stdout, _ps_stderr, _ps_rc = await self._run_lms("ps", "--json")
-        try:
-            records = json.loads(ps_stdout.decode("utf-8") or "[]")
-        except json.JSONDecodeError:
-            records = []
-        for r in records if isinstance(records, list) else []:
-            if isinstance(r, dict) and self._record_model_id(r) == model_id:
-                return self._info_from_cli(r, fallback_id=model_id)
-        return self._info_from_cli({"model_id": model_id}, fallback_id=model_id)
-
-    async def unload(self, model_id: str) -> None:
-        validate_model_id(model_id)
-        _stdout, stderr, rc = await self._run_lms("unload", model_id)
-        if rc != 0:
-            raise ModelLoadFailed(
-                f"lms unload {model_id!r} failed (rc={rc}): "
-                f"{stderr.decode('utf-8', 'replace')}"
-            )
-
-    async def list_loaded(self) -> list[ModelInfo]:
-        stdout, _stderr, _rc = await self._run_lms("ps", "--json")
-        try:
-            records = json.loads(stdout.decode("utf-8") or "[]")
-        except json.JSONDecodeError:
-            records = []
-        out: list[ModelInfo] = []
-        for r in records if isinstance(records, list) else []:
-            if not isinstance(r, dict):
-                continue
-            mid = self._record_model_id(r) or ""
-            out.append(self._info_from_cli(r, fallback_id=mid))
-        return out
 
 
 # Backend factory -----------------------------------------------------------
@@ -684,69 +469,31 @@ class OllamaBackend:
 
 
 class LifecycleBackendFactory:
-    """Selects the best available backend (HTTP -> SDK -> CLI)."""
+    """Selects the best available backend (Ollama or SGLang)."""
 
-    @classmethod
-    async def select(
-        cls,
-        base_url: str | None = None,
-        api_key: str = "lm-studio",
-        *,
-        sglang_cfg: Any = None,
-    ) -> LifecycleBackend:
-        """Probe backends in order and return the first that responds.
+    @staticmethod
+    async def select(cfg: "Any") -> LifecycleBackend:
+        """Return the appropriate backend based on ``cfg.backend``.
 
-        When ``base_url`` is provided, the HTTPBackend is preferred. If
-        ``sglang_cfg.manage_container`` is true, the HTTPBackend is returned
-        even when ``GET /v1/models`` fails — it will spin up the container
-        on ``load()`` instead.
+        - ``"ollama"``: always return OllamaBackend (no probe).
+        - ``"auto"``: probe Ollama first; fall back to SGLangBackend.
+        - ``"sglang"`` (or anything else): return SGLangBackend directly.
+
+        ``cfg`` is an ``InferenceCfg`` instance.
         """
-        if base_url:
-            kwargs: dict[str, Any] = {"base_url": base_url, "api_key": api_key}
-            if sglang_cfg is not None:
-                kwargs.update(
-                    manage_container=bool(getattr(sglang_cfg, "manage_container", False)),
-                    compose_file=getattr(sglang_cfg, "compose_file", None),
-                    env_file=getattr(sglang_cfg, "env_file", None),
-                    startup_timeout_seconds=int(
-                        getattr(sglang_cfg, "startup_timeout_seconds", 180)
-                    ),
-                    via_wsl=bool(getattr(sglang_cfg, "via_wsl", True)),
-                    wsl_distro=str(getattr(sglang_cfg, "wsl_distro", "Ubuntu")),
-                )
-            http = HTTPBackend(**kwargs)
-            # When manage_container is on, the container may legitimately be
-            # down right now — return the backend without probing so load()
-            # can bring it up.
-            if kwargs.get("manage_container"):
-                return http
-            try:
-                await http._list_models()
-            except Exception:
-                pass
-            else:
-                return http
-
-        try:
-            import lmstudio
-
-            if lmstudio is not None:
-                try:
-                    backend = LMStudioSDKBackend(lmstudio)
-                    await lmstudio.list_loaded_models()
-                except Exception:
-                    pass
-                else:
-                    return backend
-        except ImportError:
-            pass
-
-        if shutil.which("lms") is not None:
-            return LMSCLIBackend()
-
-        raise LifecycleBackendUnavailable(
-            "no usable lifecycle backend (HTTP, lmstudio SDK, lms CLI); "
-            "verify SGLang/LM Studio is running or set lifecycle.auto_load=false"
+        if cfg.backend == "ollama":
+            return OllamaBackend(cfg.ollama)
+        if cfg.backend == "auto" and await OllamaBackend.probe(cfg.ollama.base_url):
+            return OllamaBackend(cfg.ollama)
+        return SGLangBackend(
+            base_url=cfg.base_url,
+            api_key=cfg.api_key,
+            manage_container=cfg.sglang.manage_container,
+            compose_file=cfg.sglang.compose_file,
+            env_file=cfg.sglang.env_file,
+            startup_timeout_seconds=cfg.sglang.startup_timeout_seconds,
+            via_wsl=cfg.sglang.via_wsl,
+            wsl_distro=cfg.sglang.wsl_distro,
         )
 
 
@@ -811,11 +558,7 @@ async def doctor_check_lifecycle_backend(config: Any) -> DoctorCheck:
     """
     auto_load = bool(config.inference.lifecycle.auto_load)
     try:
-        backend = await LifecycleBackendFactory.select(
-            base_url=config.inference.base_url,
-            api_key=config.inference.api_key,
-            sglang_cfg=getattr(config.inference, "sglang", None),
-        )
+        backend = await LifecycleBackendFactory.select(config.inference)
     except LifecycleBackendUnavailable as exc:
         if auto_load:
             return DoctorCheck(
