@@ -328,8 +328,12 @@ async def run_audit(
             cp = Checkpoint.load(audit_dir)
 
             # ---- Build LM Studio client + per-file phase deps ----
+            _bt = "ollama" if config.inference.backend == "ollama" else "sglang"
             client = InferenceClient(
-                config=config.inference, bus=bus, redactor=redactor
+                config=config.inference,
+                bus=bus,
+                redactor=redactor,
+                backend_type=_bt,
             )
             # Pin the client's fingerprint from its own HTTP view of /v1/models,
             # not the lifecycle's `lms ps --json` view. The two surfaces report

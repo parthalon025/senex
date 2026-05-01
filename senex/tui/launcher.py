@@ -170,10 +170,12 @@ class LauncherScreen(Screen[None]):
         from senex.secret_redactor import SecretRedactor
         from senex.events import EventBus
 
+        _bt = "ollama" if self._config.inference.backend == "ollama" else "sglang"
         client = InferenceClient(
             config=self._config.inference,
             bus=EventBus(),
             redactor=SecretRedactor(),
+            backend_type=_bt,
         )
         try:
             loaded = await client.list_loaded_models()

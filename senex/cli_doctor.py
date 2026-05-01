@@ -190,7 +190,8 @@ def _run_async_checks(
     async def _run() -> list[tuple[str, CheckResult]]:
         bus = EventBus()
         redactor = SecretRedactor()
-        client = InferenceClient(config.inference, bus=bus, redactor=redactor)
+        _bt = "ollama" if config.inference.backend == "ollama" else "sglang"
+        client = InferenceClient(config.inference, bus=bus, redactor=redactor, backend_type=_bt)
         try:
             out.append(("lms_reachable", await check_lms_reachable(client)))
             out.append(

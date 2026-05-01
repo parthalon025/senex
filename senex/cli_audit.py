@@ -263,10 +263,12 @@ def _build_wizard_client(config: SenexConfig) -> Any:
     except ImportError:
         return None
     try:
+        _bt = "ollama" if config.inference.backend == "ollama" else "sglang"
         return InferenceClient(
             config=config.inference,
             bus=EventBus(),
             redactor=SecretRedactor(),
+            backend_type=_bt,
         )
     except Exception:  # noqa: BLE001 — defer the connect error to the wizard probe.
         return None
