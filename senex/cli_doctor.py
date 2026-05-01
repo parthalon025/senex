@@ -47,6 +47,8 @@ from senex.phases.preflight import (
     check_lifecycle_backend,
     check_lms_reachable,
     check_model_loaded_or_loadable,
+    check_ollama_model_available,
+    check_ollama_reachable,
     check_output_dir_writable,
     check_repo_path,
     check_runlock_dir_writable,
@@ -207,6 +209,18 @@ def _run_async_checks(
                 )
             )
             out.append(("streaming", await check_streaming(client, config)))
+            if config.inference.backend in ("ollama", "auto"):
+                out.append((
+                    "ollama_reachable",
+                    await check_ollama_reachable(config.inference.ollama.base_url),
+                ))
+                out.append((
+                    "ollama_model_available",
+                    await check_ollama_model_available(
+                        config.inference.ollama.base_url,
+                        config.inference.ollama.model,
+                    ),
+                ))
         finally:
             await client.aclose()
         return out
