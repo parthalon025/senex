@@ -3,23 +3,57 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "senex"
+name = "senex-audit"
 version = "1.0.2"
-description = "Local-LLM code audit tool"
+description = "Local-LLM code audit tool: thinking-MoE model + GitNexus graph context, fully offline, advisory output."
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
 requires-python = ">=3.11"
+authors = [
+  { name = "Justin McFarland", email = "justin.p.mcfarland@gmail.com" },
+]
+keywords = [
+  "llm",
+  "code-audit",
+  "static-analysis",
+  "security",
+  "cli",
+  "sglang",
+  "local-first",
+  "tui",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Information Technology",
+  "Operating System :: OS Independent",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX :: Linux",
+  "Operating System :: MacOS",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Software Development :: Quality Assurance",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: Security",
+  "Typing :: Typed",
+]
 dependencies = [
-  "openai>=1.50,<2.0",
   "pydantic>=2.5,<3",
-  "textual>=0.50",
-  "tiktoken",
-  "portalocker",
-  "detect-secrets",
-  "regex",
-  "httpx",
-  "jsonschema>=4.20",
-  "tomli-w",
-  "ulid-py",
-  "pathspec>=0.12.0",
+  "textual>=8.0,<9",
+  "tiktoken>=0.7,<1",
+  "portalocker>=2.7,<4",
+  "regex>=2024.5",
+  "httpx>=0.27,<1",
+  "jsonschema>=4.20,<5",
+  "tomli-w>=1.0,<2",
+  "python-ulid>=2.0,<4",
+  "pathspec>=0.12,<2",
 ]
 
 [project.optional-dependencies]
@@ -28,11 +62,29 @@ dev = ["pytest>=7", "pytest-asyncio>=0.21", "pytest-cov", "hypothesis", "mypy", 
 [project.scripts]
 senex = "senex.cli:main"
 
+[project.urls]
+Homepage = "https://github.com/parthalon025/senex"
+Repository = "https://github.com/parthalon025/senex"
+Issues = "https://github.com/parthalon025/senex/issues"
+Documentation = "https://github.com/parthalon025/senex#readme"
+Changelog = "https://github.com/parthalon025/senex/blob/main/CHANGELOG.md"
+
+[tool.setuptools]
+include-package-data = true
+
 [tool.setuptools.packages.find]
 include = ["senex*"]
 
 [tool.setuptools.package-data]
-senex = ["schema/*.json", "lens/**/*.toml", "lens/**/*.md", "prompts/*.md"]
+senex = [
+  "schema/*.json",
+  "lens/**/*.toml",
+  "lens/**/*.md",
+  "prompts/*.md",
+  "infra/sglang/*",
+  "infra/sglang/.env",
+  "infra/sglang/.gitignore",
+]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

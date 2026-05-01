@@ -1,10 +1,13 @@
 # senex.config.toml.example — sample config copied from spec §6.
 
+# [output] — where audit run dirs are written.
+# ``root`` defaults to ``<user-home>/senex-audits`` if omitted (the value below
+# is shown for clarity). Set an absolute path to override. senex does not prune
+# old run directories; users are responsible for retention per their own policy.
 [output]
-root              = "E:/senex-audits"
+# root              = "/home/youruser/senex-audits"
 filename_template = "{repo}/{date}-{run_id_short}"
 redact_secrets    = true
-retention_days    = 0
 
 [lens]
 name             = "correctness"
@@ -98,11 +101,17 @@ runlock_dir                     = ""
 # manage_container=true, senex runs `docker compose up -d` at audit start and
 # `down` at audit completion ("load on startup, shutdown on completion").
 # Leave manage_container=false to keep the container running between runs
-# (the default — bring it up manually via `bash infra/sglang/sglang.sh up`).
+# (the default — bring it up manually via
+# `bash senex/infra/sglang/sglang.sh up`).
+#
+# ``compose_file`` and ``env_file`` default to the bundled paths inside the
+# installed senex package (resolved via importlib.resources at load time),
+# so pip-installed users get a working stack out-of-the-box. Override only
+# if you want to point at a custom compose file outside the package.
 [lmstudio.sglang]
 manage_container        = false
-compose_file            = "infra/sglang/docker-compose.yml"
-env_file                = "infra/sglang/.env"
+# compose_file            = "/path/to/your/docker-compose.yml"
+# env_file                = "/path/to/your/.env"
 startup_timeout_seconds = 180
 via_wsl                 = true
 wsl_distro              = "Ubuntu"

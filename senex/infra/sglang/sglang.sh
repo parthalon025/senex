@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# SGLang management script — run from Windows via: wsl bash infra/sglang/sglang.sh <cmd>
-# Or from within WSL2: bash infra/sglang/sglang.sh <cmd>
+# SGLang management script — run from Windows via: wsl bash senex/infra/sglang/sglang.sh <cmd>
+# Or from within WSL2: bash senex/infra/sglang/sglang.sh <cmd>
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
