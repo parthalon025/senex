@@ -1,0 +1,50 @@
+senex
+Copyright 2026 Justin McFarland
+
+This product includes software developed by Justin McFarland and
+contributors, distributed under the Apache License, Version 2.0
+(see LICENSE).
+
+------------------------------------------------------------------------
+Third-party software invoked as subprocesses
+------------------------------------------------------------------------
+
+senex shells out to several third-party tools at runtime. These tools are
+not bundled or redistributed by senex; users install them separately.
+Their licenses are listed here for transparency. Subprocess invocation
+does not contaminate senex's own Apache-2.0 license.
+
+  * SGLang
+      Source: https://github.com/sgl-project/sglang
+      License: Apache License, Version 2.0
+      Used by senex as the default local inference server (OpenAI-compat
+      API on localhost). Invoked via Docker Compose
+      (senex/infra/sglang/).
+
+  * GitNexus
+      Source: https://github.com/parthalon025/gitnexus
+      License: PolyForm Noncommercial 1.0.0
+      Used by senex as an optional code-graph context provider. Invoked
+      via `npx gitnexus` subprocess. NOTE: PolyForm Noncommercial 1.0.0
+      restricts commercial use of GitNexus itself; commercial users of
+      senex who also wish to use GitNexus must obtain a separate
+      commercial license from the GitNexus maintainer. senex's own
+      Apache-2.0 license is not affected by this dependency because
+      GitNexus is invoked as an out-of-process tool and is not bundled.
+
+  * semgrep
+      Source: https://github.com/semgrep/semgrep
+      License: GNU Lesser General Public License v2.1 (LGPL-2.1)
+      Used by senex as an optional static-analysis tool invoked via
+      subprocess. LGPL-2.1 obligations are limited to the semgrep
+      binary itself; senex does not link against semgrep code.
+
+------------------------------------------------------------------------
+Python dependencies
+------------------------------------------------------------------------
+
+senex's Python dependencies (declared in pyproject.toml) are individually
+licensed under permissive terms (Apache-2.0, MIT, BSD, PSF, MPL-2.0).
+Each dependency ships its own license text inside its installed wheel;
+see the `*.dist-info/` directory in your site-packages for the
+authoritative copy of each license.
