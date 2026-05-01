@@ -19,7 +19,7 @@ def test_load_config_example_returns_senexconfig() -> None:
     cfg = load_config(EXAMPLE)
     assert isinstance(cfg, SenexConfig)
     assert cfg.lens.name == "correctness"
-    assert cfg.lmstudio.model == "google/gemma-4-E4B-it"
+    assert cfg.inference.model == "google/gemma-4-E4B-it"
 
 
 def test_load_config_unknown_key_raises_with_hint(tmp_path: Path) -> None:
@@ -46,7 +46,7 @@ def test_load_config_seed_random_default_true_when_omitted(tmp_path: Path) -> No
     f = tmp_path / "ok.toml"
     f.write_text("", encoding="utf-8")
     cfg = load_config(f)
-    assert cfg.lmstudio.sampling.seed_random is True
+    assert cfg.inference.sampling.seed_random is True
 
 
 def test_load_config_extra_top_level_key_raises(tmp_path: Path) -> None:
@@ -65,22 +65,22 @@ def test_resolve_config_per_repo_overrides_shadow_global() -> None:
         tui_overrides={},
     )
     # The example puts temperature=0.5 in the pensiv repo override.
-    assert repo_cfg.lmstudio.tasks.file_audit.temperature == 0.5
+    assert repo_cfg.inference.tasks.file_audit.temperature == 0.5
 
 
 def test_resolve_config_cli_overrides_shadow_repo() -> None:
     base = load_config(EXAMPLE)
-    cli = {"lmstudio": {"sampling": {"temperature": 0.9}}}
+    cli = {"inference": {"sampling": {"temperature": 0.9}}}
     out = resolve_config(base, repo_path=None, cli_overrides=cli, tui_overrides={})
-    assert out.lmstudio.sampling.temperature == 0.9
+    assert out.inference.sampling.temperature == 0.9
 
 
 def test_resolve_config_tui_overrides_shadow_cli() -> None:
     base = load_config(EXAMPLE)
-    cli = {"lmstudio": {"sampling": {"temperature": 0.9}}}
-    tui = {"lmstudio": {"sampling": {"temperature": 0.7}}}
+    cli = {"inference": {"sampling": {"temperature": 0.9}}}
+    tui = {"inference": {"sampling": {"temperature": 0.7}}}
     out = resolve_config(base, repo_path=None, cli_overrides=cli, tui_overrides=tui)
-    assert out.lmstudio.sampling.temperature == 0.7
+    assert out.inference.sampling.temperature == 0.7
 
 
 def test_resolve_config_explicit_empty_replaces_inherited() -> None:

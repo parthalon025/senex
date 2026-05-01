@@ -55,10 +55,10 @@ async def test_run_audit_no_lms_returns_external_dep_error(tmp_path: Path) -> No
     cfg_path.write_text("[lmstudio]\nmodel='google/gemma-4-26b-a4b'\n", encoding="utf-8")
 
     cfg = SenexConfig()
-    cfg.lmstudio = cfg.lmstudio.model_copy(
+    cfg.inference = cfg.inference.model_copy(
         update={"base_url": "http://127.0.0.1:1", "connect_timeout": 1, "read_timeout": 1}
     )
-    cfg.lmstudio.lifecycle = cfg.lmstudio.lifecycle.model_copy(
+    cfg.inference.lifecycle = cfg.inference.lifecycle.model_copy(
         update={"auto_load": False, "auto_unload": False, "runlock_dir": str(tmp_path / "locks")}
     )
 

@@ -106,7 +106,7 @@ async def test_select_raises_when_neither_available(monkeypatch: pytest.MonkeyPa
     """All backends absent (HTTP unreachable + SDK + CLI) -> LifecycleBackendUnavailable."""
     monkeypatch.setitem(sys.modules, "lmstudio", None)
     monkeypatch.setattr("shutil.which", lambda name: None)
-    # Don't pass base_url so HTTPBackend isn't probed.
+    # Don't pass base_url so SGLangBackend isn't probed.
     with pytest.raises(LifecycleBackendUnavailable, match="no usable lifecycle backend"):
         await LifecycleBackendFactory.select()
 
@@ -686,7 +686,7 @@ async def test_doctor_fail_when_auto_load_and_no_backend(
         AsyncMock(side_effect=LifecycleBackendUnavailable("no backend")),
     )
     cfg = SenexConfig()
-    cfg.lmstudio.lifecycle = LifecycleCfg(auto_load=True)
+    cfg.inference.lifecycle = LifecycleCfg(auto_load=True)
     result: DoctorCheck = await doctor_check_lifecycle_backend(cfg)
     assert result.name == "lmstudio_lifecycle_backend"
     assert result.status == "fail"
@@ -707,7 +707,7 @@ async def test_doctor_warn_when_no_backend_but_auto_load_false(
         AsyncMock(side_effect=LifecycleBackendUnavailable("no backend")),
     )
     cfg = SenexConfig()
-    cfg.lmstudio.lifecycle = LifecycleCfg(auto_load=False)
+    cfg.inference.lifecycle = LifecycleCfg(auto_load=False)
     result = await doctor_check_lifecycle_backend(cfg)
     assert result.status == "warn"
 
@@ -729,7 +729,7 @@ async def test_doctor_pass_when_backend_available(
         AsyncMock(return_value=fake_backend),
     )
     cfg = SenexConfig()
-    cfg.lmstudio.lifecycle = LifecycleCfg(auto_load=True)
+    cfg.inference.lifecycle = LifecycleCfg(auto_load=True)
     result = await doctor_check_lifecycle_backend(cfg)
     assert result.status == "pass"
     assert "sdk" in result.message.lower()

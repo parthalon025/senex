@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from senex.config import LmStudioCfg, SenexConfig
+from senex.config import InferenceCfg, SenexConfig
 from senex.phases.preflight import (
     CheckResult,
     CheckStatus,
@@ -223,8 +223,8 @@ def test_check_sampling_ranges_fail_temperature() -> None:
     # validates at construction time, so we patch the assembled value via
     # model_construct (skipping validation) to simulate a corrupt assembly.
     cfg = SenexConfig.model_construct()
-    cfg.lmstudio = LmStudioCfg.model_construct()
-    cfg.lmstudio.sampling = cfg.lmstudio.sampling.model_copy(update={"temperature": 5.0})
+    cfg.inference = InferenceCfg.model_construct()
+    cfg.inference.sampling = cfg.inference.sampling.model_copy(update={"temperature": 5.0})
     result = check_sampling_ranges(cfg)
     assert result.status is CheckStatus.FAIL
     assert result.exit_code == 2
@@ -245,11 +245,11 @@ def test_check_lifecycle_backend_pass_when_available(monkeypatch: pytest.MonkeyP
 
 def test_check_lifecycle_backend_warn_when_auto_load_off(monkeypatch: pytest.MonkeyPatch) -> None:
     cfg = SenexConfig()
-    cfg.lmstudio.lifecycle = cfg.lmstudio.lifecycle.model_copy(
+    cfg.inference.lifecycle = cfg.inference.lifecycle.model_copy(
         update={"auto_load": False, "auto_unload": False}
     )
     # Point HTTP probe at an unreachable endpoint so HTTPBackend reports unavailable.
-    cfg.lmstudio = cfg.lmstudio.model_copy(update={"base_url": "http://127.0.0.1:1/v1"})
+    cfg.inference = cfg.inference.model_copy(update={"base_url": "http://127.0.0.1:1/v1"})
     import shutil
 
     monkeypatch.setattr(shutil, "which", lambda name: None)
@@ -263,7 +263,7 @@ def test_check_lifecycle_backend_warn_when_auto_load_off(monkeypatch: pytest.Mon
 
 def test_check_lifecycle_backend_fail_when_auto_load_on(monkeypatch: pytest.MonkeyPatch) -> None:
     cfg = SenexConfig()
-    cfg.lmstudio = cfg.lmstudio.model_copy(update={"base_url": "http://127.0.0.1:1/v1"})
+    cfg.inference = cfg.inference.model_copy(update={"base_url": "http://127.0.0.1:1/v1"})
     import shutil
 
     monkeypatch.setattr(shutil, "which", lambda name: None)
@@ -280,7 +280,7 @@ def test_check_lifecycle_backend_fail_when_auto_load_on(monkeypatch: pytest.Monk
 
 def test_check_runlock_dir_writable_pass(tmp_path: Path) -> None:
     cfg = SenexConfig()
-    cfg.lmstudio.lifecycle = cfg.lmstudio.lifecycle.model_copy(
+    cfg.inference.lifecycle = cfg.inference.lifecycle.model_copy(
         update={"runlock_dir": str(tmp_path / "locks")}
     )
     result = check_runlock_dir_writable(cfg)
@@ -289,7 +289,7 @@ def test_check_runlock_dir_writable_pass(tmp_path: Path) -> None:
 
 def test_check_runlock_dir_writable_pass_when_default(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     cfg = SenexConfig()
-    cfg.lmstudio.lifecycle = cfg.lmstudio.lifecycle.model_copy(update={"runlock_dir": ""})
+    cfg.inference.lifecycle = cfg.inference.lifecycle.model_copy(update={"runlock_dir": ""})
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     result = check_runlock_dir_writable(cfg)
     assert result.status is CheckStatus.PASS
@@ -301,7 +301,7 @@ def test_check_runlock_dir_writable_pass_when_default(monkeypatch: pytest.Monkey
 
 
 class _FakeClient:
-    """Minimal stand-in for ``LMStudioClient`` for preflight tests."""
+    """Minimal stand-in for ``InferenceClient`` for preflight tests."""
 
     def __init__(
         self,
@@ -323,7 +323,7 @@ class _FakeClient:
             supports_streaming=True,
             supports_reasoning_effort=True,
         )
-        self._config = LmStudioCfg(
+        self._config = InferenceCfg(
             base_url=(
                 "http://192.168.1.1:1234/v1" if non_loopback else "http://localhost:1234/v1"
             ),
@@ -375,7 +375,7 @@ async def test_check_model_loaded_pass() -> None:
 @pytest.mark.asyncio
 async def test_check_model_loaded_fail_when_not_loaded_and_no_auto_load() -> None:
     cfg = SenexConfig()
-    cfg.lmstudio.lifecycle = cfg.lmstudio.lifecycle.model_copy(update={"auto_load": False})
+    cfg.inference.lifecycle = cfg.inference.lifecycle.model_copy(update={"auto_load": False})
     client = _FakeClient(models=[])
     result = await check_model_loaded_or_loadable(client, cfg)
     assert result.status is CheckStatus.FAIL

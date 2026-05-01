@@ -17,9 +17,9 @@ from typing import Any
 
 import pytest
 
-from senex.config import LmStudioCfg
+from senex.config import InferenceCfg
 from senex.events import EventBus
-from senex.inference_client import ChatMessage, LMStudioClient
+from senex.inference_client import ChatMessage, InferenceClient
 from senex.secret_redactor import SecretRedactor
 
 
@@ -39,7 +39,7 @@ def test_lmstudio_client_does_not_import_senex_tools() -> None:
 
 
 def test_lmstudio_client_has_no_iteration_methods() -> None:
-    """LMStudioClient MUST NOT define a tool-loop / iteration / compaction surface."""
+    """InferenceClient MUST NOT define a tool-loop / iteration / compaction surface."""
     src = (Path(__file__).resolve().parents[2] / "senex" / "inference_client.py").read_text(
         encoding="utf-8"
     )
@@ -52,16 +52,16 @@ def test_lmstudio_client_has_no_iteration_methods() -> None:
 
 def test_chat_docstring_documents_round_trip_boundary() -> None:
     """chat() docstring MUST cite the single-round-trip boundary and ToolLoop."""
-    doc = LMStudioClient.chat.__doc__ or ""
+    doc = InferenceClient.chat.__doc__ or ""
     assert "ONE chat-completion round-trip" in doc
     assert "senex.tools.loop.ToolLoop" in doc
 
 
 def test_lmstudio_client_implements_llm_client_protocol() -> None:
-    """LMStudioClient satisfies the senex.llm_client.LLMClient structural protocol."""
+    """InferenceClient satisfies the senex.llm_client.LLMClient structural protocol."""
     from senex.llm_client import LLMClient
 
-    cfg = LmStudioCfg(
+    cfg = InferenceCfg(
         base_url="http://localhost:1234/v1",
         api_key="x",
         connect_timeout=1,
@@ -73,7 +73,7 @@ def test_lmstudio_client_implements_llm_client_protocol() -> None:
         token_budget_pct=0.9,
         fingerprint_recheck_interval_s=60.0,
     )
-    inst = LMStudioClient(config=cfg, bus=EventBus(), redactor=SecretRedactor())
+    inst = InferenceClient(config=cfg, bus=EventBus(), redactor=SecretRedactor())
     assert isinstance(inst, LLMClient)
 
 
@@ -88,8 +88,8 @@ def fixture_dir() -> Path:
 
 
 @pytest.fixture
-def test_cfg() -> LmStudioCfg:
-    return LmStudioCfg(
+def test_cfg() -> InferenceCfg:
+    return InferenceCfg(
         base_url="http://localhost:1234/v1",
         api_key="lm-studio-test",
         connect_timeout=1,
@@ -125,8 +125,8 @@ def audit_schema() -> dict[str, Any]:
 
 
 @pytest.fixture
-def client(test_cfg: LmStudioCfg, bus: EventBus, redactor: SecretRedactor) -> LMStudioClient:
-    return LMStudioClient(config=test_cfg, bus=bus, redactor=redactor)
+def client(test_cfg: InferenceCfg, bus: EventBus, redactor: SecretRedactor) -> InferenceClient:
+    return InferenceClient(config=test_cfg, bus=bus, redactor=redactor)
 
 
 # --- Task 3.1: basic chat + schema validation --------------------------------
@@ -135,7 +135,7 @@ def client(test_cfg: LmStudioCfg, bus: EventBus, redactor: SecretRedactor) -> LM
 async def test_chat_returns_validated_response(
     respx_mock: Any,
     fixture_dir: Path,
-    client: LMStudioClient,
+    client: InferenceClient,
     audit_schema: dict[str, Any],
 ) -> None:
     payload = json.loads((fixture_dir / "simple_audit.json").read_text(encoding="utf-8"))
@@ -225,7 +225,7 @@ def captured_events(bus: EventBus) -> list[Any]:
 @pytest.mark.asyncio
 async def test_stream_emits_thinking_lifecycle_events(
     respx_mock: Any,
-    client: LMStudioClient,
+    client: InferenceClient,
     captured_events: list[Any],
     audit_schema: dict[str, Any],
 ) -> None:
@@ -264,7 +264,7 @@ async def test_stream_emits_thinking_lifecycle_events(
 @pytest.mark.asyncio
 async def test_thinking_tick_coalesces_at_256_tokens_or_500ms(
     respx_mock: Any,
-    client: LMStudioClient,
+    client: InferenceClient,
     captured_events: list[Any],
     audit_schema: dict[str, Any],
 ) -> None:
@@ -294,7 +294,7 @@ async def test_thinking_tick_coalesces_at_256_tokens_or_500ms(
 @pytest.mark.asyncio
 async def test_per_turn_counter_resets_between_thinking_starts(
     respx_mock: Any,
-    client: LMStudioClient,
+    client: InferenceClient,
     captured_events: list[Any],
     audit_schema: dict[str, Any],
 ) -> None:
@@ -333,7 +333,7 @@ async def test_per_turn_counter_resets_between_thinking_starts(
 @pytest.mark.asyncio
 async def test_think_tag_stripped_from_content(
     respx_mock: Any,
-    client: LMStudioClient,
+    client: InferenceClient,
     audit_schema: dict[str, Any],
 ) -> None:
     payload = {
@@ -367,7 +367,7 @@ async def test_think_tag_stripped_from_content(
 @pytest.mark.asyncio
 async def test_interleaved_think_tags_stripped(
     respx_mock: Any,
-    client: LMStudioClient,
+    client: InferenceClient,
 ) -> None:
     payload = {
         "id": "x", "model": "m",
@@ -402,7 +402,7 @@ async def test_interleaved_think_tags_stripped(
 @pytest.mark.asyncio
 async def test_total_thinking_tokens_equals_sum_of_ticks(
     respx_mock: Any,
-    client: LMStudioClient,
+    client: InferenceClient,
     captured_events: list[Any],
     audit_schema: dict[str, Any],
 ) -> None:
@@ -487,7 +487,7 @@ def _success_payload(content: str) -> dict[str, Any]:
 @pytest.mark.asyncio
 async def test_schema_fallback_on_400_schema_error(
     respx_mock: Any,
-    client: LMStudioClient,
+    client: InferenceClient,
     audit_schema: dict[str, Any],
 ) -> None:
     """First request gets 400 schema error; client falls back to json_object.
@@ -527,7 +527,7 @@ async def test_schema_fallback_on_400_schema_error(
 @pytest.mark.asyncio
 async def test_schema_fallback_caches_decision_per_session(
     respx_mock: Any,
-    client: LMStudioClient,
+    client: InferenceClient,
     audit_schema: dict[str, Any],
 ) -> None:
     """After first fallback, subsequent calls skip the json_schema probe.
@@ -566,7 +566,7 @@ async def test_schema_fallback_caches_decision_per_session(
 @pytest.mark.asyncio
 async def test_schema_fallback_400_unrelated_does_not_fallback(
     respx_mock: Any,
-    client: LMStudioClient,
+    client: InferenceClient,
     audit_schema: dict[str, Any],
 ) -> None:
     """A non-schema 400 (e.g. context length) is wrapped in SchemaNegotiationFailed.
@@ -595,7 +595,7 @@ async def test_schema_fallback_400_unrelated_does_not_fallback(
 @pytest.mark.asyncio
 async def test_jinja_template_error_wrapped_as_schema_negotiation_failed(
     respx_mock: Any,
-    client: LMStudioClient,
+    client: InferenceClient,
     audit_schema: dict[str, Any],
 ) -> None:
     """qwen3 jinja template 400 is wrapped as SchemaNegotiationFailed, not uncaught.
@@ -625,7 +625,7 @@ async def test_jinja_template_error_wrapped_as_schema_negotiation_failed(
 @pytest.mark.asyncio
 async def test_schema_fallback_on_lazy_grammar_400(
     respx_mock: Any,
-    client: LMStudioClient,
+    client: InferenceClient,
     audit_schema: dict[str, Any],
 ) -> None:
     """LM Studio 'Cannot combine structured output constraints with lazy grammar'
@@ -666,7 +666,7 @@ async def test_schema_fallback_on_lazy_grammar_400(
 @pytest.mark.asyncio
 async def test_post_hoc_validation_failure_raises_LMSResponseSchemaInvalid(
     respx_mock: Any,
-    client: LMStudioClient,
+    client: InferenceClient,
     audit_schema: dict[str, Any],
 ) -> None:
     """In json_object mode a malformed schema_version triggers LMSResponseSchemaInvalid."""
@@ -689,7 +689,7 @@ async def test_post_hoc_validation_failure_raises_LMSResponseSchemaInvalid(
 @pytest.mark.asyncio
 async def test_invalid_json_after_think_strip_raises_LMSResponseInvalidJSON(
     respx_mock: Any,
-    client: LMStudioClient,
+    client: InferenceClient,
     audit_schema: dict[str, Any],
 ) -> None:
     """Content that isn't valid JSON after think-strip raises LMSResponseInvalidJSON."""
@@ -710,7 +710,7 @@ async def test_invalid_json_after_think_strip_raises_LMSResponseInvalidJSON(
 @pytest.mark.asyncio
 async def test_schema_invalid_retried_once_with_stricter_prompt(
     respx_mock: Any,
-    client: LMStudioClient,
+    client: InferenceClient,
     audit_schema: dict[str, Any],
 ) -> None:
     """First response fails schema validation; second (with strict preamble) succeeds."""
@@ -751,7 +751,7 @@ from senex.inference_errors import TokenBudgetExceeded  # noqa: E402
 
 
 def test_count_tokens_returns_positive_for_nonempty_messages(
-    client: LMStudioClient,
+    client: InferenceClient,
 ) -> None:
     msgs = [
         ChatMessage(role="system", content="be concise"),
@@ -762,7 +762,7 @@ def test_count_tokens_returns_positive_for_nonempty_messages(
 
 
 def test_count_tokens_grows_monotonically_with_content_length(
-    client: LMStudioClient,
+    client: InferenceClient,
 ) -> None:
     short = [ChatMessage(role="user", content="x" * 10)]
     long = [ChatMessage(role="user", content="x" * 100)]
@@ -770,7 +770,7 @@ def test_count_tokens_grows_monotonically_with_content_length(
 
 
 def test_count_tokens_caches_encoder_per_model(
-    client: LMStudioClient, monkeypatch: pytest.MonkeyPatch
+    client: InferenceClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Two calls with the same model_id → tiktoken.get_encoding called once."""
     import tiktoken
@@ -792,7 +792,7 @@ def test_count_tokens_caches_encoder_per_model(
 
 
 def test_count_tokens_unknown_model_falls_back_to_chars_div_4(
-    client: LMStudioClient, monkeypatch: pytest.MonkeyPatch
+    client: InferenceClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """When tiktoken cannot supply an encoder, count_tokens uses len/4 + per-msg overhead."""
     import tiktoken
@@ -816,7 +816,7 @@ def test_count_tokens_unknown_model_falls_back_to_chars_div_4(
 @pytest.mark.asyncio
 async def test_chat_raises_token_budget_exceeded_above_90_percent(
     respx_mock: Any,
-    test_cfg: LmStudioCfg,
+    test_cfg: InferenceCfg,
     bus: EventBus,
     redactor: SecretRedactor,
     audit_schema: dict[str, Any],
@@ -824,7 +824,7 @@ async def test_chat_raises_token_budget_exceeded_above_90_percent(
     """Pre-flight token budget fires BEFORE any HTTP request."""
     # context_window=1000 → budget=900. Build messages well above that.
     tight_cfg = test_cfg.model_copy(update={"context_window": 1000})
-    tight_client = LMStudioClient(config=tight_cfg, bus=bus, redactor=redactor)
+    tight_client = InferenceClient(config=tight_cfg, bus=bus, redactor=redactor)
 
     # ~6000 chars of payload → ≥1500 tiktoken tokens → above 900 budget.
     huge = "lorem ipsum " * 500
@@ -868,7 +868,7 @@ def sleep_recorder(monkeypatch: pytest.MonkeyPatch) -> list[float]:
 @pytest.mark.asyncio
 async def test_5xx_retried_with_correct_backoff(
     respx_mock: Any,
-    client: LMStudioClient,
+    client: InferenceClient,
     audit_schema: dict[str, Any],
     sleep_recorder: list[float],
 ) -> None:
@@ -894,7 +894,7 @@ async def test_5xx_retried_with_correct_backoff(
 @pytest.mark.asyncio
 async def test_5xx_exhausted_after_3_retries_reraises(
     respx_mock: Any,
-    client: LMStudioClient,
+    client: InferenceClient,
     audit_schema: dict[str, Any],
     sleep_recorder: list[float],
 ) -> None:
@@ -915,7 +915,7 @@ async def test_5xx_exhausted_after_3_retries_reraises(
 @pytest.mark.asyncio
 async def test_4xx_not_retried(
     respx_mock: Any,
-    client: LMStudioClient,
+    client: InferenceClient,
     audit_schema: dict[str, Any],
     sleep_recorder: list[float],
 ) -> None:
@@ -936,7 +936,7 @@ async def test_4xx_not_retried(
 @pytest.mark.asyncio
 async def test_read_timeout_retried_like_5xx(
     respx_mock: Any,
-    client: LMStudioClient,
+    client: InferenceClient,
     audit_schema: dict[str, Any],
     sleep_recorder: list[float],
 ) -> None:
@@ -961,7 +961,7 @@ async def test_read_timeout_retried_like_5xx(
 @pytest.mark.asyncio
 async def test_connect_error_raises_LMSConnectionLost(
     respx_mock: Any,
-    client: LMStudioClient,
+    client: InferenceClient,
     audit_schema: dict[str, Any],
     sleep_recorder: list[float],
 ) -> None:
@@ -983,7 +983,7 @@ async def test_connect_error_raises_LMSConnectionLost(
 @pytest.mark.asyncio
 async def test_reprobe_until_alive_polls_models_every_10s(
     respx_mock: Any,
-    client: LMStudioClient,
+    client: InferenceClient,
     sleep_recorder: list[float],
 ) -> None:
     """ConnectError ×2 then 200 on /v1/models; two sleeps of 10s, returns clean."""
@@ -1003,7 +1003,7 @@ async def test_reprobe_until_alive_polls_models_every_10s(
 @pytest.mark.asyncio
 async def test_reprobe_until_alive_bounded_by_max_iterations(
     respx_mock: Any,
-    client: LMStudioClient,
+    client: InferenceClient,
     sleep_recorder: list[float],
 ) -> None:
     """After max_iterations failed probes, raise LMSConnectionLost (§3 conventions)."""
@@ -1021,7 +1021,7 @@ async def test_reprobe_until_alive_bounded_by_max_iterations(
 @pytest.mark.asyncio
 async def test_schema_negotiation_failed_when_both_modes_refused(
     respx_mock: Any,
-    client: LMStudioClient,
+    client: InferenceClient,
     audit_schema: dict[str, Any],
 ) -> None:
     """Both json_schema and json_object 4xx → SchemaNegotiationFailed.
@@ -1066,7 +1066,7 @@ _READ_FILE_TOOL: dict[str, Any] = {
 @pytest.mark.asyncio
 async def test_chat_with_tools_returns_tool_calls(
     respx_mock: Any,
-    client: LMStudioClient,
+    client: InferenceClient,
     audit_schema: dict[str, Any],
 ) -> None:
     """tool_calls populated; finish_reason=tool_calls; no recursion."""
@@ -1116,7 +1116,7 @@ async def test_chat_with_tools_returns_tool_calls(
 @pytest.mark.asyncio
 async def test_chat_with_tools_passes_tools_and_tool_choice_to_request(
     respx_mock: Any,
-    client: LMStudioClient,
+    client: InferenceClient,
     audit_schema: dict[str, Any],
 ) -> None:
     """Request body MUST contain tools verbatim and tool_choice='auto'."""
@@ -1148,7 +1148,7 @@ async def test_chat_with_tools_passes_tools_and_tool_choice_to_request(
 @pytest.mark.asyncio
 async def test_chat_with_tools_and_schema_omits_response_format(
     respx_mock: Any,
-    client: LMStudioClient,
+    client: InferenceClient,
     audit_schema: dict[str, Any],
 ) -> None:
     """v1.0.1 fix: when tools AND schema are both supplied, the client must
@@ -1207,7 +1207,7 @@ async def test_chat_with_tools_and_schema_omits_response_format(
 @pytest.mark.asyncio
 async def test_strict_json_schema_false_uses_json_object_when_tools_none(
     respx_mock: Any,
-    client: LMStudioClient,
+    client: InferenceClient,
     audit_schema: dict[str, Any],
 ) -> None:
     """v1.0.2 fix: with ``strict_json_schema=False`` (the default) and
@@ -1279,7 +1279,7 @@ async def test_strict_json_schema_false_uses_json_object_when_tools_none(
 @pytest.mark.asyncio
 async def test_chat_without_tools_omits_tools_field(
     respx_mock: Any,
-    client: LMStudioClient,
+    client: InferenceClient,
     audit_schema: dict[str, Any],
 ) -> None:
     """When tools=None or [] the request MUST NOT include 'tools' or 'tool_choice'."""
@@ -1315,7 +1315,7 @@ async def test_chat_without_tools_omits_tools_field(
 @pytest.mark.asyncio
 async def test_chat_streamed_tool_calls_assembled_correctly(
     respx_mock: Any,
-    client: LMStudioClient,
+    client: InferenceClient,
     audit_schema: dict[str, Any],
 ) -> None:
     """SSE delivers tool_calls deltas progressively; final arguments must be assembled."""
@@ -1354,7 +1354,7 @@ from senex.inference_client import LoadedModelInfo  # noqa: E402
 from senex.inference_errors import FingerprintChanged  # noqa: E402
 
 
-def test_compute_fingerprint_canonical(client: LMStudioClient) -> None:
+def test_compute_fingerprint_canonical(client: InferenceClient) -> None:
     """Byte-exact: sha256 of compact JSON list ['gemma-4','Q4_K_M','abc123']."""
     info = LoadedModelInfo(
         id="gemma-4", quantization="Q4_K_M", path="/m", digest="abc123"
@@ -1365,7 +1365,7 @@ def test_compute_fingerprint_canonical(client: LMStudioClient) -> None:
 
 
 def test_compute_fingerprint_missing_quant_uses_empty_string(
-    client: LMStudioClient,
+    client: InferenceClient,
 ) -> None:
     """quantization='' produces a stable hash; no crash."""
     info = LoadedModelInfo(id="m", quantization="", path="/m", digest="d")
@@ -1378,7 +1378,7 @@ def test_compute_fingerprint_missing_quant_uses_empty_string(
 
 
 def test_compute_fingerprint_missing_digest_uses_unknown_sentinel(
-    client: LMStudioClient,
+    client: InferenceClient,
 ) -> None:
     """When digest is empty, 'unknown' is baked into the canonical tuple."""
     info = LoadedModelInfo(id="m", quantization="Q4", path="", digest="")
@@ -1390,7 +1390,7 @@ def test_compute_fingerprint_missing_digest_uses_unknown_sentinel(
 @pytest.mark.asyncio
 async def test_per_call_fingerprint_mismatch_raises_FingerprintChanged(
     respx_mock: Any,
-    client: LMStudioClient,
+    client: InferenceClient,
     audit_schema: dict[str, Any],
     captured_events: list[Any],
 ) -> None:
@@ -1442,7 +1442,7 @@ async def test_per_call_fingerprint_mismatch_raises_FingerprintChanged(
 @pytest.mark.asyncio
 async def test_per_call_fingerprint_match_proceeds_silently(
     respx_mock: Any,
-    client: LMStudioClient,
+    client: InferenceClient,
     audit_schema: dict[str, Any],
 ) -> None:
     """Pinned matches probe → no event published; chat returns normally."""
@@ -1498,7 +1498,7 @@ async def test_per_call_fingerprint_match_proceeds_silently(
 
 @pytest.mark.asyncio
 async def test_list_loaded_models_parses_response(
-    respx_mock: Any, client: LMStudioClient
+    respx_mock: Any, client: InferenceClient
 ) -> None:
     """GET /v1/models → list[LoadedModelInfo]; preserves id/quantization/path/digest."""
     respx_mock.get("http://localhost:1234/v1/models").respond(
@@ -1530,7 +1530,7 @@ async def test_list_loaded_models_parses_response(
 
 @pytest.mark.asyncio
 async def test_list_loaded_models_unreachable_raises_LMSConnectionLost(
-    respx_mock: Any, client: LMStudioClient
+    respx_mock: Any, client: InferenceClient
 ) -> None:
     """ConnectError on /v1/models → LMSConnectionLost."""
     respx_mock.get("http://localhost:1234/v1/models").mock(
@@ -1542,7 +1542,7 @@ async def test_list_loaded_models_unreachable_raises_LMSConnectionLost(
 
 @pytest.mark.asyncio
 async def test_probe_capabilities_full_support(
-    respx_mock: Any, client: LMStudioClient
+    respx_mock: Any, client: InferenceClient
 ) -> None:
     """200 SSE → all four capability flags True."""
     sse_chunks = (
@@ -1563,7 +1563,7 @@ async def test_probe_capabilities_full_support(
 
 @pytest.mark.asyncio
 async def test_probe_capabilities_tools_unsupported(
-    respx_mock: Any, client: LMStudioClient
+    respx_mock: Any, client: InferenceClient
 ) -> None:
     """400 mentioning 'tools' (not schema) → supports_tools=False."""
     respx_mock.post("http://localhost:1234/v1/chat/completions").respond(
@@ -1577,7 +1577,7 @@ async def test_probe_capabilities_tools_unsupported(
 
 @pytest.mark.asyncio
 async def test_probe_capabilities_schema_with_tools_unsupported(
-    respx_mock: Any, client: LMStudioClient
+    respx_mock: Any, client: InferenceClient
 ) -> None:
     """400 mentioning response_format/json_schema → tools True, schema_with_tools False."""
     respx_mock.post("http://localhost:1234/v1/chat/completions").respond(
@@ -1595,7 +1595,7 @@ async def test_probe_capabilities_schema_with_tools_unsupported(
 
 @pytest.mark.asyncio
 async def test_probe_capabilities_cached(
-    respx_mock: Any, client: LMStudioClient
+    respx_mock: Any, client: InferenceClient
 ) -> None:
     """Second probe call hits zero requests (cache)."""
     sse_chunks = (
@@ -1640,7 +1640,7 @@ def _payload_with_content(
 
 @pytest.mark.asyncio
 async def test_ansi_stripped_from_content(
-    respx_mock: Any, client: LMStudioClient
+    respx_mock: Any, client: InferenceClient
 ) -> None:
     """\\x1b[31m...\\x1b[0m CSI sequences must be stripped from content."""
     raw = "\x1b[31mERROR\x1b[0m: failed"
@@ -1658,7 +1658,7 @@ async def test_ansi_stripped_from_content(
 
 @pytest.mark.asyncio
 async def test_ansi_osc_sequence_stripped_from_content(
-    respx_mock: Any, client: LMStudioClient
+    respx_mock: Any, client: InferenceClient
 ) -> None:
     """OSC sequences (\\x1b]...\\x07) must also be stripped."""
     raw = "\x1b]0;title\x07hello"
@@ -1676,7 +1676,7 @@ async def test_ansi_osc_sequence_stripped_from_content(
 
 @pytest.mark.asyncio
 async def test_ansi_NOT_stripped_from_reasoning_content(
-    respx_mock: Any, client: LMStudioClient
+    respx_mock: Any, client: InferenceClient
 ) -> None:
     """reasoning_content is informational; ANSI should survive (per §SEC-7)."""
     raw_reasoning = "thinking \x1b[33mhighlighted\x1b[0m phase"
@@ -1694,7 +1694,7 @@ async def test_ansi_NOT_stripped_from_reasoning_content(
 
 @pytest.mark.asyncio
 async def test_ansi_NOT_stripped_from_tool_call_arguments(
-    respx_mock: Any, client: LMStudioClient
+    respx_mock: Any, client: InferenceClient
 ) -> None:
     """Tool call arguments are structured input; do not corrupt them."""
     raw_args = '{"path": "x\\u001b[31my\\u001b[0m"}'
@@ -1723,7 +1723,7 @@ async def test_ansi_NOT_stripped_from_tool_call_arguments(
 
 @pytest.mark.asyncio
 async def test_aws_key_redacted_from_content(
-    respx_mock: Any, client: LMStudioClient
+    respx_mock: Any, client: InferenceClient
 ) -> None:
     """AWS access keys in content must be replaced before reaching the caller."""
     raw = "key=AKIAIOSFODNN7EXAMPLE"
@@ -1742,7 +1742,7 @@ async def test_aws_key_redacted_from_content(
 
 @pytest.mark.asyncio
 async def test_secret_redacted_from_reasoning_content(
-    respx_mock: Any, client: LMStudioClient
+    respx_mock: Any, client: InferenceClient
 ) -> None:
     """Secrets in reasoning_content must also be redacted."""
     raw_reasoning = "considering AKIAIOSFODNN7EXAMPLE for the example"
@@ -1761,7 +1761,7 @@ async def test_secret_redacted_from_reasoning_content(
 
 @pytest.mark.asyncio
 async def test_secret_redacted_from_tool_call_arguments(
-    respx_mock: Any, client: LMStudioClient
+    respx_mock: Any, client: InferenceClient
 ) -> None:
     """Tool-call arguments containing secrets must be redacted before return."""
     raw_args = '{"token": "ghp_abcdefghijklmnopqrstuvwxyzABCDEF0123"}'
@@ -1792,7 +1792,7 @@ async def test_secret_redacted_from_tool_call_arguments(
 
 @pytest.mark.asyncio
 async def test_secret_redacted_before_caller_observes_response(
-    respx_mock: Any, client: LMStudioClient
+    respx_mock: Any, client: InferenceClient
 ) -> None:
     """ChatResponse fields are post-redaction; the caller never sees raw secrets."""
     raw = "snippet AKIAIOSFODNN7EXAMPLE in body"
@@ -1812,7 +1812,7 @@ async def test_secret_redacted_before_caller_observes_response(
 
 @pytest.mark.asyncio
 async def test_redaction_order_strip_then_redact(
-    respx_mock: Any, client: LMStudioClient
+    respx_mock: Any, client: InferenceClient
 ) -> None:
     """<think>...</think> is stripped first; ANSI then; redaction last."""
     # Secret hidden inside <think> tags should be removed by the strip; the

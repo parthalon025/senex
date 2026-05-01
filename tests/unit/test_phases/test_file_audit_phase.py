@@ -64,7 +64,7 @@ _VALID_RESPONSE_DICT: dict[str, Any] = {
 
 
 class FakeClient:
-    """Minimal LMStudioClient stand-in for FileAuditPhase tests."""
+    """Minimal InferenceClient stand-in for FileAuditPhase tests."""
 
     def __init__(
         self,
@@ -73,10 +73,10 @@ class FakeClient:
         context_window: int = 32768,
         token_budget_pct: float = 0.9,
     ) -> None:
-        from senex.config import LmStudioCfg
+        from senex.config import InferenceCfg
 
         self._responses = list(responses or [])
-        self._config = LmStudioCfg(
+        self._config = InferenceCfg(
             context_window=context_window,
             token_budget_pct=token_budget_pct,
         )
@@ -192,7 +192,7 @@ def _setup_phase(
         return _NoCompact()
 
     cfg = SenexConfig()
-    cfg.lmstudio.thinking = cfg.lmstudio.thinking.model_copy(
+    cfg.inference.thinking = cfg.inference.thinking.model_copy(
         update={"save_traces": save_traces}
     )
 
@@ -296,8 +296,8 @@ async def test_token_budget_exceeded_writes_skipped(tmp_path: Path) -> None:
     client = FakeClient(responses=[], context_window=64, token_budget_pct=0.9)
     phase, bus, cb, captured, state = _setup_phase(tmp_path, client, [f1])
     cfg = SenexConfig()
-    cfg.lmstudio.context_window = 64
-    cfg.lmstudio.token_budget_pct = 0.9
+    cfg.inference.context_window = 64
+    cfg.inference.token_budget_pct = 0.9
     out = await phase.do_work(state, Lens.load("correctness"), cfg, bus, cb)
     assert out["skipped"] == ["huge.py"]
     err = [e for e in captured if isinstance(e, FileError) and e.error_kind == "token_budget"]
@@ -576,7 +576,7 @@ async def test_thinking_trace_written_when_enabled(tmp_path: Path) -> None:
         tmp_path, client, [f1], save_traces=True
     )
     cfg = SenexConfig()
-    cfg.lmstudio.thinking = cfg.lmstudio.thinking.model_copy(update={"save_traces": True})
+    cfg.inference.thinking = cfg.inference.thinking.model_copy(update={"save_traces": True})
     await phase.do_work(state, Lens.load("correctness"), cfg, bus, cb)
     assert (phase._audit_dir / "main.py.thinking.md").exists()
 
@@ -675,7 +675,7 @@ async def test_thinking_trace_not_written_when_disabled(tmp_path: Path) -> None:
         tmp_path, client, [f1], save_traces=False
     )
     cfg = SenexConfig()
-    cfg.lmstudio.thinking = cfg.lmstudio.thinking.model_copy(
+    cfg.inference.thinking = cfg.inference.thinking.model_copy(
         update={"save_traces": False}
     )
     await phase.do_work(state, Lens.load("correctness"), cfg, bus, cb)

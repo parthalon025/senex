@@ -48,7 +48,7 @@ from senex.checkpoint import (
 from senex.events import EventBus, RunComplete, RunStart
 from senex.findings_partial import FindingsPartialWriter
 from senex.graph_awareness import GitNexusCLIProvider
-from senex.inference_client import LMStudioClient
+from senex.inference_client import InferenceClient
 from senex.inference_lifecycle import (
     FingerprintMismatch,
     Lifecycle,
@@ -133,17 +133,17 @@ async def lifecycle_acquire_or_resume(
         ModelLoadFailed / ModelLoadTimeout: backend load failed.
     """
     backend = await LifecycleBackendFactory.select(
-        base_url=config.lmstudio.base_url,
-        api_key=config.lmstudio.api_key,
-        sglang_cfg=config.lmstudio.sglang,
+        base_url=config.inference.base_url,
+        api_key=config.inference.api_key,
+        sglang_cfg=config.inference.sglang,
     )
     lifecycle = Lifecycle(
         backend=backend,
         bus=bus,
-        config=config.lmstudio.lifecycle,
+        config=config.inference.lifecycle,
         redactor=redactor,
     )
-    model_id = config.lmstudio.model
+    model_id = config.inference.model
     loaded_by_us = False
     info: ModelInfo
 
@@ -153,7 +153,7 @@ async def lifecycle_acquire_or_resume(
             run_id=run_id,
             runlock=RunLock,
             checkpoint_fingerprint=checkpoint_fingerprint,
-            allow_mixed=config.lmstudio.lifecycle.allow_mixed,
+            allow_mixed=config.inference.lifecycle.allow_mixed,
         )
         # Resume can never own the load (defense-in-depth in lifecycle).
         loaded_by_us = False
@@ -162,7 +162,7 @@ async def lifecycle_acquire_or_resume(
             model_id=model_id,
             run_id=run_id,
             runlock=RunLock,
-            auto_load=config.lmstudio.lifecycle.auto_load,
+            auto_load=config.inference.lifecycle.auto_load,
         )
 
     try:
@@ -173,7 +173,7 @@ async def lifecycle_acquire_or_resume(
                 model_id=model_id,
                 run_id=run_id,
                 runlock=RunLock,
-                auto_unload=config.lmstudio.lifecycle.auto_unload,
+                auto_unload=config.inference.lifecycle.auto_unload,
                 loaded_by_us=loaded_by_us,
                 resumed=resume,
             )
@@ -236,7 +236,7 @@ async def run_audit(
     registry = ToolRegistry()
     register_default_tools(registry)
     enabled_tools = lens.openai_tools_for(
-        registry=registry, config_subset=config.lmstudio.tools.enabled_tools
+        registry=registry, config_subset=config.inference.tools.enabled_tools
     )
     # Compute tool_pack_hash; with the default pack registered, every lens-declared
     # tool is present and the hash is stable across runs (resume discipline §8.5).
@@ -332,8 +332,8 @@ async def run_audit(
             cp = Checkpoint.load(audit_dir)
 
             # ---- Build LM Studio client + per-file phase deps ----
-            client = LMStudioClient(
-                config=config.lmstudio, bus=bus, redactor=redactor
+            client = InferenceClient(
+                config=config.inference, bus=bus, redactor=redactor
             )
             # Pin the client's fingerprint from its own HTTP view of /v1/models,
             # not the lifecycle's `lms ps --json` view. The two surfaces report
@@ -345,7 +345,7 @@ async def run_audit(
             try:
                 _http_models = await client.list_loaded_models()
                 _target = next(
-                    (m for m in _http_models if m.id == config.lmstudio.model),
+                    (m for m in _http_models if m.id == config.inference.model),
                     None,
                 )
                 if _target is not None:
@@ -385,11 +385,11 @@ async def run_audit(
                     schema_path=Path(__file__).parent
                     / "schema"
                     / "compaction_response.schema.json",
-                    config=config.lmstudio.compaction,
+                    config=config.inference.compaction,
                     bus=bus,
                     run_id=run_id_full,
                     path=file,
-                    model_id=config.lmstudio.model,
+                    model_id=config.inference.model,
                     redactor=redactor,
                 )
 
@@ -399,7 +399,7 @@ async def run_audit(
                 run_id=run_id_full,
                 run_id_short=run_id_short,
                 audit_dir=str(audit_dir),
-                model=config.lmstudio.model,
+                model=config.inference.model,
                 model_fingerprint=model_info.fingerprint,
                 lens=lens.name,
                 lens_version=lens.version,
@@ -457,7 +457,7 @@ async def run_audit(
                     run_id=run_id_full,
                     repo=str(repo),
                     audit_dir=str(audit_dir),
-                    model=config.lmstudio.model,
+                    model=config.inference.model,
                     lens=lens.name,
                     lens_version=lens.version,
                     config_hash=config_hash,

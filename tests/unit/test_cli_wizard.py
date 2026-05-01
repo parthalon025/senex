@@ -238,7 +238,7 @@ def test_wizard_confirm_yes_returns_runtime_config(tmp_path: Path) -> None:
     cfg, repo_a, _ = _two_repo_config(tmp_path)
     cfg = SenexConfig(
         repos=cfg.repos,
-        lmstudio=cfg.lmstudio.model_copy(update={"model": "m1"}),
+        inference=cfg.inference.model_copy(update={"model": "m1"}),
     )
     client = _fake_client(["m1", "m2"])
     # 1=repo  ""=scan_subdir  ""=default model  ""=ctx_window  ""=effort  ""=include_tests N  ""=thinking Y  ""=confirm Y
@@ -246,7 +246,7 @@ def test_wizard_confirm_yes_returns_runtime_config(tmp_path: Path) -> None:
     stdout = io.StringIO()
     rt = interactive_audit_setup(cfg, client, stdin=stdin, stdout=stdout)
     assert rt.repo == repo_a
-    assert rt.config.lmstudio.model == "m1"
+    assert rt.config.inference.model == "m1"
 
 
 def test_wizard_confirm_no_raises_cancelled(tmp_path: Path) -> None:
@@ -256,7 +256,7 @@ def test_wizard_confirm_no_raises_cancelled(tmp_path: Path) -> None:
     cfg, repo_a, _ = _two_repo_config(tmp_path)
     cfg = SenexConfig(
         repos=cfg.repos,
-        lmstudio=cfg.lmstudio.model_copy(update={"model": "m1"}),
+        inference=cfg.inference.model_copy(update={"model": "m1"}),
     )
     client = _fake_client(["m1"])
     # 1=repo  ""=default model  ""=ctx_window  ""=effort  ""=tests-N  ""=thinking-Y  n=confirm
@@ -373,7 +373,7 @@ def test_wizard_effort_and_ctx_propagate_to_config(tmp_path: Path) -> None:
     cfg, repo_a, _ = _two_repo_config(tmp_path)
     cfg = SenexConfig(
         repos=cfg.repos,
-        lmstudio=cfg.lmstudio.model_copy(update={"model": "m1"}),
+        inference=cfg.inference.model_copy(update={"model": "m1"}),
     )
     # Two models forces the menu (single-served-model fast path skips it).
     client = _fake_client(["m1", "m2"])
@@ -381,8 +381,8 @@ def test_wizard_effort_and_ctx_propagate_to_config(tmp_path: Path) -> None:
     stdin = io.StringIO("1\n\n\n2\n3\n\n\n\n")
     stdout = io.StringIO()
     rt = interactive_audit_setup(cfg, client, stdin=stdin, stdout=stdout)
-    assert rt.config.lmstudio.context_window == 16384
-    assert rt.config.lmstudio.thinking.effort == "low"
+    assert rt.config.inference.context_window == 16384
+    assert rt.config.inference.thinking.effort == "low"
 
 
 # ---------------------------------------------------------------------------

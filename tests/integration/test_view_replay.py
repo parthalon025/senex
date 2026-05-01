@@ -107,7 +107,7 @@ async def test_view_offline_no_lms_call(audit_dir: Path) -> None:
         raise LMSConnectionLost("never available")
 
     with patch(
-        "senex.inference_client.LMStudioClient.list_loaded_models", boom
+        "senex.inference_client.InferenceClient.list_loaded_models", boom
     ):
         await run_view(audit_dir, speed=1000.0, headless=True)
 

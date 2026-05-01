@@ -92,7 +92,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from senex.events import CommandBus
     from senex.graph_awareness import GraphContextProvider
     from senex.lens import Lens
-    from senex.inference_client import LMStudioClient
+    from senex.inference_client import InferenceClient
 
 log = logging.getLogger(__name__)
 
@@ -154,7 +154,7 @@ class FileAuditPhase:
         repo_name: str,
         run_id: str,
         run_id_short: str,
-        client: "LMStudioClient",
+        client: "InferenceClient",
         compactor_factory: Any,
         graph_provider: "GraphContextProvider",
         renderer: Renderer,
@@ -201,10 +201,10 @@ class FileAuditPhase:
         if not files:
             return {"completed": [], "errored": [], "skipped": []}
 
-        if config.lmstudio.memory.enabled:
+        if config.inference.memory.enabled:
             self._memory = MemoryBuffer(
-                max_tokens=config.lmstudio.memory.max_tokens,
-                min_priority=config.lmstudio.memory.min_priority,
+                max_tokens=config.inference.memory.max_tokens,
+                min_priority=config.inference.memory.min_priority,
             )
 
         completed: list[str] = []
@@ -402,9 +402,9 @@ class FileAuditPhase:
 
         # ---- Token budget gate (§8.2 row "Pre-LMS token count > 90%") ----
         chat_messages = [ChatMessage(**m) for m in messages]
-        used = self._client.count_tokens(chat_messages, config.lmstudio.model)
+        used = self._client.count_tokens(chat_messages, config.inference.model)
         budget = int(
-            config.lmstudio.token_budget_pct * config.lmstudio.context_window
+            config.inference.token_budget_pct * config.inference.context_window
         )
         if used > budget:
             await bus.publish(
@@ -415,8 +415,8 @@ class FileAuditPhase:
                     phase="prepare",
                     error_kind="token_budget",
                     error_message=(
-                        f"messages={used} tokens exceeds {config.lmstudio.token_budget_pct} "
-                        f"* {config.lmstudio.context_window} = {budget}"
+                        f"messages={used} tokens exceeds {config.inference.token_budget_pct} "
+                        f"* {config.inference.context_window} = {budget}"
                     ),
                 )
             )
@@ -436,13 +436,13 @@ class FileAuditPhase:
             repo_name=self._repo_name,
             secret_redactor=self._renderer._redactor,  # share singleton
             compactor=lambda msgs: compactor.maybe_compact(
-                msgs, config.lmstudio.context_window
+                msgs, config.inference.context_window
             ),
-            max_calls=config.lmstudio.tools.max_calls_per_file,
-            tool_timeout_seconds=float(config.lmstudio.tools.tool_timeout_seconds),
-            max_result_tokens=config.lmstudio.tools.max_result_tokens,
+            max_calls=config.inference.tools.max_calls_per_file,
+            tool_timeout_seconds=float(config.inference.tools.tool_timeout_seconds),
+            max_result_tokens=config.inference.tools.max_result_tokens,
             bus=bus,
-            cot_reasoning_turn=config.lmstudio.tools.cot_reasoning_turn,
+            cot_reasoning_turn=config.inference.tools.cot_reasoning_turn,
         )
         # Track for FileMetadata population (M11 bug 2). Both objects expose
         # public counters that survive the recovery branches below.
@@ -631,7 +631,7 @@ class FileAuditPhase:
             return "errored"
 
         # ---- Optional thinking trace ----
-        if config.lmstudio.thinking.save_traces and response.reasoning_content:
+        if config.inference.thinking.save_traces and response.reasoning_content:
             self._write_thinking_trace(
                 report_relpath, response.reasoning_content
             )
@@ -708,16 +708,16 @@ class FileAuditPhase:
         return FileMetadata(
             relpath=relpath,
             language=_detect_language(file),
-            model_id=config.lmstudio.model,
+            model_id=config.inference.model,
             lens_name=lens.name,
             prompt_tokens=response.prompt_tokens,
             completion_tokens=response.completion_tokens,
             thinking_seconds=thinking_ms / 1000.0,
             output_seconds=output_ms / 1000.0,
             tools_used=tools_used,
-            tools_max=config.lmstudio.tools.max_calls_per_file,
+            tools_max=config.inference.tools.max_calls_per_file,
             compactions_used=compactions_used,
-            compactions_max=config.lmstudio.compaction.max_compactions_per_file,
+            compactions_max=config.inference.compaction.max_compactions_per_file,
             graph_context_summary="(see graph block in user prompt)",
             run_id_short=self._run_id_short,
             date=time.strftime("%Y-%m-%d"),

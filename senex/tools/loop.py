@@ -53,7 +53,7 @@ from senex.events import ToolResult as ToolResultEvent
 from senex.inference_client import (
     ChatMessage,
     ChatResponse,
-    LMStudioClient,
+    InferenceClient,
     ToolCall,
     ToolCallFunction,
 )
@@ -197,7 +197,7 @@ class ToolLoop:
 
     def __init__(
         self,
-        client: LMStudioClient,
+        client: InferenceClient,
         registry: ToolRegistry,
         repo_root: Path,
         repo_name: str,

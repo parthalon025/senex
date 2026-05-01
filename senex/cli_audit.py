@@ -201,17 +201,17 @@ def _ensure_managed_container_up(config: SenexConfig) -> bool:
     ``_EXIT_EXTERNAL`` so the user gets a clear failure rather than a
     cryptic wizard probe error later.
     """
-    sglang_cfg = getattr(config.lmstudio, "sglang", None)
+    sglang_cfg = getattr(config.inference, "sglang", None)
     if sglang_cfg is None or not sglang_cfg.manage_container:
         return True
 
     import asyncio
 
-    from senex.inference_lifecycle import HTTPBackend, ModelLoadFailed
+    from senex.inference_lifecycle import SGLangBackend, ModelLoadFailed
 
-    backend = HTTPBackend(
-        base_url=config.lmstudio.base_url,
-        api_key=config.lmstudio.api_key,
+    backend = SGLangBackend(
+        base_url=config.inference.base_url,
+        api_key=config.inference.api_key,
         manage_container=True,
         compose_file=sglang_cfg.compose_file,
         env_file=sglang_cfg.env_file,
@@ -258,13 +258,13 @@ def _build_wizard_client(config: SenexConfig) -> Any:
     """
     try:
         from senex.events import EventBus
-        from senex.inference_client import LMStudioClient
+        from senex.inference_client import InferenceClient
         from senex.secret_redactor import SecretRedactor
     except ImportError:
         return None
     try:
-        return LMStudioClient(
-            config=config.lmstudio,
+        return InferenceClient(
+            config=config.inference,
             bus=EventBus(),
             redactor=SecretRedactor(),
         )

@@ -16,7 +16,7 @@ from pathlib import Path
 
 from senex.config import (
     LensCfg,
-    LmStudioCfg,
+    InferenceCfg,
     OutputCfg,
     SenexConfig,
     WalkerCfg,
@@ -51,16 +51,16 @@ def test_example_file_includes_every_top_level_section() -> None:
     )
 
 
-def test_example_lmstudio_subsections_present() -> None:
-    """Critical [lmstudio.*] subsections that users tune are listed."""
+def test_example_inference_subsections_present() -> None:
+    """Critical [inference.*] subsections that users tune are listed."""
     body = _EXAMPLE.read_text(encoding="utf-8")
     for sub in (
-        "[lmstudio]",
-        "[lmstudio.sampling]",
-        "[lmstudio.thinking]",
-        "[lmstudio.tools]",
-        "[lmstudio.compaction]",
-        "[lmstudio.lifecycle]",
+        "[inference]",
+        "[inference.sampling]",
+        "[inference.thinking]",
+        "[inference.tools]",
+        "[inference.compaction]",
+        "[inference.lifecycle]",
     ):
         assert sub in body, f"missing subsection: {sub}"
 
@@ -81,4 +81,4 @@ def test_example_repos_section_documented() -> None:
 
 # Touch the imports so the linter doesn't drop them; they're here to make
 # the SenexConfig surface explicit at the top of the file.
-_ = (LensCfg, LmStudioCfg, OutputCfg, WalkerCfg)
+_ = (LensCfg, InferenceCfg, OutputCfg, WalkerCfg)

@@ -59,7 +59,7 @@ async def _async_return(v: Any) -> Any:
 
 def _build_config(tmp_path: Path) -> SenexConfig:
     cfg = SenexConfig()
-    cfg.lmstudio.lifecycle = cfg.lmstudio.lifecycle.model_copy(
+    cfg.inference.lifecycle = cfg.inference.lifecycle.model_copy(
         update={
             "auto_load": False,
             "auto_unload": False,
@@ -100,7 +100,7 @@ async def _run_with_phase_raising(
         new=lambda *a, **kw: _async_return(fake),
     ), patch.object(RunLock, "acquire", lambda *a, **kw: 1), patch.object(
         RunLock, "release", lambda *a, **kw: 0
-    ), patch("senex.auditor.LMStudioClient") as lms_class:
+    ), patch("senex.auditor.InferenceClient") as lms_class:
         lms_inst = lms_class.return_value
         lms_inst._fingerprint_pinned = ""
 
@@ -254,7 +254,7 @@ async def test_unexpected_exception_propagates(tmp_path: Path) -> None:
         new=lambda *a, **kw: _async_return(fake),
     ), patch.object(RunLock, "acquire", lambda *a, **kw: 1), patch.object(
         RunLock, "release", lambda *a, **kw: 0
-    ), patch("senex.auditor.LMStudioClient") as lms_class:
+    ), patch("senex.auditor.InferenceClient") as lms_class:
         lms_inst = lms_class.return_value
         lms_inst._fingerprint_pinned = ""
 

@@ -37,9 +37,9 @@ def _load_lifecycle_kwargs(config_path: str | None) -> dict[str, Any]:
         if not cfg_path.exists():
             return {}
         cfg = load_config(cfg_path)
-        base_url = getattr(cfg.lmstudio, "base_url", "") or ""
-        api_key = getattr(cfg.lmstudio, "api_key", "lm-studio") or "lm-studio"
-        sglang_cfg = getattr(cfg.lmstudio, "sglang", None)
+        base_url = getattr(cfg.inference, "base_url", "") or ""
+        api_key = getattr(cfg.inference, "api_key", "lm-studio") or "lm-studio"
+        sglang_cfg = getattr(cfg.inference, "sglang", None)
         kwargs: dict[str, Any] = {"api_key": api_key}
         if base_url:
             kwargs["base_url"] = base_url

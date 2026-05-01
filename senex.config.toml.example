@@ -29,10 +29,11 @@ top_n_high   = 50
 top_n_medium = 100
 top_n_low    = 100
 
-[lmstudio]
+[inference]
 # Inference-server endpoint. Defaults match SGLang's compose stack
-# (http://localhost:30000/v1). For LM Studio, set base_url to
-# "http://localhost:1234/v1" and pick a model id served by `lms ls`.
+# (http://localhost:30000/v1). For Ollama, use base_url = "http://localhost:11434/v1"
+# and set backend = "ollama". Auto-detection order: Ollama (if reachable) → SGLang.
+backend            = "auto"   # "ollama" | "sglang" | "auto"
 base_url           = "http://localhost:30000/v1"
 api_key            = "lm-studio"
 connect_timeout    = 10
@@ -44,11 +45,10 @@ preset             = ""
 allow_non_loopback = false
 # If true, use OpenAI-compat 'json_schema' response_format strictly. SGLang
 # honors strict JSON schema natively, so this defaults to true. Set false
-# only when targeting backends that do not support strict schema (e.g.
-# older LM Studio + Gemma combinations).
+# only when targeting backends that do not support strict schema.
 strict_json_schema = true
 
-[lmstudio.sampling]
+[inference.sampling]
 temperature       = 0.6
 top_p             = 0.95
 top_k             = 40
@@ -61,35 +61,35 @@ seed_random       = true
 max_tokens        = 8192
 stop              = []
 
-[lmstudio.thinking]
+[inference.thinking]
 enabled              = true
 effort               = "high"
 max_thinking_tokens  = 32768
 save_traces          = true
 include_in_report    = false
 
-[lmstudio.tasks.file_audit]
+[inference.tasks.file_audit]
 temperature = 0.6
 max_tokens  = 8192
 
-[lmstudio.tasks.cross_cutting]
+[inference.tasks.cross_cutting]
 temperature = 0.7
 max_tokens  = 4096
 
-[lmstudio.tools]
+[inference.tools]
 enabled              = true
 max_calls_per_file   = 5
 max_result_tokens    = 2048
 tool_timeout_seconds = 30
 
-[lmstudio.compaction]
+[inference.compaction]
 enabled                  = true
 trigger_pct              = 0.80
 target_pct               = 0.50
 preserve_recent_turns    = 2
 max_compactions_per_file = 3
 
-[lmstudio.lifecycle]
+[inference.lifecycle]
 auto_load                       = true
 auto_unload                     = true
 load_timeout_seconds            = 120     # auto_load subprocess timeout
@@ -97,19 +97,14 @@ load_wait_timeout_seconds       = 600     # max wait for manual load on auto_loa
 load_wait_poll_interval_seconds = 5.0     # is_loaded poll cadence during wait
 runlock_dir                     = ""
 
-# [lmstudio.sglang] — SGLang Docker container management (only applies when
+# [inference.sglang] — SGLang Docker container management (only applies when
 # the configured base_url is served by a senex-managed SGLang stack). When
 # manage_container=true, senex runs `docker compose up -d` at audit start and
 # `down` at audit completion ("load on startup, shutdown on completion").
 # Leave manage_container=false to keep the container running between runs
 # (the default — bring it up manually via
 # `bash senex/infra/sglang/sglang.sh up`).
-#
-# ``compose_file`` and ``env_file`` default to the bundled paths inside the
-# installed senex package (resolved via importlib.resources at load time),
-# so pip-installed users get a working stack out-of-the-box. Override only
-# if you want to point at a custom compose file outside the package.
-[lmstudio.sglang]
+[inference.sglang]
 manage_container        = false
 # compose_file            = "/path/to/your/docker-compose.yml"
 # env_file                = "/path/to/your/.env"
@@ -119,9 +114,6 @@ wsl_distro              = "Ubuntu"
 
 # [ui] — Launcher / TUI surface settings (M11).
 # Drives the "Scan disk for repos" button on the Launcher screen.
-# Both keys are commented out below so the defaults apply: scan_root falls
-# back to the user's home directory at runtime, and scan_max_depth caps the
-# recursive walk so a large home tree stays responsive.
 [ui]
 # scan_root      = "E:/code"
 # scan_max_depth = 6
@@ -134,4 +126,4 @@ system_prompt_addendum   = ".claude/CLAUDE.md"
 include_extensions       = []
 exclude_globs            = ["src/pensiv/_archive/**"]
 include_tests            = false
-lmstudio = { tasks = { file_audit = { temperature = 0.5 } } }
+inference = { tasks = { file_audit = { temperature = 0.5 } } }

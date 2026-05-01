@@ -1,6 +1,6 @@
 """Tests for senex.tools.loop - bounded ToolLoop iteration controller.
 
-Implements M5 Task 5.8 step tests. Mocks LMStudioClient.chat via AsyncMock;
+Implements M5 Task 5.8 step tests. Mocks InferenceClient.chat via AsyncMock;
 verifies budget enforcement, event order, compaction hook, tool failure
 tolerance.
 """

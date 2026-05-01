@@ -192,7 +192,19 @@ class LifecycleCfg(_StrictModel):
     runlock_dir: str = ""
 
 
-class LmStudioCfg(_StrictModel):
+class OllamaCfg(_StrictModel):
+    manage_process: bool = True
+    pull_on_start: bool = True
+    startup_timeout_s: int = Field(default=60, gt=0)
+    base_url: str = "http://localhost:11434"
+    model: str = "gemma4:e4b"
+    thinking: bool = True
+    strict_json_schema: bool = False
+
+
+class InferenceCfg(_StrictModel):
+    backend: Literal["ollama", "sglang", "auto"] = "auto"
+    ollama: OllamaCfg = Field(default_factory=OllamaCfg)
     # SGLang inference backend endpoint (http://localhost:30000/v1).
     # SGLang serves an OpenAI-compatible API with native tool-call and
     # structured-output support; no LM Studio workarounds are needed.
@@ -257,7 +269,7 @@ class RepoCfg(_StrictModel):
     include_extensions: list[str] = Field(default_factory=list)
     exclude_globs: list[str] = Field(default_factory=list)
     include_tests: bool = False
-    lmstudio: dict[str, Any] | None = None  # nested override; merged at resolve time.
+    inference: dict[str, Any] | None = None  # nested override; merged at resolve time.
 
 
 class SenexConfig(_StrictModel):
@@ -265,7 +277,7 @@ class SenexConfig(_StrictModel):
     lens: LensCfg = Field(default_factory=LensCfg)
     walker: WalkerCfg = Field(default_factory=WalkerCfg)
     crosscut: CrosscutCfg = Field(default_factory=CrosscutCfg)
-    lmstudio: LmStudioCfg = Field(default_factory=LmStudioCfg)
+    inference: InferenceCfg = Field(default_factory=InferenceCfg)
     ui: UICfg = Field(default_factory=UICfg)
     repos: list[RepoCfg] = Field(default_factory=list)
 
@@ -299,7 +311,25 @@ def load_config(path: Path) -> SenexConfig:
         UnknownConfigKey: TOML contained a key not declared on the schema.
         ValueError: A value was out of range / invalid type (pydantic ValidationError).
     """
+    import warnings
     data = tomllib.loads(Path(path).read_text(encoding="utf-8"))
+    if "lmstudio" in data and "inference" not in data:
+        warnings.warn(
+            "Config key [lmstudio] is deprecated; rename to [inference] to silence this warning.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        data["inference"] = data.pop("lmstudio")
+    elif "lmstudio" in data and "inference" in data:
+        warnings.warn(
+            "Both [lmstudio] and [inference] keys present; [lmstudio] is ignored.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        data.pop("lmstudio")
+    for repo in data.get("repos", []):
+        if isinstance(repo, dict) and "lmstudio" in repo and "inference" not in repo:
+            repo["inference"] = repo.pop("lmstudio")
     try:
         return SenexConfig.model_validate(data)
     except ValidationError as exc:
@@ -349,9 +379,13 @@ def resolve_config(
     merged = base.model_dump()
     if repo_path is not None:
         for repo in base.repos:
-            if Path(repo.path) == repo_path and repo.lmstudio:
-                merged = _deep_merge(merged, {"lmstudio": repo.lmstudio})
+            if Path(repo.path) == repo_path and repo.inference:
+                merged = _deep_merge(merged, {"inference": repo.inference})
                 break
     merged = _deep_merge(merged, cli_overrides)
     merged = _deep_merge(merged, tui_overrides)
     return SenexConfig.model_validate(merged)
+
+
+# Deprecated aliases — remove after one release cycle
+LmStudioCfg = InferenceCfg

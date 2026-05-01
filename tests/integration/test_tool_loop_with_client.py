@@ -1,7 +1,7 @@
-"""Integration tests for ToolLoop + real LMStudioClient + respx-mocked LMS.
+"""Integration tests for ToolLoop + real InferenceClient + respx-mocked LMS.
 
 Implements M5 Task 5.8 step 5.8.4. Demonstrates the M3 <-> M5 boundary by
-wiring a real ToolLoop on top of a real LMStudioClient with mocked HTTP
+wiring a real ToolLoop on top of a real InferenceClient with mocked HTTP
 responses; verifies budget enforcement reaches both layers correctly.
 """
 from __future__ import annotations
@@ -13,10 +13,10 @@ from typing import Any
 import httpx
 import pytest
 
-from senex.config import LmStudioCfg
+from senex.config import InferenceCfg
 from senex.events import EventBus
 from senex.events import ToolBudgetExhausted as ToolBudgetExhaustedEvent
-from senex.inference_client import LMStudioClient
+from senex.inference_client import InferenceClient
 from senex.secret_redactor import SecretRedactor
 from senex.tools.loop import ToolLoop
 from senex.tools.read_file import register_read_file
@@ -24,8 +24,8 @@ from senex.tools.registry import ToolRegistry
 
 
 @pytest.fixture
-def lms_config() -> LmStudioCfg:
-    return LmStudioCfg(
+def lms_config() -> InferenceCfg:
+    return InferenceCfg(
         base_url="http://localhost:1234/v1",
         api_key="lm-studio",
         connect_timeout=2,
@@ -105,12 +105,12 @@ def repo_root(tmp_path: Path) -> Path:
 @pytest.mark.asyncio
 async def test_real_client_with_real_loop_respects_budget(
     respx_mock: Any,
-    lms_config: LmStudioCfg,
+    lms_config: InferenceCfg,
     repo_root: Path,
 ) -> None:
     bus = EventBus()
     redactor = SecretRedactor()
-    client = LMStudioClient(config=lms_config, bus=bus, redactor=redactor)
+    client = InferenceClient(config=lms_config, bus=bus, redactor=redactor)
 
     registry = ToolRegistry()
     register_read_file(registry)
@@ -175,12 +175,12 @@ async def test_real_client_with_real_loop_respects_budget(
 @pytest.mark.asyncio
 async def test_real_client_terminates_early_on_no_tool_calls(
     respx_mock: Any,
-    lms_config: LmStudioCfg,
+    lms_config: InferenceCfg,
     repo_root: Path,
 ) -> None:
     bus = EventBus()
     redactor = SecretRedactor()
-    client = LMStudioClient(config=lms_config, bus=bus, redactor=redactor)
+    client = InferenceClient(config=lms_config, bus=bus, redactor=redactor)
 
     registry = ToolRegistry()
     register_read_file(registry)

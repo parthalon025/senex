@@ -166,12 +166,12 @@ class LauncherScreen(Screen[None]):
         """Indirection layer so tests can patch without spinning up a client."""
         if self._config is None:
             return []
-        from senex.inference_client import LMStudioClient
+        from senex.inference_client import InferenceClient
         from senex.secret_redactor import SecretRedactor
         from senex.events import EventBus
 
-        client = LMStudioClient(
-            config=self._config.lmstudio,
+        client = InferenceClient(
+            config=self._config.inference,
             bus=EventBus(),
             redactor=SecretRedactor(),
         )
@@ -361,7 +361,7 @@ class LauncherScreen(Screen[None]):
             raise ValueError(f"invalid sampling input: {exc}") from exc
         model_value = self.query_one("#model_select", Select).value
         return {
-            "lmstudio": {
+            "inference": {
                 "model": model_value if isinstance(model_value, str) else "",
                 "sampling": {
                     "temperature": temp,

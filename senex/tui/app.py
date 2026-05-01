@@ -129,7 +129,7 @@ class SenexApp(App[int]):
     async def _push_monitor_and_spawn(self) -> None:
         cfg = self._pending_runtime_config
         tools_max = (
-            cfg.config.lmstudio.tools.max_calls_per_file
+            cfg.config.inference.tools.max_calls_per_file
             if cfg is not None
             else 8
         )

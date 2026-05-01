@@ -11,7 +11,7 @@ from typing import Any
 
 import pytest
 
-from senex.config import LmStudioCfg, SenexConfig
+from senex.config import InferenceCfg, SenexConfig
 from senex.events import (
     CommandBus,
     EventBus,
@@ -28,7 +28,7 @@ from senex.phases.preflight import (
 
 class _FakeClient:
     def __init__(self, *, base_url: str = "http://localhost:1234/v1") -> None:
-        self._config = LmStudioCfg(base_url=base_url, allow_non_loopback=False)
+        self._config = InferenceCfg(base_url=base_url, allow_non_loopback=False)
 
     async def list_loaded_models(self) -> list[LoadedModelInfo]:
         return [LoadedModelInfo(id="google/gemma-4-26b-a4b")]

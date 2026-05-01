@@ -98,7 +98,7 @@ async def test_lifecycle_cm_release_on_normal_exit(tmp_path: Path) -> None:
     from senex.runlock import RunLock
 
     cfg = SenexConfig()
-    cfg.lmstudio.lifecycle = cfg.lmstudio.lifecycle.model_copy(
+    cfg.inference.lifecycle = cfg.inference.lifecycle.model_copy(
         update={"runlock_dir": str(tmp_path / "locks")}
     )
     bus = EventBus()
@@ -135,7 +135,7 @@ async def test_lifecycle_cm_release_on_body_exception(tmp_path: Path) -> None:
     from senex.secret_redactor import SecretRedactor
 
     cfg = SenexConfig()
-    cfg.lmstudio.lifecycle = cfg.lmstudio.lifecycle.model_copy(
+    cfg.inference.lifecycle = cfg.inference.lifecycle.model_copy(
         update={"runlock_dir": str(tmp_path / "locks")}
     )
     bus = EventBus()
@@ -373,7 +373,7 @@ async def test_run_audit_writes_events_jsonl(tmp_path: Path) -> None:
     cfg_path.write_text("[lmstudio]\nmodel='m'\n", encoding="utf-8")
 
     cfg = SenexConfig()
-    cfg.lmstudio.lifecycle = cfg.lmstudio.lifecycle.model_copy(
+    cfg.inference.lifecycle = cfg.inference.lifecycle.model_copy(
         update={
             "auto_load": False,
             "auto_unload": False,
@@ -393,7 +393,7 @@ async def test_run_audit_writes_events_jsonl(tmp_path: Path) -> None:
     ), patch(
         "senex.runlock.RunLock.release", new=lambda *args, **kw: 0
     ), patch(
-        "senex.auditor.LMStudioClient"
+        "senex.auditor.InferenceClient"
     ) as lms_class, patch(
         "senex.auditor.compute_audit_dir",
         new=lambda r, o, run_id_short: audit_dir,
@@ -455,7 +455,7 @@ async def test_run_audit_keyboard_interrupt_returns_130(tmp_path: Path) -> None:
     cfg_path.write_text("[lmstudio]\nmodel='m'\n", encoding="utf-8")
 
     cfg = SenexConfig()
-    cfg.lmstudio.lifecycle = cfg.lmstudio.lifecycle.model_copy(
+    cfg.inference.lifecycle = cfg.inference.lifecycle.model_copy(
         update={
             "auto_load": False,
             "auto_unload": False,
@@ -473,7 +473,7 @@ async def test_run_audit_keyboard_interrupt_returns_130(tmp_path: Path) -> None:
     ), patch(
         "senex.runlock.RunLock.release", new=lambda *args, **kw: 0
     ), patch(
-        "senex.auditor.LMStudioClient"
+        "senex.auditor.InferenceClient"
     ) as lms_class:
         lms_instance = lms_class.return_value
         lms_instance._fingerprint_pinned = ""

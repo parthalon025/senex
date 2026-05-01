@@ -1,6 +1,6 @@
 """End-to-end replay test — Task 3.9 §3.9.3.
 
-Drives a 1-file audit through ``LMStudioClient`` with the ``recorded_lms``
+Drives a 1-file audit through ``InferenceClient`` with the ``recorded_lms``
 fixture standing in for a live LMS server. The fixture file (named by
 sha256 of the canonical request body) ships alongside this test module so
 the suite is reproducible offline. The capture path is exercised by setting
@@ -16,15 +16,15 @@ from typing import Any
 
 import pytest
 
-from senex.config import LmStudioCfg
+from senex.config import InferenceCfg
 from senex.events import EventBus
-from senex.inference_client import ChatMessage, LMStudioClient
+from senex.inference_client import ChatMessage, InferenceClient
 from senex.secret_redactor import SecretRedactor
 
 
 @pytest.fixture
-def replay_cfg() -> LmStudioCfg:
-    return LmStudioCfg(
+def replay_cfg() -> InferenceCfg:
+    return InferenceCfg(
         base_url="http://localhost:1234/v1",
         api_key="lm-studio-test",
         connect_timeout=1,
@@ -46,8 +46,8 @@ def replay_cfg() -> LmStudioCfg:
 
 
 @pytest.fixture
-def replay_client(replay_cfg: LmStudioCfg) -> LMStudioClient:
-    return LMStudioClient(
+def replay_client(replay_cfg: InferenceCfg) -> InferenceClient:
+    return InferenceClient(
         config=replay_cfg, bus=EventBus(), redactor=SecretRedactor()
     )
 
@@ -76,7 +76,7 @@ def _canonical_hash(body: dict[str, Any]) -> str:
 @pytest.mark.asyncio
 async def test_replayed_audit_produces_valid_response(
     recorded_lms: Any,  # noqa: ARG001 — fixture autoroutes
-    replay_client: LMStudioClient,
+    replay_client: InferenceClient,
     audit_schema: dict[str, Any],
 ) -> None:
     """End-to-end audit replays from disk; ``RECORD_LMS=1`` would re-capture."""

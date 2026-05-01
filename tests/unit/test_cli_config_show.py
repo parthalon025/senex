@@ -45,7 +45,7 @@ def _write_config(
     if repos is not None:
         body["repos"] = repos
     if api_key is not None:
-        body["lmstudio"] = {"api_key": api_key}
+        body["lmstudio"] = {"api_key": api_key}  # deprecated key; translated by load_config
     cfg_path = tmp_path / "senex.config.toml"
     cfg_path.write_text(tomli_w.dumps(body), encoding="utf-8")
     return cfg_path
@@ -111,7 +111,7 @@ def test_cmd_config_show_json_outputs_valid_json(
     assert rc == 0
     parsed = json.loads(buf.getvalue())
     assert "lens" in parsed
-    assert "lmstudio" in parsed
+    assert "inference" in parsed
     assert "walker" in parsed
 
 

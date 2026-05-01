@@ -246,7 +246,7 @@ class _ToolCallAccumulator:
 # ----- main client ------------------------------------------------------------
 
 
-class LMStudioClient:
+class InferenceClient:
     """OpenAI-compatible client for LM Studio.
 
     Implements ``senex.llm_client.LLMClient``. Handles ONE chat-completion
@@ -1263,10 +1263,13 @@ from datetime import datetime  # noqa: E402  — kept down here for the sentinel
 __all__ = [
     "ChatMessage",
     "ChatResponse",
-    "LMStudioClient",
+    "InferenceClient",
     "LoadedModelInfo",
     "ProbedCapabilities",
     "ToolCall",
     "ToolCallFunction",
     "ToolSchema",
 ]
+
+# Deprecated alias — remove after one release cycle
+LMStudioClient = InferenceClient

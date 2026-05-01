@@ -40,7 +40,7 @@ from senex.inference_errors import LMSConnectionLost
 if TYPE_CHECKING:  # pragma: no cover — type-checking only
     from senex.events import CommandBus
     from senex.lens import Lens
-    from senex.inference_client import LMStudioClient
+    from senex.inference_client import InferenceClient
 
 from .base import Phase, PreflightFailure  # noqa: E402
 
@@ -219,7 +219,7 @@ def check_sampling_ranges(config: SenexConfig) -> CheckResult:
     defense-in-depth check covering programmatic SenexConfig construction
     that bypassed validation.
     """
-    s = config.lmstudio.sampling
+    s = config.inference.sampling
     bad: list[str] = []
     if not 0.0 <= s.temperature <= 2.0:
         bad.append(f"temperature={s.temperature}")
@@ -233,7 +233,7 @@ def check_sampling_ranges(config: SenexConfig) -> CheckResult:
         bad.append(f"repeat_penalty={s.repeat_penalty}")
     if s.max_tokens <= 0:
         bad.append(f"max_tokens={s.max_tokens}")
-    t = config.lmstudio.thinking
+    t = config.inference.thinking
     if t.max_thinking_tokens <= 0:
         bad.append(f"max_thinking_tokens={t.max_thinking_tokens}")
     if bad:
@@ -243,13 +243,13 @@ def check_sampling_ranges(config: SenexConfig) -> CheckResult:
 
 def check_lifecycle_backend(config: SenexConfig) -> CheckResult:
     """Lifecycle backend (HTTP, lmstudio SDK, or ``lms`` CLI) available when needed."""
-    auto_load = bool(config.lmstudio.lifecycle.auto_load)
-    auto_unload = bool(config.lmstudio.lifecycle.auto_unload)
+    auto_load = bool(config.inference.lifecycle.auto_load)
+    auto_unload = bool(config.inference.lifecycle.auto_unload)
     needs = auto_load or auto_unload
 
     # HTTP backend (SGLang / vLLM / OpenAI-compat servers): probe /v1/models.
     http_available = False
-    base_url = config.lmstudio.base_url
+    base_url = config.inference.base_url
     if base_url:
         try:
             import httpx
@@ -293,7 +293,7 @@ def check_runlock_dir_writable(config: SenexConfig) -> CheckResult:
     parseability is intentionally not run here — RunLock auto-recovers
     corrupt files at acquire time.
     """
-    raw = config.lmstudio.lifecycle.runlock_dir
+    raw = config.inference.lifecycle.runlock_dir
     if raw:
         target = Path(raw)
     else:
@@ -327,7 +327,7 @@ def _is_loopback(base_url: str) -> bool:
     return host in {"localhost", "127.0.0.1", "::1"}
 
 
-async def check_lms_reachable(client: "LMStudioClient") -> CheckResult:
+async def check_lms_reachable(client: "InferenceClient") -> CheckResult:
     """Inference server (SGLang/LM Studio) reachable at ``/v1/models`` and bound to loopback."""
     cfg = client._config
     if not _is_loopback(cfg.base_url) and not cfg.allow_non_loopback:
@@ -348,11 +348,11 @@ async def check_lms_reachable(client: "LMStudioClient") -> CheckResult:
 
 
 async def check_model_loaded_or_loadable(
-    client: "LMStudioClient", config: SenexConfig
+    client: "InferenceClient", config: SenexConfig
 ) -> CheckResult:
     """Target model already loaded, or auto_load can load it (spec §8.1)."""
-    target = config.lmstudio.model
-    auto_load = bool(config.lmstudio.lifecycle.auto_load)
+    target = config.inference.model
+    auto_load = bool(config.inference.lifecycle.auto_load)
     try:
         loaded = await client.list_loaded_models()
     except Exception as exc:  # noqa: BLE001
@@ -373,11 +373,11 @@ async def check_model_loaded_or_loadable(
 
 
 async def check_schema_with_thinking(
-    client: "LMStudioClient", config: SenexConfig
+    client: "InferenceClient", config: SenexConfig
 ) -> CheckResult:
     """``response_format=json_schema`` works WITH thinking — warn on fallback."""
     try:
-        caps = await client.probe_capabilities(config.lmstudio.model)
+        caps = await client.probe_capabilities(config.inference.model)
     except Exception as exc:  # noqa: BLE001
         return _warn(f"capability probe failed; assuming json_object fallback: {exc}")
     if not caps.supports_schema_with_tools:
@@ -389,11 +389,11 @@ async def check_schema_with_thinking(
 
 
 async def check_streaming(
-    client: "LMStudioClient", config: SenexConfig
+    client: "InferenceClient", config: SenexConfig
 ) -> CheckResult:
     """Streaming works on the configured model (warn-only on failure)."""
     try:
-        caps = await client.probe_capabilities(config.lmstudio.model)
+        caps = await client.probe_capabilities(config.inference.model)
     except Exception as exc:  # noqa: BLE001
         return _warn(f"streaming probe failed: {exc}")
     if not caps.supports_streaming:
@@ -438,7 +438,7 @@ class PreflightPhase:
 
     def __init__(
         self,
-        client: "LMStudioClient",
+        client: "InferenceClient",
         inputs: PreflightInputs,
         run_id: str,
     ) -> None:

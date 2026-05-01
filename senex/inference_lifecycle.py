@@ -358,7 +358,7 @@ class LMSCLIBackend:
 # Backend factory -----------------------------------------------------------
 
 
-class HTTPBackend:
+class SGLangBackend:
     """OpenAI-compatible HTTP backend (SGLang, vLLM, etc.).
 
     Two operating modes:
@@ -669,12 +669,12 @@ async def doctor_check_lifecycle_backend(config: Any) -> DoctorCheck:
     - no backend AND auto_load=T  -> status='fail' (run will not start).
     - no backend AND auto_load=F  -> status='warn' (manual load still works).
     """
-    auto_load = bool(config.lmstudio.lifecycle.auto_load)
+    auto_load = bool(config.inference.lifecycle.auto_load)
     try:
         backend = await LifecycleBackendFactory.select(
-            base_url=config.lmstudio.base_url,
-            api_key=config.lmstudio.api_key,
-            sglang_cfg=getattr(config.lmstudio, "sglang", None),
+            base_url=config.inference.base_url,
+            api_key=config.inference.api_key,
+            sglang_cfg=getattr(config.inference, "sglang", None),
         )
     except LifecycleBackendUnavailable as exc:
         if auto_load:
@@ -1187,3 +1187,7 @@ class Lifecycle:
             holder_count=count,
         )
         return info
+
+
+# Deprecated alias — remove after one release cycle
+HTTPBackend = SGLangBackend

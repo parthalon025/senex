@@ -182,7 +182,7 @@ class CrossCutter:
 
     @staticmethod
     def _extract_payload(response: object) -> dict[str, object]:
-        # Prefer `content_dict` when populated by LMStudioClient; fall back to
+        # Prefer `content_dict` when populated by InferenceClient; fall back to
         # parsing `content` as JSON.
         content_dict = getattr(response, "content_dict", None)
         if isinstance(content_dict, dict):

@@ -183,14 +183,14 @@ def _run_async_checks(
     without booting an LMS HTTP client.
     """
     from senex.events import EventBus
-    from senex.inference_client import LMStudioClient
+    from senex.inference_client import InferenceClient
 
     out: list[tuple[str, CheckResult]] = []
 
     async def _run() -> list[tuple[str, CheckResult]]:
         bus = EventBus()
         redactor = SecretRedactor()
-        client = LMStudioClient(config.lmstudio, bus=bus, redactor=redactor)
+        client = InferenceClient(config.inference, bus=bus, redactor=redactor)
         try:
             out.append(("lms_reachable", await check_lms_reachable(client)))
             out.append(

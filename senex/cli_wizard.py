@@ -32,7 +32,7 @@ from senex.lens import Lens
 from senex.inference_errors import LMSConnectionLost
 
 if TYPE_CHECKING:  # pragma: no cover
-    from senex.inference_client import LMStudioClient
+    from senex.inference_client import InferenceClient
     from senex.tui.runtime import RuntimeConfig
 
 
@@ -271,7 +271,7 @@ def _select_repo(
 
 
 def _select_model(
-    client: "LMStudioClient | None",
+    client: "InferenceClient | None",
     default_model: str,
     *,
     stdin: TextIO | None = None,
@@ -280,7 +280,7 @@ def _select_model(
     """Probe ``GET /v1/models``, render the menu, return the chosen model id.
 
     Args:
-        client: An ``LMStudioClient`` instance whose ``list_loaded_models``
+        client: An ``InferenceClient`` instance whose ``list_loaded_models``
             coroutine will be awaited via ``asyncio.run``. ``None`` is
             tolerated: we fall back to ``default_model`` and skip the menu.
         default_model: Configured default model id; pre-selected on Enter.
@@ -839,7 +839,7 @@ def _discover_repos_on_disk(root: Path, max_depth: int = 6) -> list[Path]:
 
 def interactive_audit_setup(
     config: SenexConfig,
-    client: "LMStudioClient | None",
+    client: "InferenceClient | None",
     *,
     stdin: TextIO | None = None,
     stdout: TextIO | None = None,
@@ -850,7 +850,7 @@ def interactive_audit_setup(
         config: Loaded senex config (``[[repos]]`` and ``[lmstudio]``
             populate the menus).
         client: LM Studio client used to probe loaded models. ``None`` skips
-            the probe and uses ``config.lmstudio.model``.
+            the probe and uses ``config.inference.model``.
         stdin: Input stream (default ``sys.stdin``).
         stdout: Output stream (default ``sys.stdout``).
 
@@ -875,7 +875,7 @@ def interactive_audit_setup(
         _print(sout, "")
         _print(sout, f"senex audit wizard (v{senex.__version__})")
         _print(sout, "─" * 40)
-        _print_lms_checklist(config.lmstudio.base_url, sout)
+        _print_lms_checklist(config.inference.base_url, sout)
 
         # 2. Repo selection.
         repo_name, repo_path = _select_repo(config, stdin=stdin, stdout=sout)
@@ -898,7 +898,7 @@ def interactive_audit_setup(
         # 3. Model selection.
         chosen_model = _select_model(
             client,
-            default_model=config.lmstudio.model,
+            default_model=config.inference.model,
             stdin=stdin,
             stdout=sout,
         )
@@ -906,8 +906,8 @@ def interactive_audit_setup(
 
         # 4. Context window — auto-detected cap from /v1/models when reachable.
         chosen_ctx = _select_context_window(
-            config.lmstudio.context_window,
-            base_url=config.lmstudio.base_url,
+            config.inference.context_window,
+            base_url=config.inference.base_url,
             stdin=stdin,
             stdout=sout,
         )
@@ -915,7 +915,7 @@ def interactive_audit_setup(
 
         # 5. Effort level.
         chosen_effort = _select_effort(
-            config.lmstudio.thinking.effort,
+            config.inference.thinking.effort,
             stdin=stdin,
             stdout=sout,
         )
@@ -946,7 +946,7 @@ def interactive_audit_setup(
 
         # 9. Confirm. Show the load-bearing run parameters at a glance so
         #    the user catches drift before kicking off a multi-minute audit.
-        backend = _detect_backend(config.lmstudio.base_url)
+        backend = _detect_backend(config.inference.base_url)
         backend_label = (
             "SGLang" if backend == "sglang"
             else "LM Studio" if backend == "lmstudio"
@@ -955,7 +955,7 @@ def interactive_audit_setup(
         proceed = _yes_no(
             f"Start audit on {repo_name} with {chosen_model} on {backend_label} "
             f"({chosen_effort} effort, ctx {chosen_ctx}, "
-            f"tools {config.lmstudio.tools.max_calls_per_file}/file)?",
+            f"tools {config.inference.tools.max_calls_per_file}/file)?",
             default=True,
             stdin=stdin,
             stdout=sout,
@@ -969,7 +969,7 @@ def interactive_audit_setup(
     # Apply overrides on top of the loaded config (a fresh model_dump +
     # validate keeps pydantic strict-mode honest).
     overrides: dict[str, Any] = {
-        "lmstudio": {
+        "inference": {
             "model": chosen_model,
             "context_window": chosen_ctx,
             "thinking": {"save_traces": save_thinking, "effort": chosen_effort},

@@ -1,6 +1,6 @@
 """senex.llm_client — ``LLMClient`` Protocol consumed by phases / ``ToolLoop``.
 
-Declares the structural-typing contract that ``LMStudioClient`` (M3) and any
+Declares the structural-typing contract that ``InferenceClient`` (M3) and any
 future LLM backend must implement. Phases and the M5 tool loop depend on this
 protocol, never on a concrete implementation, so the LMS client can be swapped
 or stubbed in tests.
