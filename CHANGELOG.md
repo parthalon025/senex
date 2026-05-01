@@ -2,6 +2,33 @@
 
 All notable changes to senex are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses semantic versioning.
 
+## [1.1.0] — 2026-05-01
+
+### Added
+- **Ollama backend** (`backend = "ollama"`): full lifecycle management
+  (start/stop `ollama serve`, `ollama pull`, VRAM load/unload via `keep_alive=0`),
+  structured output via Ollama's native `format` parameter, and thinking via
+  `<|think|>` token injection into the system message.  Default model: `gemma4:e4b`.
+- `[inference.ollama]` config section: `manage_process`, `pull_on_start`,
+  `startup_timeout_s`, `base_url`, `model`, `thinking`, `strict_json_schema`.
+- `InferenceCfg.backend` field: `"ollama" | "sglang" | "auto"` (default `"auto"`;
+  auto-selects Ollama if reachable at `localhost:11434`, otherwise SGLang).
+- `senex doctor` checks: `ollama_reachable`, `ollama_model_available`.
+
+### Changed
+- Config key `[lmstudio]` renamed to `[inference]`.  The old key is accepted with
+  a `DeprecationWarning` for one release cycle (remove in v1.2.0).
+- Python names: `LmStudioCfg` → `InferenceCfg`, `LMStudioClient` → `InferenceClient`,
+  `HTTPBackend` → `SGLangBackend`.  Aliases retained for one release cycle.
+- Source files renamed: `lmstudio_client.py` → `inference_client.py`,
+  `lmstudio_lifecycle.py` → `inference_lifecycle.py`,
+  `lmstudio_errors.py` → `inference_errors.py`.
+
+### Removed
+- `LMStudioSDKBackend` — use `OllamaBackend` or `SGLangBackend` instead. **Breaking.**
+- `LMSCLIBackend` — use `OllamaBackend` or `SGLangBackend` instead. **Breaking.**
+  Direct imports of these classes raise `ImportError`.
+
 ## [1.0.2] — 2026-04-27
 
 Patch release.

@@ -97,6 +97,19 @@ load_wait_timeout_seconds       = 600     # max wait for manual load on auto_loa
 load_wait_poll_interval_seconds = 5.0     # is_loaded poll cadence during wait
 runlock_dir                     = ""
 
+# [inference.ollama] — Ollama server management (only applies when
+# backend = "ollama" or when Ollama is auto-detected). When manage_process=true,
+# senex starts `ollama serve` at audit start and stops it when done.
+# Set pull_on_start=true to automatically download missing models via `ollama pull`.
+[inference.ollama]
+manage_process    = false
+pull_on_start     = false
+startup_timeout_s = 60
+base_url          = "http://localhost:11434"
+model             = "gemma4:e4b"
+thinking          = true
+strict_json_schema = false
+
 # [inference.sglang] — SGLang Docker container management (only applies when
 # the configured base_url is served by a senex-managed SGLang stack). When
 # manage_container=true, senex runs `docker compose up -d` at audit start and
