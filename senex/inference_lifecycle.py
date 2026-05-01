@@ -23,6 +23,7 @@ import time
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
+import httpx
 from pydantic import BaseModel, ConfigDict
 
 if TYPE_CHECKING:
@@ -541,6 +542,145 @@ class SGLangBackend:
                 )
             )
         return out
+
+
+class OllamaBackend:
+    """Lifecycle backend for a locally-running Ollama server.
+
+    Two operating modes:
+    1. ``manage_process=False`` (default): Ollama must already be running.
+       ``load`` raises ``LifecycleBackendUnavailable`` if the server is down.
+    2. ``manage_process=True``: senex spawns ``ollama serve`` and waits for
+       the health endpoint to respond before proceeding.
+
+    ``is_loaded`` queries ``GET /api/ps`` and checks for the model name.
+    ``unload`` posts ``keep_alive: 0`` per the Ollama unload convention.
+    """
+
+    backend_name = "ollama"
+
+    def __init__(self, cfg: "Any") -> None:
+        self._cfg = cfg
+        self._base_url = cfg.base_url.rstrip("/")
+        self._client = httpx.AsyncClient(base_url=self._base_url, timeout=10.0)
+        self._digest_cache: dict[str, tuple[float, str]] = {}
+
+    @classmethod
+    async def probe(cls, base_url: str) -> bool:
+        try:
+            async with httpx.AsyncClient(timeout=2.0) as c:
+                r = await c.get(base_url.rstrip("/") + "/")
+                return r.status_code == 200
+        except Exception:  # noqa: BLE001
+            return False
+
+    async def is_loaded(self, model_id: str) -> bool:
+        r = await self._client.get("/api/ps")
+        r.raise_for_status()
+        return any(m.get("name") == model_id for m in r.json().get("models", []))
+
+    async def load(self, model_id: str, timeout: int) -> ModelInfo:
+        try:
+            health = await self._client.get("/")
+            available = health.status_code == 200
+        except Exception:  # noqa: BLE001
+            available = False
+
+        if not available:
+            if self._cfg.manage_process:
+                await self._start_serve(timeout)
+            else:
+                raise LifecycleBackendUnavailable(
+                    f"Ollama not reachable at {self._base_url} and manage_process=False"
+                )
+
+        if self._cfg.pull_on_start:
+            await self._pull_model(model_id)
+
+        if not await self.is_loaded(model_id):
+            await self._warmup(model_id)
+
+        digest = await self._get_digest(model_id)
+        fp = _compute_fingerprint(model_id, "", digest)
+        return ModelInfo(
+            model_id=model_id,
+            quant="",
+            checkpoint_digest=digest,
+            fingerprint=fp,
+            backend=self.backend_name,
+        )
+
+    async def unload(self, model_id: str) -> None:
+        await self._client.post(
+            "/api/chat",
+            json={
+                "model": model_id,
+                "messages": [{"role": "user", "content": ""}],
+                "keep_alive": 0,
+            },
+        )
+
+    async def list_loaded(self) -> list[ModelInfo]:
+        r = await self._client.get("/api/ps")
+        r.raise_for_status()
+        return [
+            ModelInfo(
+                model_id=m["name"],
+                quant="",
+                checkpoint_digest="",
+                fingerprint="",
+                backend=self.backend_name,
+            )
+            for m in r.json().get("models", [])
+        ]
+
+    async def _start_serve(self, timeout: int) -> None:
+        import subprocess as sp
+
+        sp.Popen(["ollama", "serve"], stdout=sp.DEVNULL, stderr=sp.DEVNULL)
+        for _ in range(max(1, timeout // 2)):
+            await asyncio.sleep(2)
+            if await self.probe(self._base_url):
+                return
+        raise LifecycleBackendUnavailable(
+            "ollama serve did not become healthy in time"
+        )
+
+    async def _warmup(self, model_id: str) -> None:
+        await self._client.post(
+            "/api/chat",
+            json={
+                "model": model_id,
+                "messages": [{"role": "user", "content": "hi"}],
+                "keep_alive": "10m",
+            },
+        )
+
+    async def _get_digest(self, model_id: str) -> str:
+        import time as _time
+
+        now = _time.monotonic()
+        if model_id in self._digest_cache:
+            ts, digest = self._digest_cache[model_id]
+            if now - ts < 60:
+                return digest
+        r = await self._client.post("/api/show", json={"name": model_id})
+        r.raise_for_status()
+        digest = r.json().get("details", {}).get("digest", "")
+        self._digest_cache[model_id] = (now, digest)
+        return digest
+
+    async def _pull_model(self, model_id: str) -> None:
+        tags_r = await self._client.get("/api/tags")
+        tags_r.raise_for_status()
+        existing = [m["name"] for m in tags_r.json().get("models", [])]
+        if model_id in existing:
+            return
+        async with self._client.stream(
+            "POST", "/api/pull", json={"name": model_id, "stream": True}
+        ) as r:
+            async for _line in r.aiter_lines():
+                pass  # consume stream; progress events can be added later
 
 
 class LifecycleBackendFactory:
