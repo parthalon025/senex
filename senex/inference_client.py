@@ -259,10 +259,12 @@ class InferenceClient:
         config: LmStudioCfg,
         bus: EventBus,
         redactor: SecretRedactor,
+        backend_type: str = "sglang",
     ) -> None:
         self._config = config
         self._bus = bus
         self._redactor = redactor
+        self._backend_type = backend_type
         self._http = httpx.AsyncClient(
             base_url=config.base_url,
             timeout=httpx.Timeout(
@@ -287,6 +289,51 @@ class InferenceClient:
     async def aclose(self) -> None:
         """Release the underlying HTTP client (idempotent)."""
         await self._http.aclose()
+
+    # --- backend-aware helpers ------------------------------------------------
+
+    def _apply_schema_to_body(self, body: dict[str, Any], schema: type | None) -> dict[str, Any]:
+        """Attach the JSON schema constraint to ``body`` in the backend's native format.
+
+        Ollama uses ``format: <json-schema>``; SGLang/OpenAI use ``response_format``.
+        """
+        if schema is None:
+            return body
+        if self._backend_type == "ollama":
+            body["format"] = schema.model_json_schema()
+        else:
+            if self._config.strict_json_schema:
+                body["response_format"] = {
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": "audit_response",
+                        "schema": schema.model_json_schema(),
+                        "strict": True,
+                    },
+                }
+            else:
+                body["response_format"] = {"type": "json_object"}
+        return body
+
+    def _inject_thinking(
+        self,
+        messages: list[dict[str, Any]],
+        *,
+        backend_type: str,
+        thinking_enabled: bool,
+    ) -> list[dict[str, Any]]:
+        """Prepend ``<|think|>`` to the system prompt for Ollama thinking mode.
+
+        SGLang uses ``extra_body.chat_template_kwargs``; Ollama requires the
+        ``<|think|>`` token in the system message content. No mutation occurs
+        when thinking is disabled or the backend is not Ollama.
+        """
+        if not thinking_enabled or backend_type != "ollama":
+            return messages
+        msgs = list(messages)
+        if msgs and msgs[0].get("role") == "system":
+            msgs[0] = {**msgs[0], "content": "<|think|>\n" + msgs[0]["content"]}
+        return msgs
 
     # --- public API -----------------------------------------------------------
 
