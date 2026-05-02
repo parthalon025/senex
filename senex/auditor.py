@@ -139,7 +139,11 @@ async def lifecycle_acquire_or_resume(
         config=config.inference.lifecycle,
         redactor=redactor,
     )
-    model_id = config.inference.model
+    model_id = (
+        config.inference.ollama.model
+        if config.inference.backend == "ollama"
+        else config.inference.model
+    )
     loaded_by_us = False
     info: ModelInfo
 
@@ -389,7 +393,11 @@ async def run_audit(
                     bus=bus,
                     run_id=run_id_full,
                     path=file,
-                    model_id=config.inference.model,
+                    model_id=(
+                        config.inference.ollama.model
+                        if config.inference.backend == "ollama"
+                        else config.inference.model
+                    ),
                     redactor=redactor,
                 )
 

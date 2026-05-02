@@ -708,7 +708,11 @@ class FileAuditPhase:
         return FileMetadata(
             relpath=relpath,
             language=_detect_language(file),
-            model_id=config.inference.model,
+            model_id=(
+                config.inference.ollama.model
+                if config.inference.backend == "ollama"
+                else config.inference.model
+            ),
             lens_name=lens.name,
             prompt_tokens=response.prompt_tokens,
             completion_tokens=response.completion_tokens,
