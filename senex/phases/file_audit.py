@@ -307,9 +307,86 @@ class FileAuditPhase:
         Per §8.2 each branch writes the right artifact and returns; only
         run-aborting exceptions propagate up.
         """
-        # ---- Read source ----
+        source = await self._read_source_file(file, relpath, report_relpath, bus)
+        if source is None:
+            return "skipped"
+
+        graph_text, awareness = await self._fetch_graph_context(relpath, bus)
+
+        messages = await self._build_messages(
+            file=file,
+            relpath=relpath,
+            source=source,
+            graph_text=graph_text,
+            awareness=awareness,
+            lens=lens,
+            bus=bus,
+        )
+
+        if await self._check_token_budget(messages, relpath, report_relpath, config, bus):
+            return "skipped"
+
+        response_or_result = await self._run_tool_loop(
+            file=file,
+            relpath=relpath,
+            report_relpath=report_relpath,
+            messages=messages,
+            schema=schema,
+            config=config,
+            bus=bus,
+        )
+        if isinstance(response_or_result, str):
+            return response_or_result
+
+        response = response_or_result
+
+        # Token-budget exceptions surfaced from inside the loop.
+        if isinstance(response, TokenBudgetExceeded):  # pragma: no cover — defensive
+            write_skipped_artifact(
+                audit_dir=self._audit_dir,
+                relpath=report_relpath,
+                reason="token_budget_exceeded",
+            )
+            return "skipped"
+
+        render_result = await self._render_and_persist(
+            file=file,
+            relpath=relpath,
+            report_relpath=report_relpath,
+            response=response,
+            lens=lens,
+            config=config,
+            bus=bus,
+        )
+        if render_result == "errored":
+            return "errored"
+
+        # ---- Optional thinking trace ----
+        if config.inference.thinking.save_traces and response.reasoning_content:
+            self._write_thinking_trace(report_relpath, response.reasoning_content)
+
+        # ---- Mark complete ----
+        finding_counts = self._summarize_findings(response.content_dict or {})
+        await bus.publish(
+            FileComplete(
+                ts=_now(),
+                run_id=self._run_id,
+                path=relpath,
+                finding_counts=finding_counts,
+            )
+        )
+        return "completed"
+
+    async def _read_source_file(
+        self,
+        file: Path,
+        relpath: str,
+        report_relpath: str,
+        bus: EventBus,
+    ) -> str | None:
+        """Read file source text; publish FileError + write skipped artifact on failure."""
         try:
-            source = file.read_text(encoding="utf-8")
+            return file.read_text(encoding="utf-8")
         except (UnicodeDecodeError, PermissionError, OSError) as exc:
             await bus.publish(
                 FileError(
@@ -326,9 +403,14 @@ class FileAuditPhase:
                 relpath=report_relpath,
                 reason=f"read_error: {exc}",
             )
-            return "skipped"
+            return None
 
-        # ---- Graph awareness (graceful fallback) ----
+    async def _fetch_graph_context(
+        self,
+        relpath: str,
+        bus: EventBus,
+    ) -> tuple[str, Any]:
+        """Fetch graph awareness; fall back gracefully. Returns (graph_text, awareness)."""
         try:
             awareness = await self._graph_provider.fetch(relpath)
         except Exception as exc:  # noqa: BLE001
@@ -346,8 +428,20 @@ class FileAuditPhase:
                 graph_context_tokens=len(graph_text) // 4,
             )
         )
+        return graph_text, awareness
 
-        # ---- Build messages ----
+    async def _build_messages(
+        self,
+        *,
+        file: Path,
+        relpath: str,
+        source: str,
+        graph_text: str,
+        awareness: Any,
+        lens: Lens,
+        bus: EventBus,
+    ) -> list[dict[str, Any]]:
+        """Assemble the message list: system prompt + skills + user prompt + memory."""
         anchor = select_anchor(file) or ""
         system_prompt = lens.system_prompt_path.read_text(encoding="utf-8")
         if anchor:
@@ -386,7 +480,6 @@ class FileAuditPhase:
             {"role": "user", "content": user_prompt},
         ]
 
-        # ---- Cross-file memory injection ----
         if self._memory is not None:
             self._memory.update(self._audit_dir)
             if mem_block := self._memory.format_injection():
@@ -400,12 +493,20 @@ class FileAuditPhase:
                     )
                 )
 
-        # ---- Token budget gate (§8.2 row "Pre-LMS token count > 90%") ----
+        return messages
+
+    async def _check_token_budget(
+        self,
+        messages: list[dict[str, Any]],
+        relpath: str,
+        report_relpath: str,
+        config: SenexConfig,
+        bus: EventBus,
+    ) -> bool:
+        """Return True (and emit events/artifacts) if token budget is exceeded."""
         chat_messages = [ChatMessage(**m) for m in messages]
         used = self._client.count_tokens(chat_messages, config.inference.model)
-        budget = int(
-            config.inference.token_budget_pct * config.inference.context_window
-        )
+        budget = int(config.inference.token_budget_pct * config.inference.context_window)
         if used > budget:
             await bus.publish(
                 FileError(
@@ -425,9 +526,21 @@ class FileAuditPhase:
                 relpath=report_relpath,
                 reason=f"token_budget_exceeded: {used} / {budget}",
             )
-            return "skipped"
+            return True
+        return False
 
-        # ---- LMS call with full §8.2 recovery matrix ----
+    async def _run_tool_loop(
+        self,
+        *,
+        file: Path,
+        relpath: str,
+        report_relpath: str,
+        messages: list[dict[str, Any]],
+        schema: dict[str, Any],
+        config: SenexConfig,
+        bus: EventBus,
+    ) -> Any:
+        """Run ToolLoop with full §8.2 LMS recovery matrix. Returns response or "errored"."""
         compactor = self._compactor_factory(file)
         loop = ToolLoop(
             client=self._client,
@@ -444,12 +557,11 @@ class FileAuditPhase:
             bus=bus,
             cot_reasoning_turn=config.inference.tools.cot_reasoning_turn,
         )
-        # Track for FileMetadata population (M11 bug 2). Both objects expose
-        # public counters that survive the recovery branches below.
+        # Track for FileMetadata population (M11 bug 2).
         self._last_loop = loop
         self._last_compactor = compactor
         try:
-            response = await loop.run(
+            return await loop.run(
                 messages,
                 schema=schema,
                 lens_tools=self._lens_tools_resolved,
@@ -495,47 +607,15 @@ class FileAuditPhase:
             )
             return "errored"
         except (LMSResponseSchemaInvalid, LMSResponseInvalidJSON) as exc:
-            # Retry ONCE with stricter prompt.
-            messages_strict = self._inject_strict_addendum(messages)
-            try:
-                response = await loop.run(
-                    messages_strict,
-                    schema=schema,
-                    lens_tools=self._lens_tools_resolved,
-                    path=relpath,
-                    run_id=self._run_id,
-                )
-            except (LMSResponseSchemaInvalid, LMSResponseInvalidJSON) as exc2:
-                # Save raw response when the model offered a body we can extract.
-                raw = ""
-                try:
-                    raw = json.dumps({"error": str(exc2)})
-                except Exception:  # noqa: BLE001
-                    raw = str(exc2)
-                write_raw_response(
-                    audit_dir=self._audit_dir,
-                    relpath=report_relpath,
-                    raw_json=raw,
-                )
-                write_error_artifact(
-                    audit_dir=self._audit_dir,
-                    relpath=report_relpath,
-                    kind="schema_mismatch",
-                    error_message=str(exc2),
-                    traceback=_tb.format_exc(),
-                )
-                await bus.publish(
-                    FileError(
-                        ts=_now(),
-                        run_id=self._run_id,
-                        path=relpath,
-                        phase="llm",
-                        error_kind="schema_mismatch",
-                        error_message=str(exc2),
-                    )
-                )
-                return "errored"
-            del exc  # initial exc is recorded via traceback chain
+            return await self._retry_strict_or_error(
+                loop=loop,
+                messages=messages,
+                schema=schema,
+                relpath=relpath,
+                report_relpath=report_relpath,
+                bus=bus,
+                first_exc=exc,
+            )
         except LMSConnectionLost:
             raise  # run-aborting (§8.3)
         except FingerprintChanged:
@@ -560,16 +640,70 @@ class FileAuditPhase:
             )
             return "errored"
 
-        # Token-budget exceptions surfaced from inside the loop.
-        if isinstance(response, TokenBudgetExceeded):  # pragma: no cover — defensive
-            write_skipped_artifact(
+    async def _retry_strict_or_error(
+        self,
+        *,
+        loop: ToolLoop,
+        messages: list[dict[str, Any]],
+        schema: dict[str, Any],
+        relpath: str,
+        report_relpath: str,
+        bus: EventBus,
+        first_exc: Exception,
+    ) -> Any:
+        """Retry with strict addendum once; write error artifacts on second failure."""
+        del first_exc  # initial exc is recorded via traceback chain
+        messages_strict = self._inject_strict_addendum(messages)
+        try:
+            return await loop.run(
+                messages_strict,
+                schema=schema,
+                lens_tools=self._lens_tools_resolved,
+                path=relpath,
+                run_id=self._run_id,
+            )
+        except (LMSResponseSchemaInvalid, LMSResponseInvalidJSON) as exc2:
+            raw = ""
+            try:
+                raw = json.dumps({"error": str(exc2)})
+            except Exception:  # noqa: BLE001
+                raw = str(exc2)
+            write_raw_response(
                 audit_dir=self._audit_dir,
                 relpath=report_relpath,
-                reason="token_budget_exceeded",
+                raw_json=raw,
             )
-            return "skipped"
+            write_error_artifact(
+                audit_dir=self._audit_dir,
+                relpath=report_relpath,
+                kind="schema_mismatch",
+                error_message=str(exc2),
+                traceback=_tb.format_exc(),
+            )
+            await bus.publish(
+                FileError(
+                    ts=_now(),
+                    run_id=self._run_id,
+                    path=relpath,
+                    phase="llm",
+                    error_kind="schema_mismatch",
+                    error_message=str(exc2),
+                )
+            )
+            return "errored"
 
-        # ---- Render + persist (ARCH-13: render crash NOT run-killing) ----
+    async def _render_and_persist(
+        self,
+        *,
+        file: Path,
+        relpath: str,
+        report_relpath: str,
+        response: Any,
+        lens: Lens,
+        config: SenexConfig,
+        bus: EventBus,
+    ) -> str | None:
+        """Render + write markdown + append findings. Returns "errored" or None on success."""
         try:
             response_dict = response.content_dict or {}
             file_meta = self._build_file_metadata(
@@ -580,13 +714,8 @@ class FileAuditPhase:
                 config=config,
             )
             markdown = self._renderer.render_file(response_dict, file_meta)
-            self._renderer.write_file_atomic(
-                self._audit_dir, report_relpath, markdown
-            )
-            self._append_findings(
-                response=response_dict,
-                file_relpath=report_relpath,
-            )
+            self._renderer.write_file_atomic(self._audit_dir, report_relpath, markdown)
+            self._append_findings(response=response_dict, file_relpath=report_relpath)
         except DiskFatalError:
             raise  # propagate; auditor maps to RenderFatal
         except RenderError as exc:
@@ -629,24 +758,7 @@ class FileAuditPhase:
                 )
             )
             return "errored"
-
-        # ---- Optional thinking trace ----
-        if config.inference.thinking.save_traces and response.reasoning_content:
-            self._write_thinking_trace(
-                report_relpath, response.reasoning_content
-            )
-
-        # ---- Mark complete ----
-        finding_counts = self._summarize_findings(response.content_dict or {})
-        await bus.publish(
-            FileComplete(
-                ts=_now(),
-                run_id=self._run_id,
-                path=relpath,
-                finding_counts=finding_counts,
-            )
-        )
-        return "completed"
+        return None
 
     # ------------------------------------------------------------------
     # Helpers
