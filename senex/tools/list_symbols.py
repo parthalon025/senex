@@ -185,7 +185,7 @@ class _SymbolVisitor(ast.NodeVisitor):
         self._class_stack: list[str] = []
         self._in_function: bool = False
 
-    def visit_ClassDef(self, node: ast.ClassDef) -> None:  # type: ignore[override]
+    def visit_ClassDef(self, node: ast.ClassDef) -> None:
         self._symbols.append(
             SymbolEntry(
                 name=node.name,
@@ -204,10 +204,10 @@ class _SymbolVisitor(ast.NodeVisitor):
         self.generic_visit(node)
         self._class_stack.pop()
 
-    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:  # type: ignore[override]
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
         self._visit_func(node)
 
-    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:  # type: ignore[override]
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
         self._visit_func(node)
 
     def _visit_func(

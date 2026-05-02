@@ -5,17 +5,18 @@ import re
 import tomllib
 from functools import lru_cache
 from pathlib import Path
+from typing import Any, cast
 
 from senex.graph_awareness import GraphContext
 
 
 @lru_cache(maxsize=8)
-def _load_skills_cfg(skills_dir: Path) -> list[dict]:
+def _load_skills_cfg(skills_dir: Path) -> list[dict[str, Any]]:
     cfg_path = skills_dir / "skills.toml"
     if not cfg_path.is_file():
         return []
     with cfg_path.open("rb") as f:
-        return tomllib.load(f).get("skills", [])
+        return cast(list[dict[str, Any]], tomllib.load(f).get("skills", []))
 
 
 @lru_cache(maxsize=32)

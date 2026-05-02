@@ -33,9 +33,10 @@ import logging
 import os
 import time
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, AsyncIterator
+from typing import TYPE_CHECKING, Any
+from collections.abc import AsyncIterator, Callable, Coroutine
 
 from ulid import ULID
 
@@ -81,7 +82,7 @@ from .phases import (
 
 if TYPE_CHECKING:  # pragma: no cover
     from senex.config import SenexConfig
-    from senex.events import CommandBus
+    from senex.events import BaseEvent, CommandBus
     from senex.lens import Lens
 
 log = logging.getLogger(__name__)
@@ -96,7 +97,7 @@ EXIT_INTERRUPTED: int = 130
 
 
 def _now() -> datetime:
-    return datetime.now(tz=timezone.utc)
+    return datetime.now(tz=UTC)
 
 
 def compute_audit_dir(
@@ -110,7 +111,7 @@ def compute_audit_dir(
 @asynccontextmanager
 async def lifecycle_acquire_or_resume(
     *,
-    config: "SenexConfig",
+    config: SenexConfig,
     run_id: str,
     bus: EventBus,
     redactor: SecretRedactor,
@@ -199,10 +200,10 @@ def _hash_resume_fields(
 async def run_audit(
     *,
     repo: Path,
-    config: "SenexConfig",
-    lens: "Lens",
+    config: SenexConfig,
+    lens: Lens,
     bus: EventBus,
-    command_bus: "CommandBus",
+    command_bus: CommandBus,
     config_path: Path,
     output_root: Path | None = None,
     resume: bool = False,
@@ -643,7 +644,9 @@ def _events_BaseEvent() -> type:
     return BaseEvent
 
 
-def _disk_writer_dispatch(sub: DiskWriterSubscriber):
+def _disk_writer_dispatch(
+    sub: DiskWriterSubscriber,
+) -> Callable[[BaseEvent], Coroutine[Any, Any, None]]:
     """Build a callback that forwards events to the subscriber.
 
     Errors during disk write are logged but never propagated — they are
@@ -651,7 +654,6 @@ def _disk_writer_dispatch(sub: DiskWriterSubscriber):
     write should not abort the run (vs. e.g. ``ENOSPC`` which the audit's
     own per-file artifact writes will surface as ``DiskFatalError``).
     """
-    from senex.events import BaseEvent
 
     async def _forward(event: BaseEvent) -> None:
         try:
@@ -691,7 +693,7 @@ def _patch_checkpoint_fingerprint(audit_dir: Path, fingerprint: str) -> None:
     os.replace(tmp, path)
 
 
-def _snapshot_config(config: "SenexConfig", audit_dir: Path) -> None:
+def _snapshot_config(config: SenexConfig, audit_dir: Path) -> None:
     """Snapshot the resolved config to TOML for TOCTOU defense (§SEC-9).
 
     pydantic ``model_dump`` emits ``None`` for unset Optionals; tomli_w
