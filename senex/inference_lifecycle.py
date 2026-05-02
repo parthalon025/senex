@@ -69,7 +69,7 @@ class ResumedRunCannotOwnLoad(LifecycleError):
 
 # model_id validation -------------------------------------------------------
 
-_MODEL_ID_RE = re.compile(r"^[A-Za-z0-9_./-]+$")
+_MODEL_ID_RE = re.compile(r"^[A-Za-z0-9_.:/-]+$")
 _MODEL_ID_MAX_LEN = 256
 
 
@@ -78,10 +78,10 @@ def validate_model_id(model_id: str) -> str:
 
     Defense in depth (spec section 5.5.2.6): rejects shell metacharacters via the
     base regex, plus an explicit path-traversal rejection for ``..`` segments.
-    The base regex allows ``.`` and ``/`` because legitimate model_ids contain
-    them (e.g. ``google/gemma-4-26b-a4b``), but ``..`` segments are never
-    legitimate and would feed a directory escape if interpreted as a filesystem
-    path by either backend.
+    The base regex allows ``.``, ``/``, and ``:`` because legitimate model_ids
+    contain them (e.g. ``google/gemma-4-26b-a4b``, ``gemma4:e4b`` for Ollama
+    model:tag format), but ``..`` segments are never legitimate and would feed a
+    directory escape if interpreted as a filesystem path by either backend.
     """
     if not isinstance(model_id, str) or not model_id:
         raise InvalidModelId(
@@ -383,7 +383,7 @@ class OllamaBackend:
             await self._pull_model(model_id)
 
         if not await self.is_loaded(model_id):
-            await self._warmup(model_id)
+            await self._warmup(model_id, timeout)
 
         digest = await self._get_digest(model_id)
         fp = _compute_fingerprint(model_id, "", digest)
@@ -431,15 +431,16 @@ class OllamaBackend:
             "ollama serve did not become healthy in time"
         )
 
-    async def _warmup(self, model_id: str) -> None:
-        await self._client.post(
-            "/api/chat",
-            json={
-                "model": model_id,
-                "messages": [{"role": "user", "content": "hi"}],
-                "keep_alive": "10m",
-            },
-        )
+    async def _warmup(self, model_id: str, timeout: int) -> None:
+        # Use the caller-supplied timeout — loading a large model into VRAM can
+        # take 30-120s, far exceeding the default 10s client timeout.
+        async with httpx.AsyncClient(
+            base_url=self._base_url, timeout=float(timeout)
+        ) as c:
+            await c.post(
+                "/api/generate",
+                json={"model": model_id, "prompt": "", "keep_alive": "10m"},
+            )
 
     async def _get_digest(self, model_id: str) -> str:
         import time as _time
@@ -451,7 +452,15 @@ class OllamaBackend:
                 return digest
         r = await self._client.post("/api/show", json={"name": model_id})
         r.raise_for_status()
-        digest = r.json().get("details", {}).get("digest", "")
+        body = r.json()
+        # Newer Ollama /api/show responses moved the digest; fall back through
+        # several locations before giving up with an empty string.
+        digest = (
+            body.get("details", {}).get("digest")
+            or body.get("digest")
+            or body.get("model_info", {}).get("general.basename", "")
+            or ""
+        )
         self._digest_cache[model_id] = (now, digest)
         return digest
 
