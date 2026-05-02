@@ -247,6 +247,28 @@ def check_lifecycle_backend(config: SenexConfig) -> CheckResult:
     auto_unload = bool(config.inference.lifecycle.auto_unload)
     needs = auto_load or auto_unload
 
+    # Ollama backend: probe the Ollama server directly, skip SGLang/SDK/CLI.
+    if config.inference.backend == "ollama":
+        ollama_url = config.inference.ollama.base_url
+        try:
+            import httpx as _httpx
+            with _httpx.Client(timeout=3.0) as _cx:
+                _r = _cx.get(ollama_url.rstrip("/") + "/")
+                ollama_ok = _r.status_code == 200
+        except Exception:
+            ollama_ok = False
+        if ollama_ok:
+            return _ok(f"backend: ollama reachable at {ollama_url}")
+        if not needs:
+            return _warn(f"ollama unreachable at {ollama_url}; auto_load/auto_unload disabled")
+        if config.inference.ollama.manage_process:
+            return _ok(f"backend: ollama not running; manage_process=true will start it")
+        return _fail(
+            f"ollama unreachable at {ollama_url}; "
+            "set [inference.ollama].manage_process=true to auto-start",
+            exit_code=3,
+        )
+
     # HTTP backend (SGLang / vLLM / OpenAI-compat servers): probe /v1/models.
     http_available = False
     base_url = config.inference.base_url
@@ -537,19 +559,30 @@ class PreflightPhase:
         for name, result in sync_checks:
             await self._handle_result(name, result, bus, warnings)
 
-        # --- Async checks (LMS HTTP probes) -------------------------------
-        async_checks: list[tuple[str, CheckResult]] = [
-            ("lms_reachable", await check_lms_reachable(self._client)),
-            (
-                "model_loaded",
-                await check_model_loaded_or_loadable(self._client, config),
-            ),
-            (
-                "schema_with_thinking",
-                await check_schema_with_thinking(self._client, config),
-            ),
-            ("streaming", await check_streaming(self._client, config)),
-        ]
+        # --- Async checks (backend-specific probes) -----------------------
+        if config.inference.backend == "ollama":
+            ollama_url = config.inference.ollama.base_url
+            ollama_model = config.inference.ollama.model
+            async_checks: list[tuple[str, CheckResult]] = [
+                ("ollama_reachable", await check_ollama_reachable(ollama_url)),
+                (
+                    "ollama_model_available",
+                    await check_ollama_model_available(ollama_url, ollama_model),
+                ),
+            ]
+        else:
+            async_checks = [
+                ("lms_reachable", await check_lms_reachable(self._client)),
+                (
+                    "model_loaded",
+                    await check_model_loaded_or_loadable(self._client, config),
+                ),
+                (
+                    "schema_with_thinking",
+                    await check_schema_with_thinking(self._client, config),
+                ),
+                ("streaming", await check_streaming(self._client, config)),
+            ]
         for name, result in async_checks:
             await self._handle_result(name, result, bus, warnings)
 

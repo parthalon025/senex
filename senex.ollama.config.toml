@@ -1,0 +1,73 @@
+[output]
+root              = "E:/senex-audits"
+filename_template = "{repo}/{date}-{run_id_short}"
+redact_secrets    = true
+
+[lens]
+name             = "correctness"
+min_priority     = "all"
+include_tests    = false
+
+[walker]
+max_size_bytes        = 524288
+max_files             = 500000000
+extensions            = [".py", ".ts", ".tsx", ".js", ".jsx", ".go", ".rs", ".java", ".kt", ".cs", ".cpp", ".c", ".h", ".hpp", ".swift", ".rb", ".php", ".sh", ".ps1", ".scala", ".ex", ".exs", ".dart", ".lua", ".zig", ".nim"]
+default_excludes      = ["node_modules", ".venv", "venv", "dist", "build", "__pycache__", "*.min.*", ".git", "vendor", ".ginexus", ".claude", ".mypy_cache", ".pytest_cache", ".ruff_cache"]
+respect_gitignore     = true
+scan_subdir           = "src"
+include_tests         = false
+
+[crosscut]
+top_n_high   = 50
+top_n_medium = 100
+top_n_low    = 100
+
+[inference]
+backend = "ollama"
+
+[inference.ollama]
+manage_process   = true
+pull_on_start    = false
+startup_timeout_s = 60
+base_url         = "http://localhost:11434"
+model            = "gemma4:e4b"
+thinking         = true
+strict_json_schema = false
+
+[inference.tools]
+enabled              = true
+max_calls_per_file   = 8
+max_result_tokens    = 2048
+tool_timeout_seconds = 30
+
+[inference.memory]
+enabled      = true
+max_tokens   = 800
+min_priority = "medium"
+
+[inference.compaction]
+enabled                  = true
+trigger_pct              = 0.80
+target_pct               = 0.50
+preserve_recent_turns    = 2
+max_compactions_per_file = 3
+
+[inference.lifecycle]
+auto_load                       = true
+auto_unload                     = false
+load_timeout_seconds            = 120
+load_wait_timeout_seconds       = 300
+load_wait_poll_interval_seconds = 5.0
+runlock_dir                     = ""
+
+[ui]
+scan_root      = "E:/code"
+scan_max_depth = 6
+
+[[repos]]
+name                     = "pensiv"
+path                     = "E:/pensiv"
+system_prompt_addendum   = ".claude/CLAUDE.md"
+include_extensions       = []
+exclude_globs            = ["src/pensiv/_archive/**"]
+include_tests            = false

@@ -190,26 +190,35 @@ def _run_async_checks(
     out: list[tuple[str, CheckResult]] = []
 
     async def _run() -> list[tuple[str, CheckResult]]:
+        if config.inference.backend == "ollama":
+            out.append((
+                "ollama_reachable",
+                await check_ollama_reachable(config.inference.ollama.base_url),
+            ))
+            out.append((
+                "ollama_model_available",
+                await check_ollama_model_available(
+                    config.inference.ollama.base_url,
+                    config.inference.ollama.model,
+                ),
+            ))
+            return out
+
         bus = EventBus()
         redactor = SecretRedactor()
-        _bt = "ollama" if config.inference.backend == "ollama" else "sglang"
-        client = InferenceClient(config.inference, bus=bus, redactor=redactor, backend_type=_bt)
+        client = InferenceClient(config.inference, bus=bus, redactor=redactor, backend_type="sglang")
         try:
             out.append(("lms_reachable", await check_lms_reachable(client)))
-            out.append(
-                (
-                    "model_loaded",
-                    await check_model_loaded_or_loadable(client, config),
-                )
-            )
-            out.append(
-                (
-                    "schema_with_thinking",
-                    await check_schema_with_thinking(client, config),
-                )
-            )
+            out.append((
+                "model_loaded",
+                await check_model_loaded_or_loadable(client, config),
+            ))
+            out.append((
+                "schema_with_thinking",
+                await check_schema_with_thinking(client, config),
+            ))
             out.append(("streaming", await check_streaming(client, config)))
-            if config.inference.backend in ("ollama", "auto"):
+            if config.inference.backend == "auto":
                 out.append((
                     "ollama_reachable",
                     await check_ollama_reachable(config.inference.ollama.base_url),
