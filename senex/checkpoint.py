@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import os
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
 from typing import Any, Literal
 
@@ -103,7 +103,7 @@ class Checkpoint:
         cp = cls.load(audit_dir)
         new_data = dict(cp.data)
         new_data["completed_files"] = list(cp.data["completed_files"]) + [
-            {"path": file, "completed_at": datetime.now(tz=timezone.utc).isoformat()}
+            {"path": file, "completed_at": datetime.now(tz=UTC).isoformat()}
         ]
         _atomic_write_json(path, new_data)
 

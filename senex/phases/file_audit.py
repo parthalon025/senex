@@ -35,7 +35,7 @@ import json
 import logging
 import time
 import traceback as _tb
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -98,7 +98,7 @@ log = logging.getLogger(__name__)
 
 
 def _now() -> datetime:
-    return datetime.now(tz=timezone.utc)
+    return datetime.now(tz=UTC)
 
 
 def _detect_language(path: Path) -> str:
@@ -121,7 +121,7 @@ def _number_lines(source: str) -> str:
     return "\n".join(f"{i:>{width}}: {line}" for i, line in enumerate(lines, 1))
 
 
-def _load_audit_schema(lens: "Lens") -> dict[str, Any]:
+def _load_audit_schema(lens: Lens) -> dict[str, Any]:
     schema_path = lens.response_schema_path
     parsed: Any = json.loads(schema_path.read_text(encoding="utf-8"))
     if not isinstance(parsed, dict):
@@ -129,7 +129,7 @@ def _load_audit_schema(lens: "Lens") -> dict[str, Any]:
     return parsed
 
 
-async def _pause_until_resume(command_bus: "CommandBus", queue: asyncio.Queue[Command]) -> None:
+async def _pause_until_resume(command_bus: CommandBus, queue: asyncio.Queue[Command]) -> None:
     """Block on ``queue`` until a Resume command arrives. Re-pushes Quit/Skip."""
     while True:
         cmd = await queue.get()
@@ -154,9 +154,9 @@ class FileAuditPhase:
         repo_name: str,
         run_id: str,
         run_id_short: str,
-        client: "InferenceClient",
+        client: InferenceClient,
         compactor_factory: Any,
-        graph_provider: "GraphContextProvider",
+        graph_provider: GraphContextProvider,
         renderer: Renderer,
         partial_writer: FindingsPartialWriter,
         tool_registry: Any,
@@ -191,10 +191,10 @@ class FileAuditPhase:
     async def do_work(
         self,
         state: Any,
-        lens: "Lens",
-        config: "SenexConfig",
+        lens: Lens,
+        config: SenexConfig,
         bus: EventBus,
-        command_bus: "CommandBus",
+        command_bus: CommandBus,
     ) -> dict[str, Any]:
         files: list[Path] = list(state.get("files", []))
         relpath_map: dict[str, str] = state.get("relpath_to_report_path", {})
@@ -297,8 +297,8 @@ class FileAuditPhase:
         file: Path,
         relpath: str,
         report_relpath: str,
-        lens: "Lens",
-        config: "SenexConfig",
+        lens: Lens,
+        config: SenexConfig,
         schema: dict[str, Any],
         bus: EventBus,
     ) -> str:
@@ -674,8 +674,8 @@ class FileAuditPhase:
         file: Path,
         relpath: str,
         response: Any,
-        lens: "Lens",
-        config: "SenexConfig",
+        lens: Lens,
+        config: SenexConfig,
     ) -> FileMetadata:
         # Pull the per-file tool dispatch counts from the loop instance and
         # the compactor's running count from the per-file compactor (M11

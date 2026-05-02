@@ -1,7 +1,7 @@
 """Tests for ProgressWidget (M9 Task 9.6a)."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 import pytest
 from textual.app import App, ComposeResult
@@ -12,7 +12,7 @@ from senex.tui.widgets.progress import ProgressWidget
 
 
 def _now() -> datetime:
-    return datetime.now(tz=timezone.utc)
+    return datetime.now(tz=UTC)
 
 
 class _Host(App[None]):

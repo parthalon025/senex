@@ -221,7 +221,7 @@ class CrossCutter:
 
 
 def _now() -> datetime.datetime:
-    return datetime.datetime.now(tz=datetime.timezone.utc)
+    return datetime.datetime.now(tz=datetime.UTC)
 
 
 def _with_placeholder_ids(payload: dict[str, object]) -> dict[str, object]:

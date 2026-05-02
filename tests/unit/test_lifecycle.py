@@ -5,7 +5,6 @@ Implements M4 Tasks 4.1-4.6 per the M4 plan.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -16,7 +15,6 @@ from senex.inference_lifecycle import (
     FingerprintMismatch,
     InvalidModelId,
     Lifecycle,
-    LifecycleBackendFactory,
     LifecycleBackendUnavailable,
     ModelInfo,
     ModelLoadFailed,
@@ -573,7 +571,6 @@ async def test_doctor_fail_when_auto_load_and_no_backend(
     from senex.config import LifecycleCfg, SenexConfig
     from senex.inference_lifecycle import (
         DoctorCheck,
-        LifecycleBackendUnavailable,
         doctor_check_lifecycle_backend,
     )
 
@@ -594,7 +591,6 @@ async def test_doctor_warn_when_no_backend_but_auto_load_false(
     """auto_load=False + no backend -> status='warn' (run can still attach)."""
     from senex.config import LifecycleCfg, SenexConfig
     from senex.inference_lifecycle import (
-        LifecycleBackendUnavailable,
         doctor_check_lifecycle_backend,
     )
 

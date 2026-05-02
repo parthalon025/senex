@@ -19,7 +19,7 @@ import json
 import os
 import re
 import time
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 import httpx
@@ -219,7 +219,7 @@ class SGLangBackend:
             stdout, stderr = await asyncio.wait_for(
                 proc.communicate(), timeout=timeout
             )
-        except asyncio.TimeoutError as exc:
+        except TimeoutError as exc:
             proc.kill()
             await proc.wait()
             raise ModelLoadFailed(
@@ -344,7 +344,7 @@ class OllamaBackend:
 
     backend_name = "ollama"
 
-    def __init__(self, cfg: "Any") -> None:
+    def __init__(self, cfg: Any) -> None:
         self._cfg = cfg
         self._base_url = cfg.base_url.rstrip("/")
         self._client = httpx.AsyncClient(base_url=self._base_url, timeout=10.0)
@@ -481,7 +481,7 @@ class LifecycleBackendFactory:
     """Selects the best available backend (Ollama or SGLang)."""
 
     @staticmethod
-    async def select(cfg: "Any") -> LifecycleBackend:
+    async def select(cfg: Any) -> LifecycleBackend:
         """Return the appropriate backend based on ``cfg.backend``.
 
         - ``"ollama"``: always return OllamaBackend (no probe).
@@ -510,7 +510,7 @@ class LifecycleBackendFactory:
 
 
 def _utc_now_iso() -> str:
-    return datetime.now(tz=timezone.utc).isoformat()
+    return datetime.now(tz=UTC).isoformat()
 
 
 def _current_pid() -> int:
@@ -608,9 +608,9 @@ class Lifecycle:
     def __init__(
         self,
         backend: LifecycleBackend,
-        bus: "EventBus | Any",
-        config: "LifecycleCfg",
-        redactor: "SecretRedactor",
+        bus: EventBus | Any,
+        config: LifecycleCfg,
+        redactor: SecretRedactor,
     ) -> None:
         self._backend = backend
         self._bus = bus
@@ -630,7 +630,7 @@ class Lifecycle:
         from senex import events as _events
 
         cls = getattr(_events, event_cls_name)
-        event = cls(ts=datetime.now(tz=timezone.utc), run_id=fields.pop("run_id"), **fields)
+        event = cls(ts=datetime.now(tz=UTC), run_id=fields.pop("run_id"), **fields)
         await self._bus.publish(event)
 
     async def _probe_info(self, model_id: str) -> ModelInfo:
@@ -653,7 +653,7 @@ class Lifecycle:
         self,
         model_id: str,
         run_id: str,
-        runlock: "type[RunLockType]",
+        runlock: type[RunLockType],
         *,
         auto_load: bool,
     ) -> tuple[ModelInfo, bool]:
@@ -697,7 +697,7 @@ class Lifecycle:
                 target_fingerprint="",  # unknown until load completes
             )
             await self._publish("ModelLoadStarted", run_id=run_id, model_id=model_id)
-            started_at = datetime.now(tz=timezone.utc)
+            started_at = datetime.now(tz=UTC)
             try:
                 info = await asyncio.wait_for(
                     self._backend.load(model_id, timeout=self._config.load_timeout_seconds),
@@ -707,7 +707,7 @@ class Lifecycle:
                 # Cancellation MUST propagate cleanly (Ctrl+C). No runlock
                 # was acquired yet, so there's nothing to clean up here.
                 raise
-            except asyncio.TimeoutError as exc:
+            except TimeoutError as exc:
                 await self._publish(
                     "ModelLoadFailed",
                     run_id=run_id,
@@ -760,7 +760,7 @@ class Lifecycle:
                     ),
                     initial_error=load_err,
                 )
-            duration = (datetime.now(tz=timezone.utc) - started_at).total_seconds()
+            duration = (datetime.now(tz=UTC) - started_at).total_seconds()
             await self._publish(
                 "ModelLoadComplete",
                 run_id=run_id,
@@ -796,7 +796,7 @@ class Lifecycle:
         self,
         model_id: str,
         run_id: str,
-        runlock: "type[RunLockType]",
+        runlock: type[RunLockType],
         *,
         reason: str,
         initial_error: Exception,
@@ -877,7 +877,7 @@ class Lifecycle:
         self,
         model_id: str,
         run_id: str,
-        runlock: "type[RunLockType]",
+        runlock: type[RunLockType],
         *,
         auto_unload: bool,
         loaded_by_us: bool,
@@ -951,7 +951,7 @@ class Lifecycle:
 
         # All conditions met: unload.
         await self._publish("ModelUnloadStarted", run_id=run_id, model_id=model_id)
-        started_at = datetime.now(tz=timezone.utc)
+        started_at = datetime.now(tz=UTC)
         try:
             await self._backend.unload(model_id)
         except Exception as exc:
@@ -963,7 +963,7 @@ class Lifecycle:
                 error_message=self._redactor.redact(repr(exc)),
             )
             return
-        duration = (datetime.now(tz=timezone.utc) - started_at).total_seconds()
+        duration = (datetime.now(tz=UTC) - started_at).total_seconds()
         await self._publish(
             "ModelUnloadComplete",
             run_id=run_id,
@@ -975,7 +975,7 @@ class Lifecycle:
         self,
         model_id: str,
         run_id: str,
-        runlock: "type[RunLockType]",
+        runlock: type[RunLockType],
         *,
         checkpoint_fingerprint: str,
         allow_mixed: bool,
@@ -1008,7 +1008,7 @@ class Lifecycle:
                 target_fingerprint=checkpoint_fingerprint,
             )
             await self._publish("ModelLoadStarted", run_id=run_id, model_id=model_id)
-            started_at = datetime.now(tz=timezone.utc)
+            started_at = datetime.now(tz=UTC)
             try:
                 info = await asyncio.wait_for(
                     self._backend.load(
@@ -1016,7 +1016,7 @@ class Lifecycle:
                     ),
                     timeout=self._config.load_timeout_seconds,
                 )
-            except asyncio.TimeoutError as exc:
+            except TimeoutError as exc:
                 await self._publish(
                     "ModelLoadFailed",
                     run_id=run_id,
@@ -1039,7 +1039,7 @@ class Lifecycle:
                 raise ModelLoadFailed(
                     f"load({model_id!r}) failed: {self._redactor.redact(str(exc))}"
                 ) from exc
-            duration = (datetime.now(tz=timezone.utc) - started_at).total_seconds()
+            duration = (datetime.now(tz=UTC) - started_at).total_seconds()
             await self._publish(
                 "ModelLoadComplete",
                 run_id=run_id,

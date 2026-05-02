@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 import pytest
 from pydantic import ValidationError
@@ -24,7 +24,7 @@ from senex.events import (
 
 
 def _now() -> datetime:
-    return datetime.now(tz=timezone.utc)
+    return datetime.now(tz=UTC)
 
 
 def test_event_count_is_at_least_36() -> None:

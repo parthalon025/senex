@@ -79,26 +79,23 @@ def test_write_text_atomic_raises_disk_fatal_on_enospc(tmp_path: Path) -> None:
     """ENOSPC propagates as DiskFatalError (run-killing per ARCH-13)."""
     target = tmp_path / "out.md"
     err = OSError(errno.ENOSPC, "no space left")
-    with patch("senex.atomic_io.os.write", side_effect=err):
-        with pytest.raises(DiskFatalError):
-            write_text_atomic(target, "x")
+    with patch("senex.atomic_io.os.write", side_effect=err), pytest.raises(DiskFatalError):
+        write_text_atomic(target, "x")
 
 
 def test_write_text_atomic_raises_disk_fatal_on_erofs(tmp_path: Path) -> None:
     target = tmp_path / "out.md"
     err = OSError(errno.EROFS, "read-only filesystem")
-    with patch("senex.atomic_io.os.write", side_effect=err):
-        with pytest.raises(DiskFatalError):
-            write_text_atomic(target, "x")
+    with patch("senex.atomic_io.os.write", side_effect=err), pytest.raises(DiskFatalError):
+        write_text_atomic(target, "x")
 
 
 def test_write_text_atomic_other_oserror_not_disk_fatal(tmp_path: Path) -> None:
     """A generic OSError (e.g. EPERM) is recoverable, not run-killing."""
     target = tmp_path / "out.md"
     err = OSError(errno.EPERM, "permission denied")
-    with patch("senex.atomic_io.os.write", side_effect=err):
-        with pytest.raises(OSError) as ei:
-            write_text_atomic(target, "x")
+    with patch("senex.atomic_io.os.write", side_effect=err), pytest.raises(OSError) as ei:
+        write_text_atomic(target, "x")
     assert not isinstance(ei.value, DiskFatalError)
 
 

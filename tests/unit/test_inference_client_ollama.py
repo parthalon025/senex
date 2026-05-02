@@ -1,7 +1,6 @@
 """Tests for backend-aware schema translation and thinking injection."""
 from unittest.mock import MagicMock
 
-import pytest
 from pydantic import BaseModel
 
 

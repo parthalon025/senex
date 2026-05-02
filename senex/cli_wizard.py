@@ -271,7 +271,7 @@ def _select_repo(
 
 
 def _select_model(
-    client: "InferenceClient | None",
+    client: InferenceClient | None,
     default_model: str,
     *,
     stdin: TextIO | None = None,
@@ -413,7 +413,7 @@ def _detect_backend(base_url: str) -> str:
         return "unknown"
 
 
-def _print_lms_checklist(base_url: str, stdout: "TextIO") -> None:
+def _print_lms_checklist(base_url: str, stdout: TextIO) -> None:
     """Print the inference-server pre-flight checklist; no user input required.
 
     Auto-detects SGLang vs LM Studio at ``base_url`` and prints the relevant
@@ -839,11 +839,11 @@ def _discover_repos_on_disk(root: Path, max_depth: int = 6) -> list[Path]:
 
 def interactive_audit_setup(
     config: SenexConfig,
-    client: "InferenceClient | None",
+    client: InferenceClient | None,
     *,
     stdin: TextIO | None = None,
     stdout: TextIO | None = None,
-) -> "RuntimeConfig":
+) -> RuntimeConfig:
     """Walk the user through audit setup; return a populated ``RuntimeConfig``.
 
     Args:

@@ -1,7 +1,7 @@
 """Tests for HeadlessSubscriber (M9 Task 9.2)."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from io import StringIO
 
 import pytest
@@ -22,7 +22,7 @@ from senex.subscribers.headless_subscriber import HeadlessSubscriber
 
 
 def _now() -> datetime:
-    return datetime.now(tz=timezone.utc)
+    return datetime.now(tz=UTC)
 
 
 @pytest.mark.asyncio

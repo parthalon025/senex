@@ -18,7 +18,8 @@ import asyncio
 import json
 import logging
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
+from collections.abc import Iterator
 
 from pydantic import ValidationError
 

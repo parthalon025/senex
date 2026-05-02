@@ -46,10 +46,10 @@ class Phase(Protocol):
     async def do_work(
         self,
         state: Any,
-        lens: "Lens",
-        config: "SenexConfig",
-        bus: "EventBus",
-        command_bus: "CommandBus",
+        lens: Lens,
+        config: SenexConfig,
+        bus: EventBus,
+        command_bus: CommandBus,
     ) -> Any:
         """Perform the phase's work; return the new state."""
         ...

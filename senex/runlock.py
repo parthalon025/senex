@@ -17,7 +17,7 @@ import re
 import sys
 import time
 import warnings
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
 from typing import Any
 
@@ -202,7 +202,7 @@ class RunLock:
                 {
                     "run_id": run_id,
                     "pid": pid,
-                    "started_at": datetime.now(tz=timezone.utc).isoformat(),
+                    "started_at": datetime.now(tz=UTC).isoformat(),
                     "loaded_by_us": loaded_by_us,
                 }
             )

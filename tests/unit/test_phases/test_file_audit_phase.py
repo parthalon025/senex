@@ -39,6 +39,7 @@ from senex.phases.file_audit import FileAuditPhase
 from senex.renderer import Renderer
 from senex.secret_redactor import SecretRedactor
 from senex.tools.registry import ToolRegistry
+from datetime import UTC
 
 
 _VALID_RESPONSE_DICT: dict[str, Any] = {
@@ -482,9 +483,9 @@ async def test_command_bus_skip_writes_skipped(tmp_path: Path) -> None:
     # would race with the phase's subscribe(). Instead, monkey-patch the
     # subscribe to also pre-fill the queue with our Skip command.
     import asyncio
-    from datetime import datetime, timezone
+    from datetime import datetime
 
-    skip_cmd = Command(type="Skip", target="main.py", ts=datetime.now(tz=timezone.utc))
+    skip_cmd = Command(type="Skip", target="main.py", ts=datetime.now(tz=UTC))
     original_subscribe = cb.subscribe
 
     def subscribe_and_seed() -> asyncio.Queue[Command]:
@@ -511,10 +512,10 @@ async def test_command_bus_quit_propagates_keyboard_interrupt(tmp_path: Path) ->
     client = FakeClient(responses=[_make_response(_VALID_RESPONSE_DICT)])
     phase, bus, cb, captured, state = _setup_phase(tmp_path, client, [f1])
     import asyncio
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     cfg = SenexConfig()
-    quit_cmd = Command(type="Quit", target=None, ts=datetime.now(tz=timezone.utc))
+    quit_cmd = Command(type="Quit", target=None, ts=datetime.now(tz=UTC))
     original_subscribe = cb.subscribe
 
     def subscribe_and_seed() -> asyncio.Queue[Command]:

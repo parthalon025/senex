@@ -9,7 +9,7 @@ Verifies that:
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from io import StringIO
 from typing import Any
 
@@ -70,7 +70,7 @@ from senex.subscribers.jsonl_headless_subscriber import JSONLinesHeadlessSubscri
 
 
 def _now() -> datetime:
-    return datetime.now(tz=timezone.utc)
+    return datetime.now(tz=UTC)
 
 
 def _build_one(cls: type[BaseEvent]) -> BaseEvent:

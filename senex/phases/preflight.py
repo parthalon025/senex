@@ -43,6 +43,7 @@ if TYPE_CHECKING:  # pragma: no cover — type-checking only
     from senex.inference_client import InferenceClient
 
 from .base import Phase, PreflightFailure  # noqa: E402
+from datetime import UTC
 
 log = logging.getLogger(__name__)
 
@@ -262,7 +263,7 @@ def check_lifecycle_backend(config: SenexConfig) -> CheckResult:
         if not needs:
             return _warn(f"ollama unreachable at {ollama_url}; auto_load/auto_unload disabled")
         if config.inference.ollama.manage_process:
-            return _ok(f"backend: ollama not running; manage_process=true will start it")
+            return _ok("backend: ollama not running; manage_process=true will start it")
         return _fail(
             f"ollama unreachable at {ollama_url}; "
             "set [inference.ollama].manage_process=true to auto-start",
@@ -349,7 +350,7 @@ def _is_loopback(base_url: str) -> bool:
     return host in {"localhost", "127.0.0.1", "::1"}
 
 
-async def check_lms_reachable(client: "InferenceClient") -> CheckResult:
+async def check_lms_reachable(client: InferenceClient) -> CheckResult:
     """Inference server (SGLang/LM Studio) reachable at ``/v1/models`` and bound to loopback."""
     cfg = client._config
     if not _is_loopback(cfg.base_url) and not cfg.allow_non_loopback:
@@ -370,7 +371,7 @@ async def check_lms_reachable(client: "InferenceClient") -> CheckResult:
 
 
 async def check_model_loaded_or_loadable(
-    client: "InferenceClient", config: SenexConfig
+    client: InferenceClient, config: SenexConfig
 ) -> CheckResult:
     """Target model already loaded, or auto_load can load it (spec §8.1)."""
     target = config.inference.model
@@ -395,7 +396,7 @@ async def check_model_loaded_or_loadable(
 
 
 async def check_schema_with_thinking(
-    client: "InferenceClient", config: SenexConfig
+    client: InferenceClient, config: SenexConfig
 ) -> CheckResult:
     """``response_format=json_schema`` works WITH thinking — warn on fallback."""
     try:
@@ -445,7 +446,7 @@ async def check_ollama_model_available(base_url: str, model: str) -> CheckResult
 
 
 async def check_streaming(
-    client: "InferenceClient", config: SenexConfig
+    client: InferenceClient, config: SenexConfig
 ) -> CheckResult:
     """Streaming works on the configured model (warn-only on failure)."""
     try:
@@ -494,7 +495,7 @@ class PreflightPhase:
 
     def __init__(
         self,
-        client: "InferenceClient",
+        client: InferenceClient,
         inputs: PreflightInputs,
         run_id: str,
     ) -> None:
@@ -524,10 +525,10 @@ class PreflightPhase:
     async def do_work(
         self,
         state: Any,
-        lens: "Lens",
+        lens: Lens,
         config: SenexConfig,
         bus: EventBus,
-        command_bus: "CommandBus",
+        command_bus: CommandBus,
     ) -> dict[str, list[str]]:
         del state, command_bus  # preflight ignores prior state and the command bus
         inputs = self._inputs
@@ -606,11 +607,11 @@ class PreflightPhase:
             )
         if result.status is CheckStatus.WARN:
             warnings.append(f"{name}: {result.message}")
-            from datetime import datetime, timezone
+            from datetime import datetime
 
             await bus.publish(
                 PreflightWarning(
-                    ts=datetime.now(tz=timezone.utc),
+                    ts=datetime.now(tz=UTC),
                     run_id=self._run_id,
                     check=name,
                     message=result.message,

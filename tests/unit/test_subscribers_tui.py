@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 import pytest
 
@@ -18,7 +18,7 @@ from senex.subscribers.tui_subscriber import TuiSubscriber
 
 
 def _now() -> datetime:
-    return datetime.now(tz=timezone.utc)
+    return datetime.now(tz=UTC)
 
 
 class _MockWidget:

@@ -84,7 +84,7 @@ async def gitnexus_impact_handler(
         stdout, stderr = await asyncio.wait_for(
             proc.communicate(), timeout=ctx.tool_timeout_seconds
         )
-    except asyncio.TimeoutError:
+    except TimeoutError:
         proc.kill()
         await proc.wait()
         raise

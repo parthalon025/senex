@@ -22,7 +22,7 @@ from senex.inference_lifecycle import (
 from senex.runlock import RunLock, _is_pid_alive
 
 
-def _load_lifecycle_inference_cfg(config_path: str | None) -> "Any":
+def _load_lifecycle_inference_cfg(config_path: str | None) -> Any:
     """Read ``senex.config.toml`` and return the ``InferenceCfg`` for factory selection.
 
     Returns a default ``InferenceCfg`` on any error so missing or malformed

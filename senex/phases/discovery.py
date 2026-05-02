@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -26,7 +26,7 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 def _now() -> datetime:
-    return datetime.now(tz=timezone.utc)
+    return datetime.now(tz=UTC)
 
 
 class DiscoveryPhase:
@@ -55,10 +55,10 @@ class DiscoveryPhase:
     async def do_work(
         self,
         state: Any,
-        lens: "Lens",
-        config: "SenexConfig",
+        lens: Lens,
+        config: SenexConfig,
         bus: EventBus,
-        command_bus: "CommandBus",
+        command_bus: CommandBus,
     ) -> dict[str, Any]:
         del state, lens, command_bus  # discovery is stateless / lens-agnostic
 
