@@ -339,6 +339,15 @@ async def run_audit(
                 redactor=redactor,
                 backend_type=_bt,
             )
+            # Resolved model id used for both fingerprint pinning and the
+            # RunStart event (the SGLang ``inference.model`` default leaks
+            # in here when backend=ollama and would mask which model
+            # actually answered the chat calls).
+            _resolved_model_id = (
+                config.inference.ollama.model
+                if config.inference.backend == "ollama"
+                else config.inference.model
+            )
             # Pin the client's fingerprint from its own HTTP view of /v1/models,
             # not the lifecycle's `lms ps --json` view. The two surfaces report
             # different quant/digest fields for the same loaded model, so the
@@ -349,7 +358,7 @@ async def run_audit(
             try:
                 _http_models = await client.list_loaded_models()
                 _target = next(
-                    (m for m in _http_models if m.id == config.inference.model),
+                    (m for m in _http_models if m.id == _resolved_model_id),
                     None,
                 )
                 if _target is not None:
@@ -407,7 +416,7 @@ async def run_audit(
                 run_id=run_id_full,
                 run_id_short=run_id_short,
                 audit_dir=str(audit_dir),
-                model=config.inference.model,
+                model=_resolved_model_id,
                 model_fingerprint=model_info.fingerprint,
                 lens=lens.name,
                 lens_version=lens.version,
@@ -465,7 +474,7 @@ async def run_audit(
                     run_id=run_id_full,
                     repo=str(repo),
                     audit_dir=str(audit_dir),
-                    model=config.inference.model,
+                    model=_resolved_model_id,
                     lens=lens.name,
                     lens_version=lens.version,
                     config_hash=config_hash,
