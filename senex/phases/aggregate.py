@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -42,7 +42,7 @@ log = logging.getLogger(__name__)
 
 
 def _now() -> datetime:
-    return datetime.now(tz=timezone.utc)
+    return datetime.now(tz=UTC)
 
 
 class AggregatePhase:
@@ -66,10 +66,10 @@ class AggregatePhase:
     async def do_work(
         self,
         state: Any,
-        lens: "Lens",
-        config: "SenexConfig",
+        lens: Lens,
+        config: SenexConfig,
         bus: EventBus,
-        command_bus: "CommandBus",
+        command_bus: CommandBus,
     ) -> dict[str, Any]:
         del lens, config, command_bus  # aggregator works on persisted artifacts
 

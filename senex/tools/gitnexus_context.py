@@ -76,8 +76,8 @@ def _extract_output(payload: dict[str, object]) -> dict[str, object]:
     if "error" in payload:
         raise ToolDispatchFailed(str(payload["error"]))
 
-    incoming: dict = payload.get("incoming", {})  # type: ignore[assignment]
-    outgoing: dict = payload.get("outgoing", {})  # type: ignore[assignment]
+    incoming: dict[str, object] = payload.get("incoming", {})  # type: ignore[assignment]
+    outgoing: dict[str, object] = payload.get("outgoing", {})  # type: ignore[assignment]
 
     def _names(items: object) -> list[str]:
         if not isinstance(items, list):
@@ -127,7 +127,7 @@ async def gitnexus_context_handler(
         stdout, stderr = await asyncio.wait_for(
             proc.communicate(), timeout=ctx.tool_timeout_seconds
         )
-    except asyncio.TimeoutError:
+    except TimeoutError:
         proc.kill()
         await proc.wait()
         raise

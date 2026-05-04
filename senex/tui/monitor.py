@@ -7,7 +7,7 @@ global; replay-mode disables ``s``/``r``).
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from typing import Any
 
 from textual.app import ComposeResult
@@ -36,7 +36,7 @@ log = logging.getLogger(__name__)
 
 
 def _now() -> datetime:
-    return datetime.now(tz=timezone.utc)
+    return datetime.now(tz=UTC)
 
 
 class _FocusHost(Widget):

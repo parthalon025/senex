@@ -236,11 +236,10 @@ async def test_preflight_resolves_npx_absolute_path() -> None:
 async def test_preflight_raises_when_npx_missing() -> None:
     with patch("senex.graph_awareness.shutil.which", return_value=None), patch(
         "senex.graph_awareness.Path.is_file", return_value=False
-    ):
-        with pytest.raises(GitNexusUnavailable):
-            await GitNexusCLIProvider.preflight(
-                repo_name="senex", bus=EventBus()
-            )
+    ), pytest.raises(GitNexusUnavailable):
+        await GitNexusCLIProvider.preflight(
+            repo_name="senex", bus=EventBus()
+        )
 
 
 def test_graph_context_dataclass_shape() -> None:

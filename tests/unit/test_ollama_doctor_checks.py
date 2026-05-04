@@ -77,7 +77,7 @@ def test_run_async_checks_includes_ollama_checks_when_backend_is_ollama():
     """_run_async_checks inserts ollama_reachable + ollama_model_available for ollama backend."""
     from unittest.mock import AsyncMock, patch
 
-    from senex.config import InferenceCfg, OllamaCfg, SenexConfig
+    from senex.config import InferenceCfg, SenexConfig
     from senex.phases.preflight import CheckResult, CheckStatus
 
     _ok = CheckResult(status=CheckStatus.PASS)

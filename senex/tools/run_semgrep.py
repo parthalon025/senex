@@ -110,7 +110,7 @@ async def _get_semgrep_version() -> str:
             stdout, _ = await asyncio.wait_for(
                 proc.communicate(), timeout=_VERSION_TIMEOUT_S
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             proc.kill()
             await proc.wait()
             return "semgrep"
@@ -230,7 +230,7 @@ async def run_semgrep_handler(
         stdout, stderr = await asyncio.wait_for(
             proc.communicate(), timeout=ctx.tool_timeout_seconds
         )
-    except asyncio.TimeoutError:
+    except TimeoutError:
         proc.kill()
         await proc.wait()
         raise

@@ -51,6 +51,7 @@ from senex.events import (
 )
 from senex.inference_client import ChatMessage, ChatResponse, ToolCall, ToolCallFunction
 from senex.secret_redactor import SecretRedactor
+from datetime import UTC
 
 if TYPE_CHECKING:
     from senex.llm_client import LLMClient
@@ -277,7 +278,7 @@ class Compactor:
 
     def __init__(
         self,
-        client: "LLMClient",
+        client: LLMClient,
         prompt_path: Path,
         schema_path: Path,
         config: CompactionCfg,
@@ -496,13 +497,13 @@ class Compactor:
 # ---------------------------------------------------------------------------
 
 
-def _now() -> "datetime":
-    return datetime.now(tz=timezone.utc)
+def _now() -> datetime:
+    return datetime.now(tz=UTC)
 
 
 # Late import to avoid pulling datetime at TYPE_CHECKING time only; we need it
 # at runtime here.
-from datetime import datetime, timezone  # noqa: E402
+from datetime import datetime  # noqa: E402
 
 __all__ = [
     "CompactionFailed",

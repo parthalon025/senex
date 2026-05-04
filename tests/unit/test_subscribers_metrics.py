@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import builtins
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from unittest.mock import patch
 
 import pytest
@@ -24,7 +24,7 @@ from senex.subscribers.metrics import (
 
 
 def _now() -> datetime:
-    return datetime.now(tz=timezone.utc)
+    return datetime.now(tz=UTC)
 
 
 @pytest.mark.asyncio

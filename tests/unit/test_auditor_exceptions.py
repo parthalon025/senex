@@ -265,15 +265,14 @@ async def test_unexpected_exception_propagates(tmp_path: Path) -> None:
 
         with patch(
             "senex.phases.preflight.PreflightPhase.do_work", new=_boom
-        ):
-            with pytest.raises(ValueError):
-                await run_audit(
-                    repo=repo,
-                    config=cfg,
-                    lens=Lens.load("correctness"),
-                    bus=EventBus(),
-                    command_bus=CommandBus(),
-                    config_path=cfg_path,
-                    output_root=tmp_path / "audits",
-                    resume=False,
-                )
+        ), pytest.raises(ValueError):
+            await run_audit(
+                repo=repo,
+                config=cfg,
+                lens=Lens.load("correctness"),
+                bus=EventBus(),
+                command_bus=CommandBus(),
+                config_path=cfg_path,
+                output_root=tmp_path / "audits",
+                resume=False,
+            )

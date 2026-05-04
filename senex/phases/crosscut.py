@@ -37,7 +37,7 @@ class CrosscutPhase:
     def __init__(
         self,
         audit_dir: Path,
-        client: "LLMClient",
+        client: LLMClient,
         run_id: str,
     ) -> None:
         self._audit_dir = audit_dir
@@ -50,10 +50,10 @@ class CrosscutPhase:
     async def do_work(
         self,
         state: Any,
-        lens: "Lens",
-        config: "SenexConfig",
+        lens: Lens,
+        config: SenexConfig,
         bus: EventBus,
-        command_bus: "CommandBus",
+        command_bus: CommandBus,
     ) -> dict[str, Any]:
         del state, lens, command_bus
         findings = self._load_findings()

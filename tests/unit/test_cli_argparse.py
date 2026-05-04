@@ -242,9 +242,8 @@ def test_version_flag_returns_zero_and_prints_version() -> None:
     import senex
 
     buf = io.StringIO()
-    with redirect_stdout(buf):
-        with pytest.raises(SystemExit) as exc:
-            build_parser().parse_args(["--version"])
+    with redirect_stdout(buf), pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["--version"])
     assert exc.value.code == 0
     assert senex.__version__ in buf.getvalue()
 
@@ -252,9 +251,8 @@ def test_version_flag_returns_zero_and_prints_version() -> None:
 def test_help_flag_returns_zero() -> None:
     """--help exits 0 and lists every subcommand name."""
     buf = io.StringIO()
-    with redirect_stdout(buf):
-        with pytest.raises(SystemExit) as exc:
-            build_parser().parse_args(["--help"])
+    with redirect_stdout(buf), pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["--help"])
     assert exc.value.code == 0
     text = buf.getvalue()
     for sub in ("audit", "view", "doctor", "aggregate", "config", "lifecycle"):
@@ -264,9 +262,8 @@ def test_help_flag_returns_zero() -> None:
 def test_no_subcommand_exits_nonzero() -> None:
     """argparse with required=True subparser should error when no command given."""
     buf = io.StringIO()
-    with redirect_stderr(buf):
-        with pytest.raises(SystemExit) as exc:
-            build_parser().parse_args([])
+    with redirect_stderr(buf), pytest.raises(SystemExit) as exc:
+        build_parser().parse_args([])
     assert exc.value.code != 0
 
 

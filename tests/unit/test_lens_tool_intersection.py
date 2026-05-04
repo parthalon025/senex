@@ -59,9 +59,8 @@ def test_config_with_extension_raises_with_warnings(
     registry: ToolRegistry,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    with caplog.at_level(logging.WARNING):
-        with pytest.raises(UnknownConfigKey):
-            lens.openai_tools_for(registry, ["A", "X", "Y"])
+    with caplog.at_level(logging.WARNING), pytest.raises(UnknownConfigKey):
+        lens.openai_tools_for(registry, ["A", "X", "Y"])
     # Exactly two warnings for X and Y; the violations should ALL be logged.
     warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
     msgs = " ".join(r.getMessage() for r in warnings)

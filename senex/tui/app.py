@@ -22,7 +22,8 @@ from __future__ import annotations
 import asyncio
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Awaitable, Callable
+from typing import TYPE_CHECKING, Any
+from collections.abc import Awaitable, Callable
 
 from textual.app import App
 from textual.binding import Binding
@@ -79,7 +80,7 @@ class SenexApp(App[int]):
         self._audit_runner: AuditRunner = _default_audit_runner
         self._replay_mode = replay_mode
         self._truncated_replay = False
-        self._pending_runtime_config: "RuntimeConfig | None" = None
+        self._pending_runtime_config: RuntimeConfig | None = None
 
     @classmethod
     def in_replay_mode(
@@ -111,7 +112,7 @@ class SenexApp(App[int]):
     def replay_mode(self) -> bool:
         return self._replay_mode
 
-    def start_audit(self, runtime_config: "RuntimeConfig") -> None:
+    def start_audit(self, runtime_config: RuntimeConfig) -> None:
         """Push Monitor + spawn the audit task."""
         self._pending_runtime_config = runtime_config
         # Defer task creation until after the screen push so the Monitor

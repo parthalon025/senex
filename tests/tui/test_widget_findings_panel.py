@@ -1,7 +1,7 @@
 """Tests for FindingsPanelWidget (M9 Task 9.6c)."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 import pytest
 from textual.app import App, ComposeResult
@@ -11,7 +11,7 @@ from senex.tui.widgets.findings_panel import FindingsPanelWidget
 
 
 def _now() -> datetime:
-    return datetime.now(tz=timezone.utc)
+    return datetime.now(tz=UTC)
 
 
 def _fc(path: str, priority: str | None, title: str | None = None) -> FileComplete:

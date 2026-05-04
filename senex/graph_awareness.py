@@ -23,7 +23,7 @@ import re
 import shutil
 import sys
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -238,7 +238,7 @@ class GitNexusCLIProvider:
             stdout, stderr = await asyncio.wait_for(
                 proc.communicate(), timeout=self._timeout
             )
-        except asyncio.TimeoutError as cause:
+        except TimeoutError as cause:
             proc.kill()
             await proc.wait()
             raise GitNexusSubprocessFailed(
@@ -327,7 +327,7 @@ class GitNexusCLIProvider:
     ) -> None:
         await self._bus.publish(
             GraphContextUnavailable(
-                ts=datetime.now(tz=timezone.utc),
+                ts=datetime.now(tz=UTC),
                 seq=0,
                 run_id="preflight",
                 path=file_relpath,

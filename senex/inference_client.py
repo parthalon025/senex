@@ -19,7 +19,7 @@ import json
 import re
 import time
 from dataclasses import dataclass, field
-from typing import Any, Final, Literal
+from typing import Any, Final, Literal, cast
 
 import httpx
 import tiktoken
@@ -45,6 +45,7 @@ from senex.inference_errors import (
     TokenBudgetExceeded,
 )
 from senex.secret_redactor import SecretRedactor
+from datetime import UTC
 
 # ----- regex literals (locked by tests) ---------------------------------------
 # §5 conventions: ANSI strip on `content` only.
@@ -304,7 +305,9 @@ class InferenceClient:
 
     # --- backend-aware helpers ------------------------------------------------
 
-    def _apply_schema_to_body(self, body: dict[str, Any], schema: type | None) -> dict[str, Any]:
+    def _apply_schema_to_body(
+        self, body: dict[str, Any], schema: type[BaseModel] | None
+    ) -> dict[str, Any]:
         """Attach the JSON schema constraint to ``body`` in the backend's native format.
 
         Ollama uses ``format: <json-schema>``; SGLang/OpenAI use ``response_format``.
@@ -1235,7 +1238,7 @@ def _sanitize_schema_for_lmstudio(schema: dict[str, object]) -> dict[str, object
             return [_walk(item) for item in node]
         return node
 
-    return _walk(copy.deepcopy(schema))
+    return cast("dict[str, object]", _walk(copy.deepcopy(schema)))
 
 
 def _validate_audit_schema(parsed: dict[str, object], schema: dict[str, object]) -> None:
@@ -1302,10 +1305,10 @@ def _looks_like_sse(text: str) -> bool:
 # this client and supplies a monotonic ``run_id`` via the bus's seq counter
 # in production; for unit tests with a bare ``EventBus`` we use a fixed run_id
 # placeholder so events validate cleanly. See M4 lifecycle for the real wiring.
-def _now() -> "datetime":
-    from datetime import datetime, timezone
+def _now() -> datetime:
+    from datetime import datetime
 
-    return datetime.now(tz=timezone.utc)
+    return datetime.now(tz=UTC)
 
 
 def _run_id() -> str:

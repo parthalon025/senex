@@ -151,17 +151,16 @@ async def test_lifecycle_cm_release_on_body_exception(tmp_path: Path) -> None:
         new=lambda *a, **kw: _async_return(fake),
     ), patch.object(RunLock, "acquire", lambda *args, **kwargs: 1), patch.object(
         RunLock, "release", _release
-    ):
-        with pytest.raises(RuntimeError):
-            async with lifecycle_acquire_or_resume(
-                config=cfg,
-                run_id="01JZRUND0000000000000ABCDE",
-                bus=bus,
-                redactor=SecretRedactor(),
-                resume=False,
-                checkpoint_fingerprint=None,
-            ):
-                raise RuntimeError("body crashed")
+    ), pytest.raises(RuntimeError):
+        async with lifecycle_acquire_or_resume(
+            config=cfg,
+            run_id="01JZRUND0000000000000ABCDE",
+            bus=bus,
+            redactor=SecretRedactor(),
+            resume=False,
+            checkpoint_fingerprint=None,
+        ):
+            raise RuntimeError("body crashed")
     assert release_calls, "RunLock.release must run on body exception"
 
 

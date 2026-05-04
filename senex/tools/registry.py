@@ -213,7 +213,7 @@ class ToolRegistry:
                 reg.handler(inp, ctx),
                 timeout=ctx.tool_timeout_seconds,
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             return ToolError(
                 call_id=call_id,
                 name=name,
