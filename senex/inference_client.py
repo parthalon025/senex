@@ -265,8 +265,20 @@ class InferenceClient:
         self._bus = bus
         self._redactor = redactor
         self._backend_type = backend_type
+        # Backend-aware HTTP target + model_id resolution.
+        # When backend_type=="ollama", talk to Ollama's OpenAI-compatible
+        # endpoint (``<ollama.base_url>/v1``) and use the Ollama model name
+        # (e.g. ``gemma4:e4b``); the SGLang base_url and model fields stay
+        # as inert defaults. Without this, ollama runs would point at the
+        # SGLang URL/model and every chat() would die with ConnectError.
+        if backend_type == "ollama":
+            base_url = f"{config.ollama.base_url.rstrip('/')}/v1"
+            self._model_id = config.ollama.model
+        else:
+            base_url = config.base_url
+            self._model_id = config.model
         self._http = httpx.AsyncClient(
-            base_url=config.base_url,
+            base_url=base_url,
             timeout=httpx.Timeout(
                 connect=float(config.connect_timeout),
                 read=float(config.read_timeout),
@@ -357,7 +369,7 @@ class InferenceClient:
         Iteration controller: senex.tools.loop.ToolLoop (M5 Task 5.8).
         """
         # 1. Pre-call token budget check (§3.4).
-        used = self.count_tokens(messages, self._config.model)
+        used = self.count_tokens(messages, self._model_id)
         budget = int(self._config.token_budget_pct * self._config.context_window)
         if used > budget:
             raise TokenBudgetExceeded(
@@ -375,7 +387,7 @@ class InferenceClient:
         # {"enable_thinking": True}} rather than via <|think|> token injection.
         # The extra_body is merged into the request body in _build_base_body.
         extra_body: dict[str, object] | None = None
-        if self._config.thinking.enabled and "gemma" in self._config.model.lower():
+        if self._config.thinking.enabled and "gemma" in self._model_id.lower():
             extra_body = {"chat_template_kwargs": {"enable_thinking": True}}
 
         # 4. Build base body (sampling + thinking + tools).
@@ -1089,9 +1101,9 @@ class InferenceClient:
             return self._fingerprint_cached
 
         models = await self.list_loaded_models()
-        target = next((m for m in models if m.id == self._config.model), None)
+        target = next((m for m in models if m.id == self._model_id), None)
         if target is None:
-            raise LMSConnectionLost(f"model {self._config.model!r} not loaded")
+            raise LMSConnectionLost(f"model {self._model_id!r} not loaded")
         observed = self.compute_fingerprint(target)
         self._fingerprint_cached = observed
         self._fingerprint_cached_at = now
@@ -1121,7 +1133,7 @@ class InferenceClient:
         extra_body: dict[str, object] | None = None,
     ) -> dict[str, object]:
         body: dict[str, object] = {
-            "model": self._config.model,
+            "model": self._model_id,
             "messages": [m.model_dump(exclude_none=True) for m in messages],
         }
         # Sampling fields are forwarded verbatim (the LMS server ignores ones it doesn't know).
